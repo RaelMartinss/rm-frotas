@@ -1,13 +1,13 @@
 import { InvalidLicensePlateException } from '../exceptions/invalid-license-plate.exception';
 
-export class LicenePlate {
+export class LicensePlate {
     private readonly value: string;
     private static readonly LICENSE_PLATE_REGEX = /^[A-Z]{3}-?[0-9][A-Z0-9][0-9]{2}$/;
 
     constructor(plate: string) {
         const formattedPlate = plate.trim().toUpperCase().replace('-', '');
 
-        if(!LicenePlate.validade(formattedPlate)) {
+        if(!LicensePlate.validade(formattedPlate)) {
             throw new InvalidLicensePlateException(plate);
         }
 
@@ -20,7 +20,7 @@ export class LicenePlate {
 
     public getValue(): string {return this.value;}
 
-    public equals(other: LicenePlate): boolean {
+    public equals(other: LicensePlate): boolean {
         return this.value === other.getValue();
     }
 }

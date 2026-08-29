@@ -1,6 +1,6 @@
 import { LicensePlate } from '../value-objects/license-plate.vo';
 
-export type VehicleStatus = 'AVAIBLE' | 'IN_MAINTENANCE' | 'IN_USE';
+export type VehicleStatus = 'AVAILABLE' | 'IN_MAINTENANCE' | 'IN_USE';
 
 export interface VehicleProps {
     id: string;
@@ -39,7 +39,7 @@ export class Vehicle {
             throw new Error('O veículo já está em manutenção.');
         }
         if (this.status === 'IN_USE') {
-            throw new Error('Não é possível enviar um veiculo em uso para a manutenção.');
+            throw new Error('Não é possível enviar um veículo em uso para a manutenção.');
         }
         this.status = 'IN_MAINTENANCE';
         this.touch();
@@ -49,7 +49,7 @@ export class Vehicle {
         if (this.status !== 'IN_MAINTENANCE') {
             throw new Error('O veículo não está em manutenção.');
         }
-        this.status = 'AVAIBLE';
+        this.status = 'AVAILABLE';
         this.touch();
     }
 
