@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { Vehicle } from '../vehicle.entity';
 import { LicensePlate } from '../../value-objects/license-plate.vo';
 

@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { LicensePlate } from '../license-plate.vo';
 import { InvalidLicensePlateException } from '../../exceptions/invalid-license-plate.exception'
 
