@@ -37,4 +37,12 @@ export class PrismaVehiclesRepository implements IVehiclesRepository {
 
     return PrismaVehicleMapper.toDomain(vehicle);
   }
+
+  async findAll(): Promise<Vehicle[]> {
+    const vehicle = await this.prisma.vehicle.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return vehicle.map(PrismaVehicleMapper.toDomain);
+  }
 }

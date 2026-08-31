@@ -1,10 +1,13 @@
-import { Body, Controller, Param, Patch, Post, UseFilters } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, UseFilters } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { DomainExceptionFilter } from "../filters/domain-exception.filter";
 import { CreateVehicleUseCase } from "../../../application/use-cases/create-vehicle.use-case";
 import { CreateVehicleDto } from "../dtos/create-vehicle.dto";
 import { VehiclePresenter } from "../presenters/vehicle.presenter";
 import { SendVehicleToMaintenanceUseCase } from '../../../application/use-cases/send-vehicle-to-maintenance.use-case';
+import { FindVehicleByIdUseCase } from '../../../application/use-cases/find-vehicle-by-id.use-case';
+import { FindVehicleByPlateUseCase } from "../../../application/use-cases/find-vehicle-by-plate.use-case";
+import { ListVehiclesUseCase } from "../../../application/use-cases/list-vehicles.use-case";
 
 
 @ApiTags('Vehicles')
@@ -14,7 +17,33 @@ export class VehiclesController {
     constructor(
         private readonly createVehicleUseCase: CreateVehicleUseCase,
         private readonly sendVehicleToMaintenanceUseCase: SendVehicleToMaintenanceUseCase,
+        private readonly findVehicleByIdUseCase: FindVehicleByIdUseCase,
+        private readonly findVehicleByPlateUseCase: FindVehicleByPlateUseCase,
+        private readonly listVehiclesUseCase: ListVehiclesUseCase,
     ) {}
+
+    @Get()
+    @ApiOperation({ summary: 'Listar todos os veículos da frota' })
+    async findAll() {
+        const vehicle = await this.listVehiclesUseCase.execute();
+        return vehicle.map(VehiclePresenter.toHTTP);
+    }
+
+    @Get(':id')
+    @ApiOperation({ summary: 'Buscar veículo por ID' })
+    @ApiParam({ name: 'id', description: 'UUID do veículo' })
+    async findById(@Param('id') id: string) {
+        const vehicle = await this.findVehicleByIdUseCase.execute(id);
+        return VehiclePresenter.toHTTP(vehicle);
+    }
+
+    @Get('plate/:plate')
+    @ApiOperation({ summary: 'Buscar veículo por Placa' })
+    @ApiParam({ name: 'plate', description: 'Placa do veículo (ex: ABC1234)' })
+    async findByPlate(@Param('plate') plate: string) {
+        const vehicle = await this.findVehicleByPlateUseCase.execute(plate);
+        return VehiclePresenter.toHTTP(vehicle);
+    }
 
     @Post()
     @ApiOperation({ summary: 'Cadastrar um novo veículo na frota' })
@@ -44,4 +73,6 @@ export class VehiclesController {
 
         return VehiclePresenter.toHTTP(vehicle);
     }
+
+
 }
