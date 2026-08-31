@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseFilters } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, UseFilters } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { DomainExceptionFilter } from "../filters/domain-exception.filter";
 import { CreateVehicleUseCase } from "../../../application/use-cases/create-vehicle.use-case";
@@ -8,6 +8,8 @@ import { SendVehicleToMaintenanceUseCase } from '../../../application/use-cases/
 import { FindVehicleByIdUseCase } from '../../../application/use-cases/find-vehicle-by-id.use-case';
 import { FindVehicleByPlateUseCase } from "../../../application/use-cases/find-vehicle-by-plate.use-case";
 import { ListVehiclesUseCase } from "../../../application/use-cases/list-vehicles.use-case";
+import { UpdateVehicleKmUseCase } from "../../../application/use-cases/update-vehicle-km.use-case";
+import { UpdateVehicleKmDto } from "../dtos/update-vehicle-km.dto";
 
 
 @ApiTags('Vehicles')
@@ -20,6 +22,7 @@ export class VehiclesController {
         private readonly findVehicleByIdUseCase: FindVehicleByIdUseCase,
         private readonly findVehicleByPlateUseCase: FindVehicleByPlateUseCase,
         private readonly listVehiclesUseCase: ListVehiclesUseCase,
+        private readonly updateVehicleKmUseCase: UpdateVehicleKmUseCase,
     ) {}
 
     @Get()
@@ -74,5 +77,17 @@ export class VehiclesController {
         return VehiclePresenter.toHTTP(vehicle);
     }
 
+    @Patch(':id/km')
+    @HttpCode(HttpStatus.OK)
+    async updateKm(
+        @Param('id') id: string,
+        @Body() dto: UpdateVehicleKmDto,
+    ) {
+        const vehicle = await this.updateVehicleKmUseCase.execute({
+            vehicleId: id,
+            currentKm: dto.currentKm,
+        });
 
+        return VehiclePresenter.toHTTP(vehicle);
+    }
 }

@@ -1,11 +1,12 @@
 import { InvalidKilometrageException } from '../exceptions/invalid-kilometrage.exception';
 import { VehicleAlreadyInMaintenanceException, VehicleInUseException } from '../exceptions/vehicle-status.exception';
 import { LicensePlate } from '../value-objects/license-plate.vo';
+import { randomUUID } from 'node:crypto';
 
 export type VehicleStatus = 'AVAILABLE' | 'IN_MAINTENANCE' | 'IN_USE';
 
 export interface VehicleProps {
-    id: string;
+    id?: string;
     plate: LicensePlate;
     model: string;
     year: number;
@@ -14,6 +15,7 @@ export interface VehicleProps {
     createdAt?: Date;
     updatedAt?: Date;
 }
+
 
 export class Vehicle {
     private readonly id: string;
@@ -26,7 +28,7 @@ export class Vehicle {
     private updatedAt: Date;
 
     constructor(props: VehicleProps) {
-        this.id = props.id;
+        this.id = props.id ?? randomUUID();
         this.plate = props.plate;
         this.model = props.model;
         this.year = props.year;

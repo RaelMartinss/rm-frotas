@@ -19,6 +19,10 @@ class InMemoryVehiclesRepository implements IVehiclesRepository {
   async findByPlate(plate: string): Promise<Vehicle | null> {
     return this.items.find((item) => item.getPlate().getValue() === plate) ?? null;
   }
+
+  async findAll(): Promise<Vehicle[]> {
+    return this.items;
+  }
 }
 
 describe('CreateVehicleUseCase', () => {
