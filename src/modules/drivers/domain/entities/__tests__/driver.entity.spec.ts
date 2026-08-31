@@ -10,7 +10,7 @@ describe('Driver Entity', () => {
   let validCnh: Cnh;
 
   beforeEach(() => {
-    validCpf = new Cpf('123.456.789-00');
+    validCpf = new Cpf('529.982.247-25');
     validCnh = new Cnh('12345678900', 'AB', new Date('2030-01-01'));
   });
 
