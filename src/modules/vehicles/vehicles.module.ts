@@ -4,6 +4,7 @@ import { CreateVehicleUseCase } from './application/use-cases/create-vehicle.use
 import { IVehiclesRepository } from './domain/repositories/vehicles.repository';
 import { PrismaVehiclesRepository } from './infrastructure/persistence/prisma/repositories/prisma-vehicles.repository';
 import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
+import { SendVehicleToMaintenanceUseCase } from './application/use-cases/send-vehicle-to-maintenance.use-case';
 
 
 @Module({
@@ -13,6 +14,7 @@ import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
     ],
     providers: [
         CreateVehicleUseCase,
+        SendVehicleToMaintenanceUseCase,
         {
             provide: IVehiclesRepository,
             useClass: PrismaVehiclesRepository,        

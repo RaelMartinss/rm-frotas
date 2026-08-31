@@ -4,9 +4,11 @@ import { InvalidLicensePlateException } from "../../../domain/exceptions/invalid
 import { VehicleAlreadyExistsException } from "../../../domain/exceptions/vehicle-already-exists.exception";
 import { VehicleAlreadyInMaintenanceException, VehicleInUseException } from "../../../domain/exceptions/vehicle-status.exception";
 import { InvalidKilometrageException } from "../../../domain/exceptions/invalid-kilometrage.exception";
+import { VehicleNotFoundException } from "../../../domain/exceptions/vehicle-not-found.exception";
 
 
 @Catch(
+  VehicleNotFoundException,
   InvalidLicensePlateException,
   VehicleAlreadyExistsException,
   VehicleAlreadyInMaintenanceException,
@@ -20,13 +22,15 @@ export class DomainExceptionFilter implements ExceptionFilter {
 
         let status = HttpStatus.BAD_REQUEST;
 
-        if (exception instanceof VehicleAlreadyExistsException) {
-            status = HttpStatus.CONFLICT; 
+        if (exception instanceof VehicleNotFoundException) {
+            status = HttpStatus.NOT_FOUND // 404
+        }else if (exception instanceof VehicleAlreadyExistsException) {
+            status = HttpStatus.CONFLICT; // 409
         } else if (
             exception instanceof VehicleAlreadyInMaintenanceException ||
             exception instanceof VehicleInUseException
         ) {
-            status = HttpStatus.UNPROCESSABLE_ENTITY
+            status = HttpStatus.UNPROCESSABLE_ENTITY // 422
         }
 
         response.status(status).json({
