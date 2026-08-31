@@ -71,9 +71,19 @@ export class VehiclesController {
     @ApiResponse({ status: 200, description: 'Status do veículo alterado para IN_MAINTENANCE.' })
     @ApiResponse({ status: 404, description: 'Veículo não encontrado.' })
     @ApiResponse({ status: 422, description: 'Veículo já está em manutenção ou está em uso.' })
+    async sendToMaintenanceLegacy(@Param('id') id: string) {
+        return this.sendToMaintenance(id);
+    }
+
+    @Patch(':id/maintenance/send')
+    @ApiOperation({ summary: 'Enviar um veículo para a manutenção' })
+    @ApiParam({ name: 'id', description: 'UUID do veículo' })
+    @ApiResponse({ status: 200, description: 'Status do veículo alterado para IN_MAINTENANCE.' })
+    @ApiResponse({ status: 404, description: 'Veículo não encontrado.' })
+    @ApiResponse({ status: 422, description: 'Veículo já está em manutenção ou está em uso.' })
     async sendToMaintenance(@Param('id') id: string) {
         const vehicle = await this.sendVehicleToMaintenanceUseCase.execute({
-        vehicleId: id,
+            vehicleId: id,
         });
 
         return VehiclePresenter.toHTTP(vehicle);

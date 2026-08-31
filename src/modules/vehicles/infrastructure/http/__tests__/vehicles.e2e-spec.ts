@@ -286,6 +286,7 @@ describe('Vehicles Endpoints (E2E)', () => {
       expect(response.status).toBe(404);
     });
   });
+
   describe('PATCH /vehicles/:id/maintenance/finish', () => {
     it('deve finalizar a manutenção do veículo e retornar status AVAILABLE (200)', async () => {
       const vehicle = new Vehicle({
@@ -327,6 +328,53 @@ describe('Vehicles Endpoints (E2E)', () => {
     it('deve retornar 404 ao tentar finalizar manutenção de veículo inexistente', async () => {
       const response = await request(app.getHttpServer()).patch(
         '/vehicles/non-existing-id/maintenance/finish',
+      );
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('PATCH /vehicles/:id/maintenance/send', () => {
+    it('deve enviar um veículo disponível para manutenção com sucesso (200)', async () => {
+      const vehicle = new Vehicle({
+        plate: new LicensePlate('ABC1234'),
+        model: 'Volvo FH 540',
+        year: 2023,
+        currentKm: 15000,
+        status: VehicleStatus.AVAILABLE,
+      });
+
+      await repository.save(vehicle);
+
+      const response = await request(app.getHttpServer()).patch(
+        `/vehicles/${vehicle.getId()}/maintenance/send`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe('IN_MAINTENANCE');
+    });
+
+    it('deve retornar 422 se o veículo já estiver em manutenção', async () => {
+      const vehicle = new Vehicle({
+        plate: new LicensePlate('ABC1234'),
+        model: 'Volvo FH 540',
+        year: 2023,
+        currentKm: 15000,
+        status: VehicleStatus.IN_MAINTENANCE,
+      });
+
+      await repository.save(vehicle);
+
+      const response = await request(app.getHttpServer()).patch(
+        `/vehicles/${vehicle.getId()}/maintenance/send`,
+      );
+
+      expect(response.status).toBe(422);
+    });
+
+    it('deve retornar 404 ao tentar enviar para manutenção um veículo inexistente', async () => {
+      const response = await request(app.getHttpServer()).patch(
+        '/vehicles/non-existing-id/maintenance/send',
       );
 
       expect(response.status).toBe(404);
