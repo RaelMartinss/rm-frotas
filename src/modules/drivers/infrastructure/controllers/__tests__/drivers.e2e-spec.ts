@@ -9,6 +9,7 @@ import { DriversModule } from '../../../drivers.module';
 import { DriverStatus } from '../../../domain/entities/driver-status.enum';
 import { Cnh } from '../../../domain/value-objects/cnh.vo';
 import { PrismaService } from '../../../../../shared/infrastructure/prisma/prisma.service';
+import { DomainExceptionFilter } from '../../http/domain-exception.filter';
 
 
 // Repositório em memória isolado para os testes E2E (evita dependência de banco ativo)
@@ -62,6 +63,8 @@ describe('DriversController (E2E)', () => {
         transform: true,
       }),
     );
+    
+    app.useGlobalFilters(new DomainExceptionFilter());
 
     await app.init();
   });
@@ -116,6 +119,7 @@ describe('DriversController (E2E)', () => {
         });
 
       expect(response.status).toBe(400);
+      expect(response.body.message).toContain('CPF informado');
       expect(repository.items).toHaveLength(0);
     });
   });
