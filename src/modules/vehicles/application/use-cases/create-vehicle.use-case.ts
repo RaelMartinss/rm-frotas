@@ -1,11 +1,10 @@
-import { Injectable, ConflictException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { IVehiclesRepository } from '../../domain/repositories/vehicles.repository';
 import { Vehicle } from '../../domain/entities/vehicle.entity';
 import { LicensePlate } from '../../domain/value-objects/license-plate.vo';
 import { CreateVehicleInput } from '../inputs/create-vehicle.input';
+import { VehicleAlreadyExistsException } from '../../domain/exceptions/vehicle-already-exists.exception';
 
-@Injectable()
 export class CreateVehicleUseCase {
   constructor(private readonly vehiclesRepository: IVehiclesRepository) {}
 
@@ -14,7 +13,7 @@ export class CreateVehicleUseCase {
 
     const vehicleAlreadyExists = await this.vehiclesRepository.findByPlate(licensePlate.getValue());
     if (vehicleAlreadyExists) {
-      throw new ConflictException(`Veículo com a placa '${licensePlate.getValue()}' já está cadastrado.`);
+      throw new VehicleAlreadyExistsException(licensePlate.getValue());    
     }
 
     const vehicle = new Vehicle({

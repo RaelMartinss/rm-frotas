@@ -1,3 +1,5 @@
+import { InvalidKilometrageException } from '../exceptions/invalid-kilometrage.exception';
+import { VehicleAlreadyInMaintenanceException, VehicleInUseException } from '../exceptions/vehicle-status.exception';
 import { LicensePlate } from '../value-objects/license-plate.vo';
 
 export type VehicleStatus = 'AVAILABLE' | 'IN_MAINTENANCE' | 'IN_USE';
@@ -36,10 +38,10 @@ export class Vehicle {
 
     public sendToMaintenance(): void {
         if (this.status === 'IN_MAINTENANCE') {
-            throw new Error('O veículo já está em manutenção.');
+            throw new VehicleAlreadyInMaintenanceException();
         }
         if (this.status === 'IN_USE') {
-            throw new Error('Não é possível enviar um veículo em uso para a manutenção.');
+            throw new VehicleInUseException();
         }
         this.status = 'IN_MAINTENANCE';
         this.touch();
@@ -55,7 +57,7 @@ export class Vehicle {
 
     public updateKm(newKm: number): void {
         if (newKm < this.currentKm) {
-            throw new Error('A nova quilometragem não pode ser menor que a quilometragem atual.');
+            throw new InvalidKilometrageException();
         }
         this.currentKm = newKm;
         this.touch();

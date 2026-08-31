@@ -7,14 +7,14 @@ export class LicensePlate {
     constructor(plate: string) {
         const formattedPlate = plate.trim().toUpperCase().replace('-', '');
 
-        if(!LicensePlate.validade(formattedPlate)) {
+        if(!LicensePlate.validate(formattedPlate)) {
             throw new InvalidLicensePlateException(plate);
         }
 
         this.value = formattedPlate;
     }
 
-    public static validade(plate: string): boolean {
+    public static validate(plate: string): boolean {
         return this.LICENSE_PLATE_REGEX.test(plate)
     }
 

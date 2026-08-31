@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { CreateVehicleUseCase } from '../create-vehicle.use-case';
 import { IVehiclesRepository } from '../../../domain/repositories/vehicles.repository';
 import { Vehicle } from '../../../domain/entities/vehicle.entity';
+import { VehicleAlreadyExistsException } from '../../../domain/exceptions/vehicle-already-exists.exception';
 
 // Implementation Fake (In-Memory) apenas para os testes unitários
 class InMemoryVehiclesRepository implements IVehiclesRepository {
@@ -57,6 +58,6 @@ describe('CreateVehicleUseCase', () => {
         year: 2022,
         currentKm: 5000,
       }),
-    ).rejects.toThrow("Veículo com a placa 'ABC1234' já está cadastrado.");
+    ).rejects.toThrow(VehicleAlreadyExistsException);
   });
 });
