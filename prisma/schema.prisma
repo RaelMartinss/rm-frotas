@@ -25,3 +25,23 @@ model Vehicle {
 
   @@map("vehicles")
 }
+
+enum DriverStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model Driver {
+  id                String       @id @default(uuid())
+  name              String
+  cpf               String       @unique
+  cnhNumber         String
+  cnhCategory       String
+  cnhExpirationDate DateTime
+  status            DriverStatus @default(ACTIVE)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@map("drivers")
+}
