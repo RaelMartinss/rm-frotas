@@ -1,10 +1,12 @@
 import { randomUUID } from 'node:crypto';
+import { Injectable } from '@nestjs/common';
 import { IVehiclesRepository } from '../../domain/repositories/vehicles.repository';
 import { Vehicle } from '../../domain/entities/vehicle.entity';
 import { LicensePlate } from '../../domain/value-objects/license-plate.vo';
 import { CreateVehicleInput } from '../inputs/create-vehicle.input';
 import { VehicleAlreadyExistsException } from '../../domain/exceptions/vehicle-already-exists.exception';
 
+@Injectable()
 export class CreateVehicleUseCase {
   constructor(private readonly vehiclesRepository: IVehiclesRepository) {}
 

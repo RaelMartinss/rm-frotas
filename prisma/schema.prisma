@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  IN_MAINTENANCE
+  IN_USE
+}
+
+model Vehicle {
+  id        String        @id @default(uuid())
+  plate     String        @unique
+  model     String
+  year      Int
+  currentKm Int           @map("current_km")
+  status    VehicleStatus @default(AVAILABLE)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  @@map("vehicles")
+}

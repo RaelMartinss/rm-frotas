@@ -3,6 +3,7 @@ import { Vehicle } from "../../../domain/entities/vehicle.entity";
 import { IVehiclesRepository } from "../../../domain/repositories/vehicles.repository";
 import { Test, TestingModule } from "@nestjs/testing";
 import { AppModule } from "../../../../../app.module";
+import { PrismaService } from "../../../../../shared/infrastructure/prisma/prisma.service";
 import request from 'supertest';
 
 class InMemoryVehiclesRepository implements IVehiclesRepository {
@@ -31,8 +32,10 @@ describe('Vehicle Controller (E2E)', () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
             imports: [AppModule],
         })
-        .overrideInterceptor(IVehiclesRepository)
+        .overrideProvider(IVehiclesRepository)
         .useValue(repository)
+        .overrideProvider(PrismaService)
+        .useValue({})
         .compile();
 
         app = moduleFixture.createNestApplication();

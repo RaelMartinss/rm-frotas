@@ -3,9 +3,11 @@ import { VehiclesController } from './infrastructure/http/controllers/vehicles.c
 import { CreateVehicleUseCase } from './application/use-cases/create-vehicle.use-case';
 import { IVehiclesRepository } from './domain/repositories/vehicles.repository';
 import { PrismaVehiclesRepository } from './infrastructure/persistence/prisma/repositories/prisma-vehicles.repository';
+import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
 
 
 @Module({
+    imports: [PrismaModule],
     controllers: [
         VehiclesController,
     ],
