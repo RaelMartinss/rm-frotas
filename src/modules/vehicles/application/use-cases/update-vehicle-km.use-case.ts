@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { IVehiclesRepository } from "../../domain/repositories/vehicles.repository";
-import { Vehicle, InvalidKmException } from "../../domain/entities/vehicle.entity";
+import { Vehicle } from "../../domain/entities/vehicle.entity";
+import { InvalidKilometrageException } from "../../domain/exceptions/invalid-kilometrage.exception";
 
 
 
@@ -26,7 +27,7 @@ export class UpdateVehicleKmUseCase {
         try {
             vehicle.updateKm(currentKm);
         } catch (error) {
-            if(error instanceof InvalidKmException) {
+            if(error instanceof InvalidKilometrageException) {
                 throw new BadRequestException(error.message);
             }
             throw error;

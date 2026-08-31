@@ -8,6 +8,7 @@ import { SendVehicleToMaintenanceUseCase } from './application/use-cases/send-ve
 import { FindVehicleByIdUseCase } from './application/use-cases/find-vehicle-by-id.use-case';
 import { FindVehicleByPlateUseCase } from './application/use-cases/find-vehicle-by-plate.use-case';
 import { ListVehiclesUseCase } from './application/use-cases/list-vehicles.use-case';
+import { UpdateVehicleKmUseCase } from './application/use-cases/update-vehicle-km.use-case';
 
 
 @Module({
@@ -21,6 +22,7 @@ import { ListVehiclesUseCase } from './application/use-cases/list-vehicles.use-c
         FindVehicleByIdUseCase,
         FindVehicleByPlateUseCase,
         ListVehiclesUseCase,
+        UpdateVehicleKmUseCase,
         {
             provide: IVehiclesRepository,
             useClass: PrismaVehiclesRepository,        
