@@ -9,6 +9,7 @@ import { FindVehicleByIdUseCase } from './application/use-cases/find-vehicle-by-
 import { FindVehicleByPlateUseCase } from './application/use-cases/find-vehicle-by-plate.use-case';
 import { ListVehiclesUseCase } from './application/use-cases/list-vehicles.use-case';
 import { UpdateVehicleKmUseCase } from './application/use-cases/update-vehicle-km.use-case';
+import { FinishVehicleMaintenanceUseCase } from './application/use-cases/finish-vehicle-maintenance.use-case';
 
 
 @Module({
@@ -19,6 +20,7 @@ import { UpdateVehicleKmUseCase } from './application/use-cases/update-vehicle-k
     providers: [
         CreateVehicleUseCase,
         SendVehicleToMaintenanceUseCase,
+        FinishVehicleMaintenanceUseCase,
         FindVehicleByIdUseCase,
         FindVehicleByPlateUseCase,
         ListVehiclesUseCase,

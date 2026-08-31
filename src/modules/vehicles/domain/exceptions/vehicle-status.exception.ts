@@ -11,3 +11,10 @@ export class VehicleInUseException extends Error {
     this.name = 'VehicleInUseException';
   }
 }
+
+export class VehicleNotInMaintenanceException extends Error {
+  constructor() {
+    super('O veículo não está em manutenção para ter a manutenção finalizada.');
+    this.name = 'VehicleNotInMaintenanceException';
+  }
+}

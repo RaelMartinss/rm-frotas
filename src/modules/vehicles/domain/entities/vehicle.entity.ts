@@ -3,8 +3,11 @@ import { VehicleAlreadyInMaintenanceException, VehicleInUseException } from '../
 import { LicensePlate } from '../value-objects/license-plate.vo';
 import { randomUUID } from 'node:crypto';
 
-export type VehicleStatus = 'AVAILABLE' | 'IN_MAINTENANCE' | 'IN_USE';
-
+export enum VehicleStatus {
+  AVAILABLE = 'AVAILABLE',
+  IN_MAINTENANCE = 'IN_MAINTENANCE',
+  IN_USE = 'IN_USE',
+}
 export interface VehicleProps {
     id?: string;
     plate: LicensePlate;
@@ -18,65 +21,66 @@ export interface VehicleProps {
 
 
 export class Vehicle {
-    private readonly id: string;
-    private readonly plate: LicensePlate;
-    private model: string;
-    private year: number;
-    private currentKm: number;
-    private status: VehicleStatus;
-    private readonly createdAt: Date;
-    private updatedAt: Date;
+    private props: Required<VehicleProps>;
 
     constructor(props: VehicleProps) {
-        this.id = props.id ?? randomUUID();
-        this.plate = props.plate;
-        this.model = props.model;
-        this.year = props.year;
-        this.currentKm = props.currentKm;
-        this.status = props.status ?? 'AVAILABLE';
-        this.createdAt = props.createdAt ?? new Date();
-        this.updatedAt = props.updatedAt ?? new Date();
+        this.props = {
+        ...props,
+        id: props.id ?? randomUUID(), // 2. Se não passar ID, gera um UUID v4 nativo do Node
+        status: props.status ?? VehicleStatus.AVAILABLE,
+        createdAt: props.createdAt ?? new Date(),
+        updatedAt: props.updatedAt ?? new Date(),
+        };  
     }
 
     public sendToMaintenance(): void {
-        if (this.status === 'IN_MAINTENANCE') {
+        if (this.props.status === VehicleStatus.IN_MAINTENANCE) {
             throw new VehicleAlreadyInMaintenanceException();
         }
-        if (this.status === 'IN_USE') {
+        if (this.props.status === VehicleStatus.IN_USE) {
             throw new VehicleInUseException();
         }
-        this.status = 'IN_MAINTENANCE';
+        this.props.status = VehicleStatus.IN_MAINTENANCE;
         this.touch();
     }
 
     public returnFromMaintenance(): void {
-        if (this.status !== 'IN_MAINTENANCE') {
+        if (this.props.status !== VehicleStatus.IN_MAINTENANCE) {
             throw new Error('O veículo não está em manutenção.');
         }
-        this.status = 'AVAILABLE';
+        this.props.status = VehicleStatus.AVAILABLE;
         this.touch();
     }
 
     public updateKm(newKm: number): void {
-        if (newKm < this.currentKm) {
+        if (newKm < this.props.currentKm) {
             throw new InvalidKilometrageException();
         }
-        this.currentKm = newKm;
+        this.props.currentKm = newKm;
         this.touch();
     }
 
     private touch(): void {
-        this.updatedAt = new Date();
+        this.props.updatedAt = new Date();
+    }
+
+    public finishMaintenance(): void {
+        if (this.props.status !== VehicleStatus.IN_MAINTENANCE) {
+            throw new VehicleAlreadyInMaintenanceException();
+        }
+
+        this.props.status = VehicleStatus.AVAILABLE;
+        this.props.updatedAt = new Date();
     }
 
     // -- Getters ---
-    public getId(): string { return this.id; }
-    public getPlate(): LicensePlate { return this.plate; }
-    public getModel(): string { return this.model; }
-    public getYear(): number { return this.year; }
-    public getCurrentKm(): number { return this.currentKm; }
-    public getStatus(): VehicleStatus { return this.status; }
-    public getCreatedAt(): Date { return this.createdAt; }
-    public getUpdatedAt(): Date { return this.updatedAt; }
+    public getId(): string { return this.props.id; }
+    public getPlate(): LicensePlate { return this.props.plate; }
+    public getModel(): string { return this.props.model; }
+    public getYear(): number { return this.props.year; }
+    public getCurrentKm(): number { return this.props.currentKm; }
+    public getStatus(): VehicleStatus { return this.props.status; }
+    public getCreatedAt(): Date { return this.props.createdAt; }
+    public getUpdatedAt(): Date { return this.props.updatedAt; }
 
 }

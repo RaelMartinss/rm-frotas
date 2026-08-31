@@ -10,6 +10,7 @@ import { FindVehicleByPlateUseCase } from "../../../application/use-cases/find-v
 import { ListVehiclesUseCase } from "../../../application/use-cases/list-vehicles.use-case";
 import { UpdateVehicleKmUseCase } from "../../../application/use-cases/update-vehicle-km.use-case";
 import { UpdateVehicleKmDto } from "../dtos/update-vehicle-km.dto";
+import { FinishVehicleMaintenanceUseCase } from '../../../application/use-cases/finish-vehicle-maintenance.use-case';
 
 
 @ApiTags('Vehicles')
@@ -23,6 +24,7 @@ export class VehiclesController {
         private readonly findVehicleByPlateUseCase: FindVehicleByPlateUseCase,
         private readonly listVehiclesUseCase: ListVehiclesUseCase,
         private readonly updateVehicleKmUseCase: UpdateVehicleKmUseCase,
+        private readonly finishVehicleMaintenanceUseCase: FinishVehicleMaintenanceUseCase,
     ) {}
 
     @Get()
@@ -86,6 +88,20 @@ export class VehiclesController {
         const vehicle = await this.updateVehicleKmUseCase.execute({
             vehicleId: id,
             currentKm: dto.currentKm,
+        });
+
+        return VehiclePresenter.toHTTP(vehicle);
+    }
+
+   @Patch(':id/maintenance/finish')
+    @ApiOperation({ summary: 'Finalizar a manutenção de um veículo e torná-lo disponível' })
+    @ApiParam({ name: 'id', description: 'UUID do veículo' })
+    @ApiResponse({ status: 200, description: 'Manutenção finalizada. Status alterado para AVAILABLE.' })
+    @ApiResponse({ status: 404, description: 'Veículo não encontrado.' })
+    @ApiResponse({ status: 422, description: 'Veículo não está em manutenção.' })
+    async finishMaintenance(@Param('id') id: string) {
+        const vehicle = await this.finishVehicleMaintenanceUseCase.execute({
+            vehicleId: id,
         });
 
         return VehiclePresenter.toHTTP(vehicle);
