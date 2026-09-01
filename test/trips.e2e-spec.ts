@@ -91,6 +91,38 @@ class InMemoryTripsRepository implements ITripsRepository {
     return this.items.find((item) => item.getVehicleId() === vehicleId && item.getStatus() === 'IN_PROGRESS') ?? null;
   }
 
+  async findManyPaginated({
+    status,
+    driverId,
+    vehicleId,
+    page,
+    limit,
+  }: {
+    status?: string;
+    driverId?: string;
+    vehicleId?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ trips: Trip[]; total: number }> {
+    let filteredTrips = this.items;
+
+    if (status) {
+      filteredTrips = filteredTrips.filter((trip) => trip.getStatus() === status);
+    }
+    if (driverId) {
+      filteredTrips = filteredTrips.filter((trip) => trip.getDriverId() === driverId);
+    }
+    if (vehicleId) {
+      filteredTrips = filteredTrips.filter((trip) => trip.getVehicleId() === vehicleId);
+    }
+
+    const total = filteredTrips.length;
+    const startIndex = (page - 1) * limit;
+    const trips = filteredTrips.slice(startIndex, startIndex + limit);
+
+    return { trips, total };
+  }
+
   async save(trip: Trip): Promise<void> {
     const index = this.items.findIndex((item) => item.getId() === trip.getId());
     if (index >= 0) {

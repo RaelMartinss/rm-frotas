@@ -67,4 +67,43 @@ export class PrismaTripsRepository implements ITripsRepository {
       data,
     });
   }
+
+  async findManyPaginated({
+    status,
+    driverId,
+    vehicleId,
+    page,
+    limit,
+  }: {
+    status?: TripStatus;
+    driverId?: string;
+    vehicleId?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ trips: Trip[]; total: number }> {
+    const where = {
+      ...(status !== undefined && { status }),
+      ...(driverId && { driverId }),
+      ...(vehicleId && { vehicleId }),
+    };
+
+    const skip = (page - 1) * limit;
+
+    const [rawTrips, total] = await Promise.all([
+      this.prisma.trip.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.trip.count({ where }),
+    ]);
+
+    return {
+      trips: rawTrips.map(TripMapper.toDomain),
+      total,
+    };
+  }
 }

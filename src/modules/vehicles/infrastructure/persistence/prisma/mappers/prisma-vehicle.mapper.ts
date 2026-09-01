@@ -17,6 +17,8 @@ export class PrismaVehicleMapper {
   }
 
   static toPrisma(vehicle: Vehicle) {
+    const ownerId = process.env.DEFAULT_OWNER_ID ?? '00000000-0000-0000-0000-000000000000';
+
     return {
       id: vehicle.getId(),
       plate: vehicle.getPlate().getValue(),
@@ -24,6 +26,7 @@ export class PrismaVehicleMapper {
       year: vehicle.getYear(),
       currentKm: vehicle.getCurrentKm(),
       status: vehicle.getStatus() as PrismaStatus,
+      ownerId,
       createdAt: vehicle.getCreatedAt(),
       updatedAt: vehicle.getUpdatedAt(),
     };

@@ -18,7 +18,7 @@ export interface CreateDriverProps {
   name: string;
   cpf: Cpf;
   cnh: Cnh;
-  cnhExpirationDate: Date;
+  cnhExpirationDate?: Date;
   status?: DriverStatus;
   createdAt?: Date;
   updatedAt?: Date;
@@ -29,9 +29,13 @@ export class Driver {
   private props: DriverProps;
 
   constructor(props: CreateDriverProps, id?: string) {
+    const cnhExpirationDate =
+      props.cnhExpirationDate ?? props.cnh.getExpirationDate();
+
     this.id = id ?? randomUUID();
     this.props = {
       ...props,
+      cnhExpirationDate,
       status: props.status ?? DriverStatus.ACTIVE,
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
@@ -116,12 +120,11 @@ export class Driver {
    * Verifica se a CNH do motorista está vencida em relação à data informada (ou data atual)
    */
   public isCnhExpired(referenceDate: Date = new Date()): boolean {
-    if (!this.props.cnhExpirationDate) {
-      return false;
-    }
+    const expirationDate =
+      this.props.cnhExpirationDate ?? this.props.cnh.getExpirationDate();
 
     // Normaliza para comparar apenas a data sem interferência de fuso/horário
-    const expiration = new Date(this.props.cnhExpirationDate);
+    const expiration = new Date(expirationDate);
     expiration.setHours(23, 59, 59, 999);
 
     return referenceDate > expiration;
