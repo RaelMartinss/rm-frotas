@@ -1,13 +1,13 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  resolve: { 
-    tsconfigPaths: true 
+  resolve: {
+    tsconfigPaths: true,
   },
   test: {
     globals: true,
     environment: 'node',
-    include: ['src/**/*.spec.ts'],
-    exclude: ['node_modules', 'dist', 'test'],
+    include: ['test/**/*.e2e-spec.ts', 'src/**/*.e2e-spec.ts'],
+    exclude: ['node_modules', 'dist'],
   },
 });
