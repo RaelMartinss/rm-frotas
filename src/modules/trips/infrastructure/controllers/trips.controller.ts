@@ -18,6 +18,8 @@ import { VehicleNotAvailableException } from '../../application/exceptions/vehic
 import { TripNotFoundException } from '../../application/exceptions/trip-not-found.exception';
 import { InvalidLocationException } from '../../domain/exceptions/invalid-location.exception';
 import { InvalidTripStatusTransitionException } from '../../domain/exceptions/invalid-trip-status-transition.exception';
+import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { CancelTripUseCase } from '../../application/use-cases/cancel-trip.use-case';
 
 @Controller('trips')
 export class TripsController {
@@ -25,6 +27,7 @@ export class TripsController {
     private readonly createTripUseCase: CreateTripUseCase,
     private readonly startTripUseCase: StartTripUseCase,
     private readonly completeTripUseCase: CompleteTripUseCase,
+    private readonly cancelTripUseCase: CancelTripUseCase,
   ) {}
 
   @Post()
@@ -98,5 +101,22 @@ export class TripsController {
       }
       throw error;
     }
+  }
+
+  @Patch(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Cancelar uma viagem' })
+  @ApiResponse({ status: 200, description: 'Viagem cancelada com sucesso.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Regra de negócio violada (ex: viagem já concluída).',
+  })
+  async cancel(@Param('id') id: string) {
+    const trip = await this.cancelTripUseCase.execute({ tripId: id });
+    return {
+      id: trip.getId(),
+      status: trip.getStatus(),
+      updatedAt: trip.getUpdatedAt(),
+    };
   }
 }
