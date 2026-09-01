@@ -31,10 +31,12 @@ describe('Auth Endpoints (E2E)', () => {
   });
 
   beforeEach(async () => {
-    // Reset related tables together so test isolation is independent of FK order.
-    await prisma.$executeRawUnsafe(
-      'TRUNCATE TABLE "trips", "vehicles", "drivers", "users" RESTART IDENTITY CASCADE',
-    );
+    // Reset related tables in safe Prisma calls so the test suite remains stable
+    // in CI and local environments without depending on raw SQL features.
+    await prisma.trip.deleteMany();
+    await prisma.vehicle.deleteMany();
+    await prisma.driver.deleteMany();
+    await prisma.user.deleteMany();
   });
 
   afterAll(async () => {
