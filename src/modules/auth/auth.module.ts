@@ -7,10 +7,13 @@ import { LoginUseCase } from './application/use-cases/login.use-case';
 import { PrismaUsersRepository } from './infrastructure/repositories/prisma-users.repository';
 import { NestJwtTokenGenerator } from './infrastructure/cryptography/nest-jwt-token-generator';
 import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
 
 @Module({
   imports: [
     PrismaModule,
+    PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -23,6 +26,7 @@ import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
   providers: [
     RegisterUserUseCase,
     LoginUseCase,
+    JwtStrategy,
     {
       provide: 'IUsersRepository',
       useClass: PrismaUsersRepository,
@@ -32,6 +36,6 @@ import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
       useClass: NestJwtTokenGenerator,
     },
   ],
-  exports: ['IUsersRepository', JwtModule],
+  exports: ['IUsersRepository', JwtModule, PassportModule],
 })
 export class AuthModule {}
