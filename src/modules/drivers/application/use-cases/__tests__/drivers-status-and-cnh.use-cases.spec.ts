@@ -10,31 +10,8 @@ import { Cpf } from '../../../domain/value-objects/cpf.vo';
 import { Cnh } from '../../../domain/value-objects/cnh.vo';
 import { DriverNotFoundException } from '../../../domain/exceptions/driver-not-found.exception';
 import { InvalidDriverStatusTransitionException } from '../../../domain/exceptions/invalid-driver-status-transition.exception';
+import { InMemoryDriversRepository } from '../../../infrastructure/repositories/in-memory-drivers.repository';
 
-class InMemoryDriversRepository implements IDriversRepository {
-  public items: Driver[] = [];
-
-  async save(driver: Driver): Promise<void> {
-    const index = this.items.findIndex((item) => item.getId() === driver.getId());
-    if (index >= 0) {
-      this.items[index] = driver;
-    } else {
-      this.items.push(driver);
-    }
-  }
-
-  async findById(id: string): Promise<Driver | null> {
-    return this.items.find((item) => item.getId() === id) ?? null;
-  }
-
-  async findByCpf(cpf: Cpf): Promise<Driver | null> {
-    return this.items.find((item) => item.getCpf().equals(cpf)) ?? null;
-  }
-
-  async findAll(): Promise<Driver[]> {
-    return this.items;
-  }
-}
 
 describe('Drivers Status & CNH Use Cases', () => {
   let repository: InMemoryDriversRepository;

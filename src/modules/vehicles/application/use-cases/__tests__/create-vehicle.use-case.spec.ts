@@ -3,27 +3,9 @@ import { CreateVehicleUseCase } from '../create-vehicle.use-case';
 import { IVehiclesRepository } from '../../../domain/repositories/vehicles.repository';
 import { Vehicle } from '../../../domain/entities/vehicle.entity';
 import { VehicleAlreadyExistsException } from '../../../domain/exceptions/vehicle-already-exists.exception';
+import { InMemoryVehiclesRepository } from '../../../infrastructure/repositories/in-memory-vehicles.repository';
 
 // Implementation Fake (In-Memory) apenas para os testes unitários
-class InMemoryVehiclesRepository implements IVehiclesRepository {
-  public items: Vehicle[] = [];
-
-  async save(vehicle: Vehicle): Promise<void> {
-    this.items.push(vehicle);
-  }
-
-  async findById(id: string): Promise<Vehicle | null> {
-    return this.items.find((item) => item.getId() === id) ?? null;
-  }
-
-  async findByPlate(plate: string): Promise<Vehicle | null> {
-    return this.items.find((item) => item.getPlate().getValue() === plate) ?? null;
-  }
-
-  async findAll(): Promise<Vehicle[]> {
-    return this.items;
-  }
-}
 
 describe('CreateVehicleUseCase', () => {
   let repository: InMemoryVehiclesRepository;

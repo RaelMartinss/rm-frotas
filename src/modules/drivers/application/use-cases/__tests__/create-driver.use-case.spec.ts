@@ -4,31 +4,9 @@ import { IDriversRepository } from '../../../domain/repositories/drivers.reposit
 import { Driver } from '../../../domain/entities/driver.entity';
 import { Cpf } from '../../../domain/value-objects/cpf.vo';
 import { DriverAlreadyExistsException } from '../../../domain/exceptions/driver-already-exists.exception';
+import { InMemoryDriversRepository } from '../../../infrastructure/repositories/in-memory-drivers.repository';
 
-class InMemoryDriversRepository implements IDriversRepository {
-  public items: Driver[] = [];
 
-  async save(driver: Driver): Promise<void> {
-    const index = this.items.findIndex((item) => item.getId() === driver.getId());
-    if (index >= 0) {
-      this.items[index] = driver;
-    } else {
-      this.items.push(driver);
-    }
-  }
-
-  async findById(id: string): Promise<Driver | null> {
-    return this.items.find((item) => item.getId() === id) ?? null;
-  }
-
-  async findByCpf(cpf: Cpf): Promise<Driver | null> {
-    return this.items.find((item) => item.getCpf().equals(cpf)) ?? null;
-  }
-
-  async findAll(): Promise<Driver[]> {
-    return this.items;
-  }
-}
 
 describe('CreateDriverUseCase', () => {
   let sut: CreateDriverUseCase;

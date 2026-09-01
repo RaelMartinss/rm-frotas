@@ -15,7 +15,7 @@ describe('Vehicle Entity', () => {
       model: 'Volvo FH 540',
       year: 2022,
       currentKm: 50000,
-      status: VehicleStatus.AVAILABLE,
+      status: VehicleStatus[status],
 
     });
   };
