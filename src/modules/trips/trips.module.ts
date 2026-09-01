@@ -40,7 +40,7 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
       ) => {
         return new CreateTripUseCase(tripsRepo, driversRepo, vehiclesRepo);
       },
-      inject: ['ITripsRepository', 'IDriversRepository', 'IVehiclesRepository'],
+      inject: ['ITripsRepository', 'IDriversRepository', IVehiclesRepository],
     },
     {
       provide: StartTripUseCase,
