@@ -1,6 +1,7 @@
 import { Trip } from '../../domain/entities/trip.entity';
 import { TripStatus } from '../../domain/entities/trip-status.enum';
 import { ITripsRepository } from '../../application/repositories/trips-repository.interface';
+import { FindManyPaginatedOutput, FindManyPaginatedParams } from '../../domain/repositories/trips.repository.interface';
 
 export class InMemoryTripsRepository implements ITripsRepository {
   public items: Trip[] = [];
@@ -46,5 +47,34 @@ export class InMemoryTripsRepository implements ITripsRepository {
     if (index >= 0) {
       this.items[index] = trip;
     }
+  }
+
+  async findManyPaginated({
+    status,
+    driverId,
+    vehicleId,
+    page,
+    limit,
+  }: FindManyPaginatedParams): Promise<FindManyPaginatedOutput> {
+    let filteredTrips = this.items;
+
+    if (status) {
+      filteredTrips = filteredTrips.filter((trip) => trip.getStatus() === status);
+    }
+    if (driverId) {
+      filteredTrips = filteredTrips.filter((trip) => trip.getDriverId() === driverId);
+    }
+    if (vehicleId) {
+      filteredTrips = filteredTrips.filter((trip) => trip.getVehicleId() === vehicleId);
+    }
+
+    const total = filteredTrips.length;
+    const startIndex = (page - 1) * limit;
+    const paginatedTrips = filteredTrips.slice(startIndex, startIndex + limit);
+
+    return {
+      trips: paginatedTrips,
+      total,
+    };
   }
 }

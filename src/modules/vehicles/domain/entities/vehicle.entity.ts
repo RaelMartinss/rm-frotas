@@ -73,6 +73,16 @@ export class Vehicle {
         this.props.updatedAt = new Date();
     }
 
+    public markAsInUse(): void {
+        this.props.status = VehicleStatus.IN_USE;
+        this.props.updatedAt = new Date();
+    }
+
+    public markAsAvailable(): void {
+        this.props.status = VehicleStatus.AVAILABLE;
+        this.props.updatedAt = new Date();
+    }
+
     // -- Getters ---
     public getId(): string { return this.props.id; }
     public getPlate(): LicensePlate { return this.props.plate; }
