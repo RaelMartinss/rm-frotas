@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Vehicle } from '../vehicle.entity';
+import { Vehicle, VehicleStatus } from '../vehicle.entity';
 import { LicensePlate } from '../../value-objects/license-plate.vo';
 import {
   VehicleAlreadyInMaintenanceException,
@@ -15,7 +15,8 @@ describe('Vehicle Entity', () => {
       model: 'Volvo FH 540',
       year: 2022,
       currentKm: 50000,
-      status,
+      status: VehicleStatus.AVAILABLE,
+
     });
   };
 
