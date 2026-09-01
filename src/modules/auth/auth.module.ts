@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { AuthController } from './infrastructure/controllers/auth.controller';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
@@ -13,6 +14,7 @@ import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
 @Module({
   imports: [
     PrismaModule,
+    ConfigModule.forRoot({ isGlobal: true }),
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
