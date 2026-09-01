@@ -1,5 +1,5 @@
 import { Inject, Injectable, ConflictException } from '@nestjs/common';
-import { IUsersRepository } from '../../domain/repositories/users.repository.interface';
+import type { IUsersRepository } from '../../domain/repositories/users.repository.interface';
 import { User, UserRole } from '../../domain/entities/user.entity';
 import { Email } from '../../domain/value-objects/email.vo';
 import { Password } from '../../domain/value-objects/password.vo';

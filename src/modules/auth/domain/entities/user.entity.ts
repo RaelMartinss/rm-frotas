@@ -6,11 +6,17 @@ export enum UserRole {
   DRIVER = 'DRIVER',
 }
 
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+}
+
 export interface UserProps {
   name: string;
   email: Email;
   password: Password;
   role: UserRole;
+  status?: UserStatus;
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -24,6 +30,7 @@ export class User {
     this.id = id ?? crypto.randomUUID();
     this.props = {
       ...props,
+      status: props.status ?? UserStatus.ACTIVE,
       isActive: props.isActive ?? true,
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
@@ -35,5 +42,8 @@ export class User {
   getEmail(): Email { return this.props.email; }
   getPassword(): Password { return this.props.password; }
   getRole(): UserRole { return this.props.role; }
+  getStatus(): UserStatus { return this.props.status!; }
   isActive(): boolean { return this.props.isActive!; }
+  getCreatedAt(): Date { return this.props.createdAt!; }
+  getUpdatedAt(): Date {return this.props.updatedAt!; }
 }
