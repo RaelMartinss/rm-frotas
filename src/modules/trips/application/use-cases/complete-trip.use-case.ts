@@ -19,7 +19,7 @@ export class CompleteTripUseCase {
 
   async execute({ tripId }: { tripId: string }): Promise<Trip> {
     const trip = await this.tripsRepository.findById(tripId);
-    if (!trip) throw new NotFoundException('Viagem não encontrada.');
+    if (!trip) throw new TripNotFoundException('Viagem não encontrada.');
 
     const vehicle = await this.vehiclesRepository.findById(trip.getVehicleId());
     if (!vehicle) throw new NotFoundException('Veículo não encontrado.');

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { StartTripUseCase } from '../start-trip.use-case';
 import { InMemoryTripsRepository } from '../../../infrastructure/repositories/in-memory-trips.repository';
+import { InMemoryVehiclesRepository } from '../../../../vehicles/infrastructure/repositories/in-memory-vehicles.repository';
 import { Trip } from '../../../domain/entities/trip.entity';
 import { TripStatus } from '../../../domain/entities/trip-status.enum';
 import { Location } from '../../../domain/value-objects/location.vo';
@@ -10,6 +11,8 @@ import { Driver } from '../../../../drivers/domain/entities/driver.entity';
 import { Cpf } from '../../../../drivers/domain/value-objects/cpf.vo';
 import { Cnh } from '../../../../drivers/domain/value-objects/cnh.vo';
 import { DriverStatus } from '../../../../drivers/domain/entities/driver-status.enum';
+import { Vehicle, VehicleStatus } from '../../../../vehicles/domain/entities/vehicle.entity';
+import { LicensePlate } from '../../../../vehicles/domain/value-objects/license-plate.vo';
 
 // Mock do repositório de drivers para evitar dependência real
 class MockDriversRepository implements IDriversRepository {
@@ -34,6 +37,7 @@ class MockDriversRepository implements IDriversRepository {
 describe('StartTripUseCase', () => {
   let tripsRepository: InMemoryTripsRepository;
   let driversRepository: IDriversRepository;
+  let vehiclesRepository: InMemoryVehiclesRepository;
   let sut: StartTripUseCase;
   let origin: Location;
   let destination: Location;
@@ -41,16 +45,26 @@ describe('StartTripUseCase', () => {
   beforeEach(() => {
     tripsRepository = new InMemoryTripsRepository();
     driversRepository = new MockDriversRepository();
-    sut = new StartTripUseCase(tripsRepository, driversRepository);
+    vehiclesRepository = new InMemoryVehiclesRepository();
+    sut = new StartTripUseCase(tripsRepository, driversRepository, vehiclesRepository);
 
     origin = new Location({ address: 'Garagem Central', city: 'Paragominas', state: 'PA' });
     destination = new Location({ address: 'Filial 01', city: 'Belém', state: 'PA' });
   });
 
   it('deve iniciar uma viagem planejada com sucesso', async () => {
+    const vehicle = new Vehicle({
+      plate: new LicensePlate('ABC1D23'),
+      model: 'Volvo FH',
+      year: 2022,
+      currentKm: 10000,
+      status: VehicleStatus.AVAILABLE,
+    });
+    await vehiclesRepository.save(vehicle);
+
     const trip = new Trip({
       driverId: 'driver-1',
-      vehicleId: 'vehicle-1',
+      vehicleId: vehicle.getId(),
       origin,
       destination,
     });

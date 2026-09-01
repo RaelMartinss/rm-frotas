@@ -45,24 +45,34 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
     },
     {
       provide: StartTripUseCase,
-      useFactory: (tripsRepo: ITripsRepository, driversRepo: IDriversRepository) => {
-        return new StartTripUseCase(tripsRepo, driversRepo);
+      useFactory: (
+        tripsRepo: ITripsRepository,
+        driversRepo: IDriversRepository,
+        vehiclesRepo: IVehiclesRepository,
+      ) => {
+        return new StartTripUseCase(tripsRepo, driversRepo, vehiclesRepo);
       },
-      inject: ['ITripsRepository', 'IDriversRepository'],
+      inject: ['ITripsRepository', 'IDriversRepository', IVehiclesRepository],
     },
     {
       provide: CompleteTripUseCase,
-      useFactory: (tripsRepo: ITripsRepository) => {
-        return new CompleteTripUseCase(tripsRepo);
+      useFactory: (
+        tripsRepo: ITripsRepository,
+        vehiclesRepo: IVehiclesRepository,
+      ) => {
+        return new CompleteTripUseCase(tripsRepo, vehiclesRepo);
       },
-      inject: ['ITripsRepository'],
+      inject: ['ITripsRepository', IVehiclesRepository],
     },
     {
       provide: CancelTripUseCase,
-      useFactory: (tripsRepo: ITripsRepository) => {
-        return new CancelTripUseCase(tripsRepo);
+      useFactory: (
+        tripsRepo: ITripsRepository,
+        vehiclesRepo: IVehiclesRepository,
+      ) => {
+        return new CancelTripUseCase(tripsRepo, vehiclesRepo);
       },
-      inject: ['ITripsRepository'],
+      inject: ['ITripsRepository', IVehiclesRepository],
     },
   ],
   exports: [

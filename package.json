@@ -15,12 +15,12 @@
     "start:prod": "node dist/main",
     "lint": "oxlint src/ test/",
     "lint:fix": "oxlint src/ test/ --fix",
-    "test": "vitest run --config ./vitest.config.ts",
-    "test:watch": "vitest --config ./vitest.config.ts",
+    "test": "vitest run --config ./vitest.config.mjs",
+    "test:watch": "vitest --config ./vitest.config.mjs",
     "test:e2e": "vitest run --config ./vitest.config.e2e.mjs",
     "test:e2e:watch": "vitest --config ./vitest.config.e2e.mjs",
-    "test:cov": "vitest run --coverage --config ./vitest.config.ts",
-    "test:all": "vitest run --config ./vitest.config.ts && vitest run --config ./vitest.config.e2e.mjs"
+    "test:cov": "vitest run --coverage --config ./vitest.config.mjs",
+    "test:all": "vitest run --config ./vitest.config.mjs && vitest run --config ./vitest.config.e2e.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

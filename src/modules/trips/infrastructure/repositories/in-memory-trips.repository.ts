@@ -46,6 +46,8 @@ export class InMemoryTripsRepository implements ITripsRepository {
 
     if (index >= 0) {
       this.items[index] = trip;
+    } else {
+      this.items.push(trip);
     }
   }
 
