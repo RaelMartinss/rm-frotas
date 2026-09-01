@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -23,6 +22,8 @@ model Vehicle {
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
 
+  trips Trip[]
+
   @@map("vehicles")
 }
 
@@ -36,12 +37,49 @@ model Driver {
   id                String       @id @default(uuid())
   name              String
   cpf               String       @unique
-  cnhNumber         String
-  cnhCategory       String
-  cnhExpirationDate DateTime
+  cnhNumber         String       @unique @map("cnh_number")
+  cnhCategory       String       @map("cnh_category")
+  cnhExpirationDate DateTime     @map("cnh_expiration_date")
   status            DriverStatus @default(ACTIVE)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  trips Trip[]
 
   @@map("drivers")
+}
+
+enum TripStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Trip {
+  id                   String     @id @default(uuid())
+  driverId             String     @map("driver_id")
+  vehicleId            String     @map("vehicle_id")
+  originAddress        String     @map("origin_address")
+  originCity           String     @map("origin_city")
+  originState          String     @map("origin_state")
+  originLatitude       Float?     @map("origin_latitude")
+  originLongitude      Float?     @map("origin_longitude")
+  destinationAddress   String     @map("destination_address")
+  destinationCity      String     @map("destination_city")
+  destinationState     String     @map("destination_state")
+  destinationLatitude  Float?     @map("destination_latitude")
+  destinationLongitude Float?     @map("destination_longitude")
+  status               TripStatus @default(PLANNED)
+  startedAt            DateTime?  @map("started_at")
+  completedAt          DateTime?  @map("completed_at")
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+
+  driver  Driver  @relation(fields: [driverId], references: [id])
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@index([vehicleId, status])
+  @@index([driverId, status])
+  @@map("trips")
 }

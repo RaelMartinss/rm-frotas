@@ -17,16 +17,17 @@
     "lint:fix": "oxlint src/ test/ --fix",
     "test": "vitest run --config ./vitest.config.ts",
     "test:watch": "vitest --config ./vitest.config.ts",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
-    "test:e2e:watch": "vitest --config ./vitest.config.e2e.ts",
+    "test:e2e": "vitest run --config ./vitest.config.e2e.mjs",
+    "test:e2e:watch": "vitest --config ./vitest.config.e2e.mjs",
     "test:cov": "vitest run --coverage --config ./vitest.config.ts",
-    "test:all": "vitest run --config ./vitest.config.ts && vitest run --config ./vitest.config.e2e.ts"
+    "test:all": "vitest run --config ./vitest.config.ts && vitest run --config ./vitest.config.e2e.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
     "@nestjs/core": "^12.0.1",
     "@nestjs/platform-express": "^12.0.1",
     "@nestjs/swagger": "^12.0.1",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
