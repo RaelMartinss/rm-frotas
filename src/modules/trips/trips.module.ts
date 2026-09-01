@@ -45,10 +45,10 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
     },
     {
       provide: StartTripUseCase,
-      useFactory: (tripsRepo: ITripsRepository) => {
-        return new StartTripUseCase(tripsRepo);
+      useFactory: (tripsRepo: ITripsRepository, driversRepo: IDriversRepository) => {
+        return new StartTripUseCase(tripsRepo, driversRepo);
       },
-      inject: ['ITripsRepository'],
+      inject: ['ITripsRepository', 'IDriversRepository'],
     },
     {
       provide: CompleteTripUseCase,
