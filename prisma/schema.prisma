@@ -6,10 +6,40 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  FLEET_MANAGER
+  DRIVER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum VehicleStatus {
   AVAILABLE
   IN_MAINTENANCE
   IN_USE
+}
+
+model User {
+  id        String     @id @default(uuid())
+  name      String
+  email     String     @unique
+  password  String
+  role      UserRole   @default(FLEET_MANAGER)
+  status    UserStatus @default(ACTIVE)
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  // Relacionamentos operacionais (um Gestor é dono de veículos e motoristas)
+  vehicles Vehicle[] @relation("VehicleOwner")
+  drivers  Driver[]  @relation("DriverOwner")
+
+  // Relacionamento 1:1 opcional (caso um usuário do tipo DRIVER esteja vinculado a um motorista da frota)
+  driverProfile Driver? @relation("DriverUserAccount")
+
+  @@map("users")
 }
 
 model Vehicle {
@@ -21,6 +51,10 @@ model Vehicle {
   status    VehicleStatus @default(AVAILABLE)
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
+
+  // Vínculo com o Gestor responsável (Proprietário dos dados)
+  ownerId String @map("owner_id")
+  owner   User   @relation("VehicleOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   trips Trip[]
 
@@ -43,6 +77,14 @@ model Driver {
   status            DriverStatus @default(ACTIVE)
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  // Vínculo com o Gestor responsável (Proprietário dos dados)
+  ownerId String @map("owner_id")
+  owner   User   @relation("DriverOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Vínculo OPCIONAL com a conta de usuário (Acesso ao app por um motorista)
+  userId String? @unique @map("user_id")
+  user   User?   @relation("DriverUserAccount", fields: [userId], references: [id], onDelete: SetNull)
 
   trips Trip[]
 
