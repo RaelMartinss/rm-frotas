@@ -14,6 +14,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "oxlint src/ test/",
+    "lint:fix": "oxlint src/ test/ --fix",
     "test": "vitest run --config ./vitest.config.ts",
     "test:watch": "vitest --config ./vitest.config.ts",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",

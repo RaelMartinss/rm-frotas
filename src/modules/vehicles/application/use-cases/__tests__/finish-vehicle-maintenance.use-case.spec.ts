@@ -2,7 +2,6 @@ import { NotFoundException, UnprocessableEntityException } from "@nestjs/common"
 import { Vehicle, VehicleStatus } from "../../../domain/entities/vehicle.entity";
 import { IVehiclesRepository } from "../../../domain/repositories/vehicles.repository";
 import { LicensePlate } from "../../../domain/value-objects/license-plate.vo";
-import { FindVehicleByIdUseCase } from "../find-vehicle-by-id.use-case";
 import { FinishVehicleMaintenanceUseCase } from "../finish-vehicle-maintenance.use-case";
 
 class InMemoryVehiclesRepository implements IVehiclesRepository {

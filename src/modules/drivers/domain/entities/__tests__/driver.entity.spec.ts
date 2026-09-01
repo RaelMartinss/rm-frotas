@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Driver, DriverProps } from '../driver.entity';
+import { Driver } from '../driver.entity';
 import { DriverStatus } from '../driver-status.enum';
 import { Cpf } from '../../value-objects/cpf.vo';
 import { Cnh } from '../../value-objects/cnh.vo';
