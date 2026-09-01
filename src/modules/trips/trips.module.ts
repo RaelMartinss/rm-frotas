@@ -10,6 +10,7 @@ import { PrismaTripsRepository } from './infrastructure/repositories/prisma-trip
 import { CreateTripUseCase } from './application/use-cases/create-trip.use-case';
 import { StartTripUseCase } from './application/use-cases/start-trip.use-case';
 import { CompleteTripUseCase } from './application/use-cases/complete-trip.use-case';
+import { CancelTripUseCase } from './application/use-cases/cancel-trip.use-case';
 import { ITripsRepository } from './application/repositories/trips-repository.interface';
 import { IDriversRepository } from '../drivers/domain/repositories/drivers.repository';
 import { IVehiclesRepository } from '../vehicles/domain/repositories/vehicles.repository';
@@ -56,11 +57,19 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
       },
       inject: ['ITripsRepository'],
     },
+    {
+      provide: CancelTripUseCase,
+      useFactory: (tripsRepo: ITripsRepository) => {
+        return new CancelTripUseCase(tripsRepo);
+      },
+      inject: ['ITripsRepository'],
+    },
   ],
   exports: [
     CreateTripUseCase,
     StartTripUseCase,
     CompleteTripUseCase,
+    CancelTripUseCase,
     'ITripsRepository',
   ],
 })
