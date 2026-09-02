@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: rm-frotas-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rm-frotas-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      # Adicione aqui outras envs que o Auth ou demais módulos precisarem
+
+databases:
+  - name: rm-frotas-db
+    plan: free
+    region: oregon
+    databaseName: rm_frotas
+    user: rm_frotas_user
