@@ -1,4 +1,7 @@
-import { Vehicle as PrismaVehicleModel, VehicleStatus as PrismaStatus } from '../../../../../../../generated/prisma/index.js';
+import {
+  Vehicle as PrismaVehicleModel,
+  VehicleStatus as PrismaStatus,
+} from '@prisma/client';
 import { Vehicle, VehicleStatus } from '../../../../domain/entities/vehicle.entity';
 import { LicensePlate } from '../../../../domain/value-objects/license-plate.vo';
 

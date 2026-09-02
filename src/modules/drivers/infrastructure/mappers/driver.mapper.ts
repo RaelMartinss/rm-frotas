@@ -1,7 +1,7 @@
 import {
   Driver as PrismaDriver,
   DriverStatus as PrismaDriverStatus,
-} from '../../../../../generated/prisma/index.js';
+} from '@prisma/client';
 import { Driver } from '../../domain/entities/driver.entity';
 import { DriverStatus } from '../../domain/entities/driver-status.enum';
 import { Cpf } from '../../domain/value-objects/cpf.vo';
