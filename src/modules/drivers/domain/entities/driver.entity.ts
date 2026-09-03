@@ -10,6 +10,7 @@ export interface DriverProps {
   cnh: Cnh;
   status: DriverStatus;
   cnhExpirationDate: Date;
+  ownerId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,6 +21,7 @@ export interface CreateDriverProps {
   cnh: Cnh;
   cnhExpirationDate?: Date;
   status?: DriverStatus;
+  ownerId?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -37,6 +39,7 @@ export class Driver {
       ...props,
       cnhExpirationDate,
       status: props.status ?? DriverStatus.ACTIVE,
+      ownerId: props.ownerId,
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
     };
@@ -62,6 +65,9 @@ export class Driver {
   }
   public getUpdatedAt(): Date {
     return this.props.updatedAt;
+  }
+  public getOwnerId(): string | undefined {
+    return this.props.ownerId;
   }
 
   public activate(): void {

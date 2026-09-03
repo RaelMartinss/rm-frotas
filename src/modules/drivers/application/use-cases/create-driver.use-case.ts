@@ -35,6 +35,7 @@ export class CreateDriverUseCase {
       name: input.name,
       cpf,
       cnh,
+      ownerId: input.ownerId,
     });
 
     // 5. Persiste através do contrato do repositório

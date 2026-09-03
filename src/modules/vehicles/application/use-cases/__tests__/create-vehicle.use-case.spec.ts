@@ -22,10 +22,12 @@ describe('CreateVehicleUseCase', () => {
       model: 'Volvo FH 540',
       year: 2023,
       currentKm: 1000,
+      ownerId: 'owner-uuid-123',
     });
 
     expect(vehicle.getId()).toBeDefined();
     expect(vehicle.getPlate().getValue()).toBe('ABC1234');
+    expect(vehicle.getOwnerId()).toBe('owner-uuid-123');
     expect(repository.items).toHaveLength(1);
   });
 

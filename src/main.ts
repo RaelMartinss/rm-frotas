@@ -2,15 +2,42 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { DomainExceptionFilter } from './modules/drivers/infrastructure/http/domain-exception.filter';
+import { VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.enableCors({
+    origin: 'http://localhost:4200',
+    credentials: true,
+  });
+
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
+
   const config = new DocumentBuilder()
-    .setTitle('Portal Frotas API')
-    .setDescription('API para gestão de frotas e manutenções com DDD e NestJS')
-    .setVersion('1.0')
-    .build();
+  .setTitle('Portal Frotas API')
+  .setDescription('API para gestão de frotas e manutenções com DDD e NestJS')
+  .setVersion('1.0')
+  .addBearerAuth(
+    {
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      name: 'JWT',
+      description: 'Insira o token JWT',
+      in: 'header',
+    },
+    'JWT-auth', // nome do esquema — precisa bater com o usado nos controllers
+  )
+  .addTag('Auth', 'Registro e autenticação de usuários')
+  .addTag('Profile', 'Dados do usuário autenticado')
+  .addTag('Vehicles', 'Gestão de veículos da frota')
+  .addTag('Drivers', 'Gestão de motoristas da frota')
+  .addTag('Trips', 'Gestão de viagens da frota')
+  .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
@@ -18,4 +45,5 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
 }
+
 bootstrap();

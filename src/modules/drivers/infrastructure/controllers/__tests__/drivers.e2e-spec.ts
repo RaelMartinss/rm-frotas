@@ -10,6 +10,8 @@ import { DriverStatus } from '../../../domain/entities/driver-status.enum';
 import { Cnh } from '../../../domain/value-objects/cnh.vo';
 import { PrismaService } from '../../../../../shared/infrastructure/prisma/prisma.service';
 import { DomainExceptionFilter } from '../../http/domain-exception.filter';
+import { AppModule } from '../../../../../app.module';
+import { InMemoryUsersRepository } from '../../../../auth/repositories/in-memory-users.repository';
 
 
 // Repositório em memória isolado para os testes E2E (evita dependência de banco ativo)
@@ -41,15 +43,20 @@ class InMemoryDriversRepositoryE2E implements IDriversRepository {
 describe('DriversController (E2E)', () => {
   let app: INestApplication;
   let repository: InMemoryDriversRepositoryE2E;
+  let usersRepository: InMemoryUsersRepository;
+  let authToken: string;
 
   beforeAll(async () => {
     repository = new InMemoryDriversRepositoryE2E();
+    usersRepository = new InMemoryUsersRepository();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [DriversModule],
+      imports: [AppModule],
     })
       .overrideProvider('IDriversRepository')
       .useValue(repository)
+      .overrideProvider('IUsersRepository')
+      .useValue(usersRepository)
       .overrideProvider(PrismaService)
       .useValue({})
       .compile();
@@ -67,6 +74,24 @@ describe('DriversController (E2E)', () => {
     app.useGlobalFilters(new DomainExceptionFilter());
 
     await app.init();
+
+    const registerRes = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        name: 'Fleet Manager',
+        email: 'fleet.manager@e2e.com',
+        password: 'StrongPass123!',
+        role: 'FLEET_MANAGER',
+      });
+
+    const loginRes = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: 'fleet.manager@e2e.com',
+        password: 'StrongPass123!',
+      });
+
+    authToken = loginRes.body.accessToken;
   });
 
   afterAll(async () => {
@@ -81,6 +106,7 @@ describe('DriversController (E2E)', () => {
     it('deve criar um novo motorista e retornar status 201 com payload formatado', async () => {
       const response = await request(app.getHttpServer())
         .post('/drivers')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Rael Martins',
           cpf: '529.982.247-25',
@@ -110,6 +136,7 @@ describe('DriversController (E2E)', () => {
     it('deve retornar 400 Bad Request ao enviar payload com CPF inválido', async () => {
       const response = await request(app.getHttpServer())
         .post('/drivers')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Motorista Invalido',
           cpf: '111.111.111-11', // CPF com dígitos inválidos
@@ -136,6 +163,7 @@ describe('DriversController (E2E)', () => {
 
       const response = await request(app.getHttpServer())
         .patch(`/drivers/${driver.getId()}/deactivate`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send();
 
       expect(response.status).toBe(200);
@@ -146,6 +174,7 @@ describe('DriversController (E2E)', () => {
     it('deve retornar status 404 Not Found caso o motorista não exista', async () => {
       const response = await request(app.getHttpServer())
         .patch('/drivers/non-existing-id/deactivate')
+        .set('Authorization', `Bearer ${authToken}`)
         .send();
 
       expect(response.status).toBe(404);
@@ -164,6 +193,7 @@ describe('DriversController (E2E)', () => {
 
       const response = await request(app.getHttpServer())
         .patch(`/drivers/${driver.getId()}/cnh`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           cnhNumber: '98765432100',
           cnhCategory: 'E',

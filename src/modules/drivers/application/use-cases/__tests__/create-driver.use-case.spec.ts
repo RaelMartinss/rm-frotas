@@ -24,10 +24,12 @@ describe('CreateDriverUseCase', () => {
       cnhNumber: '12345678901',
       cnhCategory: 'AB',
       cnhExpirationDate: new Date('2030-01-01'),
+      ownerId: 'owner-uuid-456',
     });
 
     expect(driver.getId()).toBeDefined();
     expect(driver.getName()).toBe('Rael Martins');
+    expect(driver.getOwnerId()).toBe('owner-uuid-456');
     expect(repository.items).toHaveLength(1);
     expect(repository.items[0].getCpf().getValue()).toBe('52998224725');
   });

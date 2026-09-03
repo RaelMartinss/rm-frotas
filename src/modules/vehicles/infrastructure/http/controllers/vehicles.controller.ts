@@ -1,5 +1,6 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, UseFilters } from "@nestjs/common";
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, UseFilters, UseGuards } from "@nestjs/common";
+import { AuthGuard } from '@nestjs/passport';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { DomainExceptionFilter } from "../filters/domain-exception.filter";
 import { CreateVehicleUseCase } from "../../../application/use-cases/create-vehicle.use-case";
 import { CreateVehicleDto } from "../dtos/create-vehicle.dto";
@@ -11,10 +12,16 @@ import { ListVehiclesUseCase } from "../../../application/use-cases/list-vehicle
 import { UpdateVehicleKmUseCase } from "../../../application/use-cases/update-vehicle-km.use-case";
 import { UpdateVehicleKmDto } from "../dtos/update-vehicle-km.dto";
 import { FinishVehicleMaintenanceUseCase } from '../../../application/use-cases/finish-vehicle-maintenance.use-case';
+import { RolesGuard } from "../../../../auth/infrastructure/guards/roles.guard";
+import { Roles } from "../../../../auth/infrastructure/decorators/roles.decorator";
+import { CurrentUser } from "../../../../auth/infrastructure/decorators/current-user.decorator";
+import { UserRole } from "../../../../auth/domain/entities/user.entity";
 
 
 @ApiTags('Vehicles')
+@ApiBearerAuth('JWT-auth') 
 @Controller('vehicles')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 @UseFilters(DomainExceptionFilter)
 export class VehiclesController {
     constructor(
@@ -51,21 +58,27 @@ export class VehiclesController {
     }
 
     @Post()
+    @Roles(UserRole.FLEET_MANAGER)
     @ApiOperation({ summary: 'Cadastrar um novo veículo na frota' })
     @ApiResponse({ status: 201, description: 'Veículo criado com sucesso.' })
     @ApiResponse({ status: 400, description: 'Dados de entrada inválidos ou placa em formato incorreto.' })
     @ApiResponse({ status: 409, description: 'Veículo com esta placa já cadastrado.' })
-    async create(@Body() dto: CreateVehicleDto) {
+    async create(
+        @CurrentUser('userId') userId: string,
+        @Body() dto: CreateVehicleDto,
+    ) {
         const vehicle = await this.createVehicleUseCase.execute({
             plate: dto.plate,
             model: dto.model,
             year: dto.year,
             currentKm: dto.currentKm,
+            ownerId: userId,
         });
         return VehiclePresenter.toHTTP(vehicle);
     }
 
     @Patch(':id/maintenance')
+    @Roles(UserRole.FLEET_MANAGER)
     @ApiOperation({ summary: 'Enviar um veículo para a manutenção' })
     @ApiParam({ name: 'id', description: 'UUID do veículo' })
     @ApiResponse({ status: 200, description: 'Status do veículo alterado para IN_MAINTENANCE.' })
@@ -76,6 +89,7 @@ export class VehiclesController {
     }
 
     @Patch(':id/maintenance/send')
+    @Roles(UserRole.FLEET_MANAGER)
     @ApiOperation({ summary: 'Enviar um veículo para a manutenção' })
     @ApiParam({ name: 'id', description: 'UUID do veículo' })
     @ApiResponse({ status: 200, description: 'Status do veículo alterado para IN_MAINTENANCE.' })
@@ -90,7 +104,13 @@ export class VehiclesController {
     }
 
     @Patch(':id/km')
+    @Roles(UserRole.FLEET_MANAGER)
     @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Atualizar a quilometragem atual de um veículo' })
+    @ApiParam({ name: 'id', description: 'UUID do veículo' })
+    @ApiResponse({ status: 200, description: 'Quilometragem atualizada com sucesso.' })
+    @ApiResponse({ status: 400, description: 'Quilometragem informada menor que a atual.' })
+    @ApiResponse({ status: 404, description: 'Veículo não encontrado.' })
     async updateKm(
         @Param('id') id: string,
         @Body() dto: UpdateVehicleKmDto,
@@ -104,6 +124,7 @@ export class VehiclesController {
     }
 
    @Patch(':id/maintenance/finish')
+    @Roles(UserRole.FLEET_MANAGER)
     @ApiOperation({ summary: 'Finalizar a manutenção de um veículo e torná-lo disponível' })
     @ApiParam({ name: 'id', description: 'UUID do veículo' })
     @ApiResponse({ status: 200, description: 'Manutenção finalizada. Status alterado para AVAILABLE.' })

@@ -3,4 +3,5 @@ export interface CreateVehicleInput {
     model: string;
     year: number;
     currentKm: number;
+    ownerId?: string;
 }

@@ -6,4 +6,5 @@ export interface CreateDriverInputDto {
   cnhNumber: string;
   cnhCategory: CnhCategory;
   cnhExpirationDate: Date;
+  ownerId?: string;
 }

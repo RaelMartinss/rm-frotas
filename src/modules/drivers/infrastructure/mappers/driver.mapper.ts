@@ -23,6 +23,7 @@ export class DriverMapper {
         ),
         cnhExpirationDate: raw.cnhExpirationDate,
         status: raw.status as unknown as DriverStatus,
+        ownerId: raw.ownerId,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },
@@ -34,7 +35,11 @@ export class DriverMapper {
    * Converte a Entidade de Domínio (Driver) no formato esperado pelo Prisma.
    */
   static toPrisma(driver: Driver) {
-    const ownerId = process.env.DEFAULT_OWNER_ID ?? '00000000-0000-0000-0000-000000000000';
+    const ownerId = driver.getOwnerId() ?? process.env.DEFAULT_OWNER_ID;
+
+    if (!ownerId) {
+      throw new Error(`Driver ${driver.getId()} must have an ownerId to be persisted.`);
+    }
 
     return {
       id: driver.getId(),

@@ -14,13 +14,18 @@ export class PrismaVehicleMapper {
       year: raw.year,
       currentKm: raw.currentKm,
       status: raw.status as VehicleStatus,
+      ownerId: raw.ownerId,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
     });
   }
 
   static toPrisma(vehicle: Vehicle) {
-    const ownerId = process.env.DEFAULT_OWNER_ID ?? '00000000-0000-0000-0000-000000000000';
+    const ownerId = vehicle.getOwnerId() ?? process.env.DEFAULT_OWNER_ID;
+
+    if (!ownerId) {
+      throw new Error(`Vehicle ${vehicle.getId()} must have an ownerId to be persisted.`);
+    }
 
     return {
       id: vehicle.getId(),

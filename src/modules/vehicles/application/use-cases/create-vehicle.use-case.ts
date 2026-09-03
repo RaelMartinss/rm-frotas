@@ -24,6 +24,7 @@ export class CreateVehicleUseCase {
       model: input.model,
       year: input.year,
       currentKm: input.currentKm,
+      ownerId: input.ownerId,
     });
 
     await this.vehiclesRepository.save(vehicle);

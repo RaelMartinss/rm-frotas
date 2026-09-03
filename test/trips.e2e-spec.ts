@@ -14,6 +14,7 @@ import { DriverStatus } from '../src/modules/drivers/domain/entities/driver-stat
 import { Vehicle } from '../src/modules/vehicles/domain/entities/vehicle.entity';
 import { LicensePlate } from '../src/modules/vehicles/domain/value-objects/license-plate.vo';
 import { Trip } from '../src/modules/trips/domain/entities/trip.entity';
+import { InMemoryUsersRepository } from '../src/modules/auth/repositories/in-memory-users.repository';
 
 // Repositório em memória para Drivers
 class InMemoryDriversRepository implements IDriversRepository {
@@ -141,6 +142,7 @@ describe('TripsController (E2E) - Lifecycle', () => {
   let driversRepository: InMemoryDriversRepository;
   let vehiclesRepository: InMemoryVehiclesRepository;
   let tripsRepository: InMemoryTripsRepository;
+  let authToken: string;
 
   beforeAll(async () => {
     driversRepository = new InMemoryDriversRepository();
@@ -156,17 +158,39 @@ describe('TripsController (E2E) - Lifecycle', () => {
       .useValue(vehiclesRepository)
       .overrideProvider('ITripsRepository')
       .useValue(tripsRepository)
+      .overrideProvider('IUsersRepository')
+      .useValue(new InMemoryUsersRepository())
       .overrideProvider(PrismaService)
       .useValue({})
       .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ transform: true }));
+
     await app.init();
+
+    const registerRes = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        name: 'Fleet Manager',
+        email: 'trips.e2e@fleet.com',
+        password: 'StrongPass123!',
+        role: 'FLEET_MANAGER',
+      });
+
+    const loginRes = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: 'trips.e2e@fleet.com',
+        password: 'StrongPass123!',
+      });
+
+    authToken = loginRes.body.accessToken;
 
     // 1. Cria um motorista válido para o teste
     const driverRes = await request(app.getHttpServer())
       .post('/drivers')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({
         name: 'João Silva',
         cpf: '529.982.247-25',
@@ -179,6 +203,7 @@ describe('TripsController (E2E) - Lifecycle', () => {
     // 2. Cria um veículo disponível para o teste
     const vehicleRes = await request(app.getHttpServer())
       .post('/vehicles')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({
         plate: 'ABC1D23',
         model: 'Volvo FH 540',
@@ -198,6 +223,7 @@ describe('TripsController (E2E) - Lifecycle', () => {
     // PASSAGEM 1: POST /trips (Criar viagem)
     const createRes = await request(app.getHttpServer())
       .post('/trips')
+      .set('Authorization', `Bearer ${authToken}`)
       .send({
         driverId: createdDriverId,
         vehicleId: createdVehicleId,
@@ -221,6 +247,7 @@ describe('TripsController (E2E) - Lifecycle', () => {
     // PASSAGEM 2: PATCH /trips/:id/start (Iniciar viagem)
     const startRes = await request(app.getHttpServer())
       .patch(`/trips/${createdTripId}/start`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send()
       .expect(200);
 
@@ -229,6 +256,7 @@ describe('TripsController (E2E) - Lifecycle', () => {
     // PASSAGEM 3: PATCH /trips/:id/complete (Finalizar viagem)
     const completeRes = await request(app.getHttpServer())
       .patch(`/trips/${createdTripId}/complete`)
+      .set('Authorization', `Bearer ${authToken}`)
       .send()
       .expect(200);
 

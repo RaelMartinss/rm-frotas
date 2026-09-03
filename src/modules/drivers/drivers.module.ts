@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module'; // Ajuste o caminho conforme a estrutura do projeto
+import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
+import { AuthModule } from '../auth/auth.module';
 
 // Repositórios e Mappers
 import { PrismaDriversRepository } from './infrastructure/repositories/prisma-drivers.repository';
@@ -14,7 +15,7 @@ import { UpdateDriverCnhUseCase } from './application/use-cases/update-driver-cn
 import { DriversController } from './infrastructure/controllers/drivers.controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuthModule],
   controllers: [DriversController],
   providers: [
     {

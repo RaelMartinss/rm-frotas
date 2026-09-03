@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
 import { DriversModule } from '../drivers/drivers.module';
 import { VehiclesModule } from '../vehicles/vehicles.module';
+import { AuthModule } from '../auth/auth.module';
 
 // Repositórios
 import { PrismaTripsRepository } from './infrastructure/repositories/prisma-trips.repository';
@@ -20,7 +21,7 @@ import { IVehiclesRepository } from '../vehicles/domain/repositories/vehicles.re
 import { TripsController } from './infrastructure/controllers/trips.controller';
 
 @Module({
-  imports: [PrismaModule, DriversModule, VehiclesModule],
+  imports: [PrismaModule, DriversModule, VehiclesModule, AuthModule],
   controllers: [TripsController],
   providers: [
     PrismaTripsRepository,

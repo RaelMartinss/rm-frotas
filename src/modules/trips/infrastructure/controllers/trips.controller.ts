@@ -8,7 +8,9 @@ import {
   HttpStatus,
   NotFoundException,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { CreateTripUseCase } from '../../application/use-cases/create-trip.use-case';
 import { StartTripUseCase } from '../../application/use-cases/start-trip.use-case';
 import { CompleteTripUseCase } from '../../application/use-cases/complete-trip.use-case';
@@ -18,10 +20,16 @@ import { VehicleNotAvailableException } from '../../application/exceptions/vehic
 import { TripNotFoundException } from '../../application/exceptions/trip-not-found.exception';
 import { InvalidLocationException } from '../../domain/exceptions/invalid-location.exception';
 import { InvalidTripStatusTransitionException } from '../../domain/exceptions/invalid-trip-status-transition.exception';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CancelTripUseCase } from '../../application/use-cases/cancel-trip.use-case';
+import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
+import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
+import { UserRole } from '../../../auth/domain/entities/user.entity';
 
+@ApiTags('Trips')
+@ApiBearerAuth('JWT-auth')
 @Controller('trips')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class TripsController {
   constructor(
     private readonly createTripUseCase: CreateTripUseCase,
@@ -31,7 +39,11 @@ export class TripsController {
   ) {}
 
   @Post()
+  @Roles(UserRole.FLEET_MANAGER)
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Registrar uma nova viagem para a frota' })
+  @ApiResponse({ status: 201, description: 'Viagem criada com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Dados de entrada inválidos, motorista ou veículo indisponíveis.' })
   async create(@Body() dto: CreateTripHttpDto) {
     try {
       const trip = await this.createTripUseCase.execute(dto);
@@ -58,7 +70,13 @@ export class TripsController {
   }
 
   @Patch(':id/start')
+  @Roles(UserRole.FLEET_MANAGER, UserRole.DRIVER)
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Iniciar uma viagem cadastrada' })
+  @ApiParam({ name: 'id', description: 'UUID da viagem' })
+  @ApiResponse({ status: 200, description: 'Viagem iniciada com sucesso (status IN_PROGRESS).' })
+  @ApiResponse({ status: 400, description: 'Transição de status inválida.' })
+  @ApiResponse({ status: 404, description: 'Viagem não encontrada.' })
   async start(@Param('id') id: string) {
     try {
       const trip = await this.startTripUseCase.execute({ tripId: id });
@@ -81,7 +99,13 @@ export class TripsController {
   }
 
   @Patch(':id/complete')
+  @Roles(UserRole.FLEET_MANAGER, UserRole.DRIVER)
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Concluir uma viagem em andamento' })
+  @ApiParam({ name: 'id', description: 'UUID da viagem' })
+  @ApiResponse({ status: 200, description: 'Viagem concluída com sucesso (status COMPLETED).' })
+  @ApiResponse({ status: 400, description: 'Transição de status inválida.' })
+  @ApiResponse({ status: 404, description: 'Viagem não encontrada.' })
   async complete(@Param('id') id: string) {
     try {
       const trip = await this.completeTripUseCase.execute({ tripId: id });
@@ -104,8 +128,10 @@ export class TripsController {
   }
 
   @Patch(':id/cancel')
+  @Roles(UserRole.FLEET_MANAGER, UserRole.DRIVER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Cancelar uma viagem' })
+  @ApiParam({ name: 'id', description: 'UUID da viagem' })
   @ApiResponse({ status: 200, description: 'Viagem cancelada com sucesso.' })
   @ApiResponse({
     status: 400,

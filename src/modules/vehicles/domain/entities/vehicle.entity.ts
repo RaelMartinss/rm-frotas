@@ -15,21 +15,34 @@ export interface VehicleProps {
     year: number;
     currentKm: number;
     status?: VehicleStatus;
+    ownerId?: string;
     createdAt?: Date;
     updatedAt?: Date;
 }
 
+interface VehicleInternalProps {
+    id: string;
+    plate: LicensePlate;
+    model: string;
+    year: number;
+    currentKm: number;
+    status: VehicleStatus;
+    ownerId?: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 export class Vehicle {
-    private props: Required<VehicleProps>;
+    private props: VehicleInternalProps;
 
     constructor(props: VehicleProps) {
         this.props = {
-        ...props,
-        id: props.id ?? randomUUID(), // 2. Se não passar ID, gera um UUID v4 nativo do Node
-        status: props.status ?? VehicleStatus.AVAILABLE,
-        createdAt: props.createdAt ?? new Date(),
-        updatedAt: props.updatedAt ?? new Date(),
+            ...props,
+            id: props.id ?? randomUUID(), // 2. Se não passar ID, gera um UUID v4 nativo do Node
+            status: props.status ?? VehicleStatus.AVAILABLE,
+            ownerId: props.ownerId,
+            createdAt: props.createdAt ?? new Date(),
+            updatedAt: props.updatedAt ?? new Date(),
         };  
     }
 
@@ -92,5 +105,6 @@ export class Vehicle {
     public getStatus(): VehicleStatus { return this.props.status; }
     public getCreatedAt(): Date { return this.props.createdAt; }
     public getUpdatedAt(): Date { return this.props.updatedAt; }
+    public getOwnerId(): string | undefined { return this.props.ownerId; }
 
 }

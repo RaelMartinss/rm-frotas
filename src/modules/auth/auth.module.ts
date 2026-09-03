@@ -10,6 +10,8 @@ import { NestJwtTokenGenerator } from './infrastructure/cryptography/nest-jwt-to
 import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
+import { ProfileController } from './infrastructure/controllers/profile.controller';
+import { RolesGuard } from './infrastructure/guards/roles.guard';
 
 @Module({
   imports: [
@@ -24,11 +26,12 @@ import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, ProfileController],
   providers: [
     RegisterUserUseCase,
     LoginUseCase,
     JwtStrategy,
+    RolesGuard,
     {
       provide: 'IUsersRepository',
       useClass: PrismaUsersRepository,
@@ -38,6 +41,6 @@ import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
       useClass: NestJwtTokenGenerator,
     },
   ],
-  exports: ['IUsersRepository', JwtModule, PassportModule],
+  exports: ['IUsersRepository', JwtModule, PassportModule, RolesGuard],
 })
 export class AuthModule {}
