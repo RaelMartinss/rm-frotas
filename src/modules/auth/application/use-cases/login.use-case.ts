@@ -10,6 +10,7 @@ export interface LoginUseCaseRequest {
 
 export interface LoginUseCaseResponse {
   accessToken: string;
+  refreshToken: string;
   user: {
     id: string;
     name: string;
@@ -43,7 +44,7 @@ export class LoginUseCase {
       throw new InvalidCredentialsException();
     }
 
-    const { accessToken } = await this.tokenGenerator.generate({
+    const { accessToken, refreshToken } = await this.tokenGenerator.generate({
       sub: user.getId(),
       email: user.getEmail().getValue(),
       role: user.getRole(),
@@ -51,6 +52,7 @@ export class LoginUseCase {
 
     return {
       accessToken,
+      refreshToken,
       user: {
         id: user.getId(),
         name: user.getName(),

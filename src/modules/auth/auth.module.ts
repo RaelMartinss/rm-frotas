@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AuthController } from './infrastructure/controllers/auth.controller';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
 import { LoginUseCase } from './application/use-cases/login.use-case';
+import { RefreshTokenUseCase } from './application/use-cases/refresh-token.use-case';
 import { PrismaUsersRepository } from './infrastructure/repositories/prisma-users.repository';
 import { NestJwtTokenGenerator } from './infrastructure/cryptography/nest-jwt-token-generator';
 import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
@@ -22,7 +23,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET', 'default-secret-key'),
-        signOptions: { expiresIn: '1d' },
+        signOptions: { expiresIn: '15m' },
       }),
     }),
   ],
@@ -30,6 +31,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
   providers: [
     RegisterUserUseCase,
     LoginUseCase,
+    RefreshTokenUseCase,
     JwtStrategy,
     RolesGuard,
     {
@@ -41,6 +43,12 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
       useClass: NestJwtTokenGenerator,
     },
   ],
-  exports: ['IUsersRepository', JwtModule, PassportModule, RolesGuard],
+  exports: [
+    'IUsersRepository',
+    'ITokenGenerator',
+    JwtModule,
+    PassportModule,
+    RolesGuard,
+  ],
 })
 export class AuthModule {}

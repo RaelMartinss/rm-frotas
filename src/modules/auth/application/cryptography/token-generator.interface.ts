@@ -4,6 +4,13 @@ export interface TokenPayload {
   role: string;
 }
 
-export interface ITokenGenerator {
-  generate(payload: TokenPayload): Promise<{ accessToken: string }>;
+export interface GeneratedTokens {
+  accessToken: string;
+  refreshToken: string;
 }
+
+export interface ITokenGenerator {
+  generate(payload: TokenPayload): Promise<GeneratedTokens>;
+  verifyRefreshToken(token: string): Promise<TokenPayload>;
+}
+
