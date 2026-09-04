@@ -49,10 +49,12 @@ async function bootstrap() {
   )
   .addTag('Auth', 'Registro e autenticação de usuários')
   .addTag('Profile', 'Dados do usuário autenticado')
+  .addTag('Dashboard', 'Indicadores e resumos consolidados da frota')
   .addTag('Vehicles', 'Gestão de veículos da frota')
   .addTag('Drivers', 'Gestão de motoristas da frota')
   .addTag('Trips', 'Gestão de viagens da frota')
   .build();
+
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
