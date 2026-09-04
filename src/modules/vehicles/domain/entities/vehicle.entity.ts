@@ -11,7 +11,7 @@ export enum VehicleStatus {
 export interface VehicleProps {
     id?: string;
     plate: LicensePlate;
-    brand?: string;
+    brand?: string | null;
     model: string;
     year: number;
     currentKm: number;
@@ -25,7 +25,7 @@ export interface VehicleProps {
 interface VehicleInternalProps {
     id: string;
     plate: LicensePlate;
-    brand?: string;
+    brand?: string | null;
     model: string;
     year: number;
     currentKm: number;
@@ -35,6 +35,7 @@ interface VehicleInternalProps {
     createdAt: Date;
     updatedAt: Date;
 }
+
 
 
 
@@ -105,7 +106,7 @@ export class Vehicle {
     // -- Getters ---
     public getId(): string { return this.props.id; }
     public getPlate(): LicensePlate { return this.props.plate; }
-    public getBrand(): string | undefined { return this.props.brand; }
+    public getBrand(): string | null | undefined { return this.props.brand; }
     public getModel(): string { return this.props.model; }
     public getYear(): number { return this.props.year; }
     public getCurrentKm(): number { return this.props.currentKm; }

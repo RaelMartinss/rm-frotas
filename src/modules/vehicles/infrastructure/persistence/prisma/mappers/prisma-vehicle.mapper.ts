@@ -10,7 +10,7 @@ export class PrismaVehicleMapper {
     return new Vehicle({
       id: raw.id,
       plate: new LicensePlate(raw.plate),
-      brand: raw.brand,
+      brand: raw.brand ?? undefined,
       model: raw.model,
       year: raw.year,
       currentKm: raw.currentKm,
@@ -32,7 +32,7 @@ export class PrismaVehicleMapper {
     return {
       id: vehicle.getId(),
       plate: vehicle.getPlate().getValue(),
-      brand: vehicle.getBrand(),
+      brand: vehicle.getBrand() ?? null,
       model: vehicle.getModel(),
       year: vehicle.getYear(),
       currentKm: vehicle.getCurrentKm(),
@@ -43,4 +43,5 @@ export class PrismaVehicleMapper {
       updatedAt: vehicle.getUpdatedAt(),
     };
   }
+
 }
