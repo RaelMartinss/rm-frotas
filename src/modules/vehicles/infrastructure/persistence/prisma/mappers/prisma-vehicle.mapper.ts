@@ -10,9 +10,11 @@ export class PrismaVehicleMapper {
     return new Vehicle({
       id: raw.id,
       plate: new LicensePlate(raw.plate),
+      brand: raw.brand,
       model: raw.model,
       year: raw.year,
       currentKm: raw.currentKm,
+      crlvExpiration: raw.crlvExpiration,
       status: raw.status as VehicleStatus,
       ownerId: raw.ownerId,
       createdAt: raw.createdAt,
@@ -30,9 +32,11 @@ export class PrismaVehicleMapper {
     return {
       id: vehicle.getId(),
       plate: vehicle.getPlate().getValue(),
+      brand: vehicle.getBrand(),
       model: vehicle.getModel(),
       year: vehicle.getYear(),
       currentKm: vehicle.getCurrentKm(),
+      crlvExpiration: vehicle.getCrlvExpiration() ?? null,
       status: vehicle.getStatus() as PrismaStatus,
       ownerId,
       createdAt: vehicle.getCreatedAt(),

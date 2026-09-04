@@ -43,14 +43,17 @@ model User {
 }
 
 model Vehicle {
-  id        String        @id @default(uuid())
-  plate     String        @unique
-  model     String
-  year      Int
-  currentKm Int           @map("current_km")
-  status    VehicleStatus @default(AVAILABLE)
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
+  id              String        @id @default(uuid())
+  plate           String        @unique
+  brand           String?
+  model           String
+  year            Int
+  currentKm       Int           @map("current_km")
+  crlvExpiration  DateTime?     @map("crlv_expiration")
+  status          VehicleStatus @default(AVAILABLE)
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
 
   // Vínculo com o Gestor responsável (Proprietário dos dados)
   ownerId String @map("owner_id")

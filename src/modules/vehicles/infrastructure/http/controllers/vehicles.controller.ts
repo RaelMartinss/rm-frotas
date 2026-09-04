@@ -69,9 +69,11 @@ export class VehiclesController {
     ) {
         const vehicle = await this.createVehicleUseCase.execute({
             plate: dto.plate,
+            brand: dto.brand,
             model: dto.model,
             year: dto.year,
             currentKm: dto.currentKm,
+            crlvExpiration: dto.crlvExpiration,
             ownerId: userId,
         });
         return VehiclePresenter.toHTTP(vehicle);

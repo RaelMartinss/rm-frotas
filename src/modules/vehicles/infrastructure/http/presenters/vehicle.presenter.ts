@@ -6,9 +6,11 @@ export class VehiclePresenter {
         return {
             id: vehicle.getId(),
             plate: vehicle.getPlate().getValue(),
+            brand: vehicle.getBrand(),
             model: vehicle.getModel(),
             year: vehicle.getYear(),
             currentKm: vehicle.getCurrentKm(),
+            crlvExpiration: vehicle.getCrlvExpiration()?.toISOString().split('T')[0] ?? null,
             status: vehicle.getStatus(),
             createdAt: vehicle.getCreatedAt(),
             updatedAt: vehicle.getUpdatedAt(),
