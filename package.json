@@ -20,7 +20,8 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.mjs",
     "test:e2e:watch": "vitest --config ./vitest.config.e2e.mjs",
     "test:cov": "vitest run --coverage --config ./vitest.config.mjs",
-    "test:all": "vitest run --config ./vitest.config.mjs && vitest run --config ./vitest.config.e2e.mjs"
+    "test:all": "vitest run --config ./vitest.config.mjs && vitest run --config ./vitest.config.e2e.mjs",
+    "seed": "npx ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

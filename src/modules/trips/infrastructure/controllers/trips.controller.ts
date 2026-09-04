@@ -1,9 +1,11 @@
 import {
   Controller,
   Post,
+  Get,
   Patch,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -12,9 +14,11 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateTripUseCase } from '../../application/use-cases/create-trip.use-case';
+import { GetTripsUseCase } from '../../application/use-cases/get-trips.use-case';
 import { StartTripUseCase } from '../../application/use-cases/start-trip.use-case';
 import { CompleteTripUseCase } from '../../application/use-cases/complete-trip.use-case';
 import { CreateTripHttpDto } from './dtos/create-trip-http.dto';
+import { GetTripsQueryDto } from '../http/dtos/get-trips-query.dto';
 import { DriverNotAvailableException } from '../../application/exceptions/driver-not-available.exception';
 import { VehicleNotAvailableException } from '../../application/exceptions/vehicle-not-available.exception';
 import { TripNotFoundException } from '../../application/exceptions/trip-not-found.exception';
@@ -33,10 +37,45 @@ import { UserRole } from '../../../auth/domain/entities/user.entity';
 export class TripsController {
   constructor(
     private readonly createTripUseCase: CreateTripUseCase,
+    private readonly getTripsUseCase: GetTripsUseCase,
     private readonly startTripUseCase: StartTripUseCase,
     private readonly completeTripUseCase: CompleteTripUseCase,
     private readonly cancelTripUseCase: CancelTripUseCase,
   ) {}
+
+  @Get()
+  @Roles(UserRole.FLEET_MANAGER, UserRole.DRIVER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Listar viagens paginadas com filtros' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista paginada de viagens retornada com sucesso.',
+  })
+  async findAll(@Query() query: GetTripsQueryDto) {
+    const result = await this.getTripsUseCase.execute(query);
+
+    return {
+      ...result,
+      data: result.data.map((trip) => ({
+        id: trip.getId(),
+        driverId: trip.getDriverId(),
+        vehicleId: trip.getVehicleId(),
+        origin: trip.getOrigin().getValue(),
+        destination: trip.getDestination().getValue(),
+        originAddress: trip.getOrigin().getAddress(),
+        originCity: trip.getOrigin().getCity(),
+        originState: trip.getOrigin().getState(),
+        destinationAddress: trip.getDestination().getAddress(),
+        destinationCity: trip.getDestination().getCity(),
+        destinationState: trip.getDestination().getState(),
+        status: trip.getStatus(),
+        startedAt: trip.getStartedAt(),
+        completedAt: trip.getCompletedAt(),
+        createdAt: trip.getCreatedAt(),
+        updatedAt: trip.getUpdatedAt(),
+      })),
+    };
+  }
 
   @Post()
   @Roles(UserRole.FLEET_MANAGER)

@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Patch,
   Body,
@@ -14,6 +15,8 @@ import { ActivateDriverUseCase } from '../../application/use-cases/activate-driv
 import { DeactivateDriverUseCase } from '../../application/use-cases/deactivate-driver.use-case';
 import { SuspendDriverUseCase } from '../../application/use-cases/suspend-driver.use-case';
 import { UpdateDriverCnhUseCase } from '../../application/use-cases/update-driver-cnh.use-case';
+import { ListDriversUseCase } from '../../application/use-cases/list-drivers.use-case';
+import { FindDriverByIdUseCase } from '../../application/use-cases/find-driver-by-id.use-case';
 import { CreateDriverHttpDto } from './dtos/create-driver-http.dto';
 import { UpdateDriverCnhHttpDto } from './dtos/update-driver-cnh-http.dto';
 import { DriverPresenter } from './presenters/driver.presenter';
@@ -34,7 +37,24 @@ export class DriversController {
     private readonly deactivateDriverUseCase: DeactivateDriverUseCase,
     private readonly suspendDriverUseCase: SuspendDriverUseCase,
     private readonly updateDriverCnhUseCase: UpdateDriverCnhUseCase,
+    private readonly listDriversUseCase: ListDriversUseCase,
+    private readonly findDriverByIdUseCase: FindDriverByIdUseCase,
   ) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Listar todos os motoristas da frota' })
+  async findAll() {
+    const drivers = await this.listDriversUseCase.execute();
+    return drivers.map(DriverPresenter.toHTTP);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Buscar motorista por ID' })
+  @ApiParam({ name: 'id', description: 'UUID do motorista' })
+  async findById(@Param('id') id: string) {
+    const driver = await this.findDriverByIdUseCase.execute(id);
+    return DriverPresenter.toHTTP(driver);
+  }
 
   @Post()
   @Roles(UserRole.FLEET_MANAGER)

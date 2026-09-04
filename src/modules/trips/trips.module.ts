@@ -12,6 +12,7 @@ import { CreateTripUseCase } from './application/use-cases/create-trip.use-case'
 import { StartTripUseCase } from './application/use-cases/start-trip.use-case';
 import { CompleteTripUseCase } from './application/use-cases/complete-trip.use-case';
 import { CancelTripUseCase } from './application/use-cases/cancel-trip.use-case';
+import { GetTripsUseCase } from './application/use-cases/get-trips.use-case';
 import { ITripsRepository } from './application/repositories/trips-repository.interface';
 import { IDriversRepository } from '../drivers/domain/repositories/drivers.repository';
 import { IVehiclesRepository } from '../vehicles/domain/repositories/vehicles.repository';
@@ -43,6 +44,13 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
         return new CreateTripUseCase(tripsRepo, driversRepo, vehiclesRepo);
       },
       inject: ['ITripsRepository', 'IDriversRepository', IVehiclesRepository],
+    },
+    {
+      provide: GetTripsUseCase,
+      useFactory: (tripsRepo: ITripsRepository) => {
+        return new GetTripsUseCase(tripsRepo);
+      },
+      inject: ['ITripsRepository'],
     },
     {
       provide: StartTripUseCase,
@@ -78,6 +86,7 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
   ],
   exports: [
     CreateTripUseCase,
+    GetTripsUseCase,
     StartTripUseCase,
     CompleteTripUseCase,
     CancelTripUseCase,
