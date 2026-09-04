@@ -3,6 +3,7 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -11,9 +12,11 @@ import { HealthModule } from './health/health.module';
     VehiclesModule,
     TripsModule,
     AuthModule,
+    DashboardModule,
     HealthModule,
   ],
   controllers: [],
   providers: [],
 })
 export class AppModule {}
+
