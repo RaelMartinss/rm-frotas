@@ -46,8 +46,9 @@ USER nestjs
 EXPOSE 3000
 
 # Healthcheck simples: falha se a API não responder no endpoint de health
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/v1/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 # Roda as migrations do Prisma e só então sobe a aplicação
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+
