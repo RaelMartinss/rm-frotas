@@ -17,7 +17,15 @@ import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/login.dto';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
-const REFRESH_COOKIE_PATH = '/v1/auth';
+const isProduction = process.env.NODE_ENV === 'production';
+
+const getCookieOptions = () => ({
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+  path: '/',
+});
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -61,13 +69,7 @@ export class AuthController {
     const { accessToken, refreshToken, user } =
       await this.loginUseCase.execute(body);
 
-    res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
-      path: REFRESH_COOKIE_PATH,
-    });
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, getCookieOptions());
 
     return {
       accessToken,
@@ -98,13 +100,7 @@ export class AuthController {
     const { accessToken, refreshToken: newRefreshToken, user } =
       await this.refreshTokenUseCase.execute({ refreshToken: token });
 
-    res.cookie(REFRESH_COOKIE_NAME, newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: REFRESH_COOKIE_PATH,
-    });
+    res.cookie(REFRESH_COOKIE_NAME, newRefreshToken, getCookieOptions());
 
     return {
       accessToken,
@@ -119,9 +115,9 @@ export class AuthController {
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie(REFRESH_COOKIE_NAME, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: REFRESH_COOKIE_PATH,
+      secure: isProduction,
+      sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+      path: '/',
     });
 
     return { message: 'Desconectado com sucesso.' };
