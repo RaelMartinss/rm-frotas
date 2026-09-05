@@ -102,7 +102,7 @@ export class GetDashboardSummaryUseCase {
     const trips = await this.prisma.trip.findMany({
       where: {
         status: { in: ['IN_PROGRESS', 'PLANNED'] },
-        ...(userId ? { vehicle: { ownerId: userId } } : {}),
+        ...(ownerConditions.length > 0 ? { vehicle: { OR: ownerConditions } } : {}),
       },
       include: {
         driver: true,
