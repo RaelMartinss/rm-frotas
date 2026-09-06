@@ -86,6 +86,26 @@ function generateMercosulPlate(index: number): string {
   return `${l1}${l2}${l3}${n1}${l4}${n2}`;
 }
 
+function generateValidCpf(index: number): string {
+  const base = String(100_000_000n + BigInt(index % 800_000_000)).padStart(9, '0');
+  let sum1 = 0;
+  for (let i = 0; i < 9; i++) {
+    sum1 += parseInt(base.charAt(i), 10) * (10 - i);
+  }
+  let d1 = 11 - (sum1 % 11);
+  if (d1 >= 10) d1 = 0;
+
+  const baseWithD1 = base + d1;
+  let sum2 = 0;
+  for (let i = 0; i < 10; i++) {
+    sum2 += parseInt(baseWithD1.charAt(i), 10) * (11 - i);
+  }
+  let d2 = 11 - (sum2 % 11);
+  if (d2 >= 10) d2 = 0;
+
+  return `${base}${d1}${d2}`;
+}
+
 async function main() {
   console.log('🚀 Iniciando geração de dados em lote para RM Frotas...');
   console.log(
@@ -177,7 +197,7 @@ async function main() {
   const drivers = driverIds.map((id, index) => ({
     id,
     name: faker.person.fullName(),
-    cpf: String(100_000_000_00n + BigInt(index)).padStart(11, '0'),
+    cpf: generateValidCpf(index),
     cnhNumber: String(500_000_000_00n + BigInt(index)).padStart(11, '0'),
     cnhCategory: faker.helpers.arrayElement(CNH_CATEGORIES),
     cnhExpirationDate: faker.date.between({

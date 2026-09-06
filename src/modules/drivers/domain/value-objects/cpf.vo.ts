@@ -13,6 +13,13 @@ export class Cpf {
     this.value = cleaned;
   }
 
+  public static restore(value: string): Cpf {
+    const cleaned = (value || '').replace(/\D/g, '').padStart(11, '0').slice(0, 11);
+    const instance = Object.create(Cpf.prototype);
+    (instance as any).value = cleaned;
+    return instance;
+  }
+
   public getValue(): string {
     return this.value;
   }

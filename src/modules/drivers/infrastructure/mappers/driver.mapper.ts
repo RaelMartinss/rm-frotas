@@ -15,8 +15,8 @@ export class DriverMapper {
     return new Driver(
       {
         name: raw.name,
-        cpf: new Cpf(raw.cpf),
-        cnh: new Cnh(
+        cpf: Cpf.restore(raw.cpf),
+        cnh: Cnh.restore(
           raw.cnhNumber,
           raw.cnhCategory,
           raw.cnhExpirationDate,

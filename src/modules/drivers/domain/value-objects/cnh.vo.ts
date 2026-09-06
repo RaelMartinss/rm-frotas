@@ -29,6 +29,16 @@ export class Cnh {
     this.expirationDate = expirationDate;
   }
 
+  public static restore(number: string, category: string, expirationDate: Date): Cnh {
+    const cleanedNumber = (number || '').replace(/\D/g, '').padStart(11, '0').slice(0, 11);
+    const upperCategory = (category || 'D').toUpperCase() as CnhCategory;
+    const instance = Object.create(Cnh.prototype);
+    (instance as any).number = cleanedNumber;
+    (instance as any).category = upperCategory;
+    (instance as any).expirationDate = expirationDate;
+    return instance;
+  }
+
   public getNumber(): string {
     return this.number;
   }
