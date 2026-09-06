@@ -55,6 +55,12 @@ export class User {
     this.props.updatedAt = new Date();
   }
 
+  setStatus(status: UserStatus): void {
+    this.props.status = status;
+    this.props.isActive = status === UserStatus.ACTIVE;
+    this.props.updatedAt = new Date();
+  }
+
   changePassword(password: Password): void {
     this.props.password = password;
     this.props.updatedAt = new Date();

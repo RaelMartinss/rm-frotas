@@ -12,6 +12,7 @@ import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './infrastructure/strategies/jwt.strategy';
 import { ProfileController } from './infrastructure/controllers/profile.controller';
+import { UsersController } from './infrastructure/controllers/users.controller';
 import { RolesGuard } from './infrastructure/guards/roles.guard';
 
 @Module({
@@ -27,7 +28,7 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
       }),
     }),
   ],
-  controllers: [AuthController, ProfileController],
+  controllers: [AuthController, ProfileController, UsersController],
   providers: [
     RegisterUserUseCase,
     LoginUseCase,
