@@ -45,5 +45,18 @@ export class User {
   getStatus(): UserStatus { return this.props.status!; }
   isActive(): boolean { return this.props.isActive!; }
   getCreatedAt(): Date { return this.props.createdAt!; }
-  getUpdatedAt(): Date {return this.props.updatedAt!; }
+  getUpdatedAt(): Date { return this.props.updatedAt!; }
+
+  setName(name: string): void {
+    if (!name || name.trim().length === 0) {
+      throw new Error('O nome não pode estar em branco.');
+    }
+    this.props.name = name.trim();
+    this.props.updatedAt = new Date();
+  }
+
+  changePassword(password: Password): void {
+    this.props.password = password;
+    this.props.updatedAt = new Date();
+  }
 }
