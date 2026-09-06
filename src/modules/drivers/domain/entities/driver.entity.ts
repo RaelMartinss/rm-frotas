@@ -4,6 +4,8 @@ import { DriverStatus } from './driver-status.enum';
 import { InvalidDriverStatusTransitionException } from '../exceptions/invalid-driver-status-transition.exception';
 import { randomUUID } from 'node:crypto';
 
+export { DriverStatus };
+
 export interface DriverProps {
   name: string;
   cpf: Cpf;

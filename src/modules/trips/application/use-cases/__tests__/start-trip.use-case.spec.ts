@@ -32,6 +32,9 @@ class MockDriversRepository implements IDriversRepository {
   async findAll(): Promise<Driver[]> {
     return [];
   }
+  async findManyPaginated(): Promise<{ drivers: Driver[]; total: number }> {
+    return { drivers: [], total: 0 };
+  }
 }
 
 describe('StartTripUseCase', () => {

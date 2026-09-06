@@ -27,6 +27,10 @@ class InMemoryVehiclesRepository implements IVehiclesRepository {
     async findAll(): Promise<Vehicle[]> {
         return this.items;
     }
+
+    async findManyPaginated(): Promise<{ vehicles: Vehicle[]; total: number }> {
+        return { vehicles: this.items, total: this.items.length };
+    }
 }
 
 describe('Finish vehicle main tenance use case', () => {

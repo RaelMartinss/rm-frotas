@@ -40,6 +40,10 @@ class InMemoryDriversRepository implements IDriversRepository {
   async findAll(): Promise<Driver[]> {
     return this.items;
   }
+
+  async findManyPaginated(): Promise<{ drivers: Driver[]; total: number }> {
+    return { drivers: this.items, total: this.items.length };
+  }
 }
 
 // Repositório em memória para Vehicles
@@ -69,6 +73,10 @@ class InMemoryVehiclesRepository implements IVehiclesRepository {
 
   async findAll(): Promise<Vehicle[]> {
     return this.items;
+  }
+
+  async findManyPaginated(): Promise<{ vehicles: Vehicle[]; total: number }> {
+    return { vehicles: this.items, total: this.items.length };
   }
 }
 
