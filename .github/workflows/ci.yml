@@ -102,6 +102,7 @@ jobs:
           docker run -d --name rm-frotas-test \
             --network="host" \
             -e DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app_test?schema=public \
+            -e JWT_SECRET=ci-super-secret-jwt-key-for-test-validation-12345678 \
             rm-frotas:ci
 
       - name: Wait for container to be healthy
