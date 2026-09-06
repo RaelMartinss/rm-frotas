@@ -22,10 +22,19 @@ import { RolesGuard } from './infrastructure/guards/roles.guard';
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET', 'default-secret-key'),
-        signOptions: { expiresIn: '15m' },
-      }),
+      useFactory: (config: ConfigService) => {
+        const secret = config.get<string>('JWT_SECRET');
+        const isProd = config.get<string>('NODE_ENV') === 'production';
+        if (isProd && (!secret || secret === 'default-secret-key')) {
+          throw new Error(
+            'FATAL: JWT_SECRET deve ser configurado com uma chave forte e segura em ambiente de produção.',
+          );
+        }
+        return {
+          secret: secret || 'default-secret-key',
+          signOptions: { expiresIn: '15m' },
+        };
+      },
     }),
   ],
   controllers: [AuthController, ProfileController, UsersController],

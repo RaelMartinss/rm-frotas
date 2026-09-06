@@ -4,12 +4,22 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DomainExceptionFilter } from './modules/drivers/infrastructure/http/domain-exception.filter';
 import cookieParser from 'cookie-parser';
-
-
-
+import helmet from 'helmet';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Confia no proxy reverso (Render, Cloudflare, NGINX) para obter o IP real do cliente via X-Forwarded-For
+  app.set('trust proxy', 1);
+
+  // Headers de segurança HTTP (desativa CSP para permitir documentação Swagger)
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   app.use(cookieParser());
 
@@ -21,15 +31,15 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Permite requisições sem origin (como mobile apps, curl, health checks) ou origens autorizadas
       if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
         callback(null, true);
       } else {
-        callback(null, true);
+        callback(new Error('Origem não permitida pelo CORS.'), false);
       }
     },
     credentials: true,
   });
-
 
   app.enableVersioning({
     type: VersioningType.URI,
@@ -40,6 +50,7 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
+      forbidNonWhitelisted: true,
     }),
   );
 

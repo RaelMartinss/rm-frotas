@@ -18,6 +18,7 @@ import { CurrentUser } from '../decorators/current-user.decorator';
 import type { UserPayload } from '../strategies/jwt.strategy';
 import type { IUsersRepository } from '../../domain/repositories/users.repository.interface';
 import { Password } from '../../domain/value-objects/password.vo';
+import { Throttle } from '@nestjs/throttler';
 
 export class UpdateProfileDto {
   @ApiProperty({ example: 'Rael Martins', description: 'Nome completo do usuário' })
@@ -103,6 +104,7 @@ export class ProfileController {
   }
 
   @Patch('password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Alterar a senha do usuário autenticado' })
   @ApiResponse({ status: 200, description: 'Senha atualizada com sucesso.' })
