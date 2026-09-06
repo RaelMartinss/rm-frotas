@@ -5,6 +5,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DomainExceptionFilter } from './modules/drivers/infrastructure/http/domain-exception.filter';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
@@ -22,6 +23,28 @@ async function bootstrap() {
   );
 
   app.use(cookieParser());
+
+  // Rate Limiting Global: 60 requisições por minuto por IP
+  app.use(
+    rateLimit({
+      windowMs: 60 * 1000,
+      limit: 60,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+      message: { statusCode: 429, message: 'Muitas requisições. Tente novamente em um minuto.' },
+    }),
+  );
+
+  // Rate Limiting Estrito para rotas sensíveis: 5 tentativas por minuto por IP
+  const authLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 5,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { statusCode: 429, message: 'Muitas tentativas. Tente novamente em 1 minuto.' },
+  });
+  app.use('/v1/auth/login', authLimiter);
+  app.use('/v1/me/password', authLimiter);
 
   const allowedOrigins = [
     'http://localhost:4200',
