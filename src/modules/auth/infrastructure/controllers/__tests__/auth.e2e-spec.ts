@@ -1,19 +1,24 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { beforeEach, describe, expect, it } from 'vitest';
-import { PrismaService } from '../../../../../shared/infrastructure/prisma/prisma.service';
+import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../../../../app.module';
 import { UserRole } from '../../../domain/entities/user.entity';
+import { InMemoryUsersRepository } from '../../../repositories/in-memory-users.repository';
 
 describe('Auth Endpoints (E2E)', () => {
   let app: INestApplication;
-  let prisma: PrismaService;
+  let usersRepository: InMemoryUsersRepository;
 
   beforeAll(async () => {
+    usersRepository = new InMemoryUsersRepository();
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider('IUsersRepository')
+      .useValue(usersRepository)
+      .compile();
 
     app = moduleFixture.createNestApplication();
 
@@ -27,22 +32,13 @@ describe('Auth Endpoints (E2E)', () => {
     );
 
     await app.init();
-    prisma = app.get<PrismaService>(PrismaService);
   });
 
-  beforeEach(async () => {
-    // Clean up only test users created during the auth test suite
-    await prisma.user.deleteMany({
-      where: {
-        email: {
-          in: ['rael@example.com', 'login@example.com', 'refresh@example.com'],
-        },
-      },
-    });
+  beforeEach(() => {
+    usersRepository.items = [];
   });
 
   afterAll(async () => {
-    await prisma.$disconnect();
     await app.close();
   });
 
