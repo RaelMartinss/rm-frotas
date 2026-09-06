@@ -39,8 +39,11 @@ export class PrismaDriversRepository implements IDriversRepository {
     return DriverMapper.toDomain(raw);
   }
 
-  async findAll(): Promise<Driver[]> {
-    const drivers = await this.prisma.driver.findMany();
+  async findAll(ownerId?: string): Promise<Driver[]> {
+    const drivers = await this.prisma.driver.findMany({
+      where: ownerId ? { ownerId } : undefined,
+      orderBy: { createdAt: 'desc' },
+    });
 
     return drivers.map(
       (driver: Awaited<ReturnType<typeof this.prisma.driver.findMany>>[number]) =>

@@ -21,7 +21,10 @@ export class InMemoryDriversRepository implements IDriversRepository {
     return driver ?? null;
   }
 
-  findAll(): Promise<Driver[]> {
+  findAll(ownerId?: string): Promise<Driver[]> {
+    if (ownerId) {
+      return Promise.resolve(this.items.filter((item) => item.getOwnerId() === ownerId));
+    }
     return Promise.resolve(this.items);
   }
 

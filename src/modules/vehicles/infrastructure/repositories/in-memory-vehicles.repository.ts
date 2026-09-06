@@ -27,7 +27,10 @@ export class InMemoryVehiclesRepository implements IVehiclesRepository {
     return this.items.find((item) => item.getPlate().getValue() === plate) ?? null;
   }
 
-  async findAll(): Promise<Vehicle[]> {
+  async findAll(ownerId?: string): Promise<Vehicle[]> {
+    if (ownerId) {
+      return this.items.filter((item) => item.getOwnerId() === ownerId);
+    }
     return this.items;
   }
 }

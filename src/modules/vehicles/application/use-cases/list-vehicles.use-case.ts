@@ -7,7 +7,7 @@ import { Vehicle } from "../../domain/entities/vehicle.entity";
 export class ListVehiclesUseCase {
     constructor(private readonly vehiclesRepository: IVehiclesRepository) {}
 
-    async execute(): Promise<Vehicle[]> {
-        return this.vehiclesRepository.findAll();
+    async execute(ownerId?: string): Promise<Vehicle[]> {
+        return this.vehiclesRepository.findAll(ownerId);
     }
 }

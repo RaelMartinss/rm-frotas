@@ -9,7 +9,7 @@ export class ListDriversUseCase {
     private readonly driversRepository: IDriversRepository,
   ) {}
 
-  async execute(): Promise<Driver[]> {
-    return this.driversRepository.findAll();
+  async execute(ownerId?: string): Promise<Driver[]> {
+    return this.driversRepository.findAll(ownerId);
   }
 }

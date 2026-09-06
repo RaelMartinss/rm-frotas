@@ -19,7 +19,7 @@ export interface IDriversRepository {
   findByCpf(cpf: Cpf): Promise<Driver | null>;
 
   /**
-   * Retorna a lista de todos os motoristas cadastrados.
+   * Retorna a lista de motoristas cadastrados (filtrados por gestor se informado).
    */
-  findAll(): Promise<Driver[]>;
+  findAll(ownerId?: string): Promise<Driver[]>;
 }

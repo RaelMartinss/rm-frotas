@@ -43,8 +43,8 @@ export class DriversController {
 
   @Get()
   @ApiOperation({ summary: 'Listar todos os motoristas da frota' })
-  async findAll() {
-    const drivers = await this.listDriversUseCase.execute();
+  async findAll(@CurrentUser('userId') userId: string) {
+    const drivers = await this.listDriversUseCase.execute(userId);
     return drivers.map(DriverPresenter.toHTTP);
   }
 

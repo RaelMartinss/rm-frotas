@@ -36,8 +36,8 @@ export class VehiclesController {
 
     @Get()
     @ApiOperation({ summary: 'Listar todos os veículos da frota' })
-    async findAll() {
-        const vehicle = await this.listVehiclesUseCase.execute();
+    async findAll(@CurrentUser('userId') userId: string) {
+        const vehicle = await this.listVehiclesUseCase.execute(userId);
         return vehicle.map(VehiclePresenter.toHTTP);
     }
 
