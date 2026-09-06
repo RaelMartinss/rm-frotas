@@ -1,6 +1,9 @@
 import { Vehicle } from "../../domain/entities/vehicle.entity";
-import { IVehiclesRepository } from "../../domain/repositories/vehicles.repository";
-
+import {
+  IVehiclesRepository,
+  FindManyVehiclesPaginatedParams,
+  FindManyVehiclesPaginatedOutput,
+} from "../../domain/repositories/vehicles.repository";
 
 export class InMemoryVehiclesRepository implements IVehiclesRepository {
   public items: Vehicle[] = [];
@@ -32,5 +35,41 @@ export class InMemoryVehiclesRepository implements IVehiclesRepository {
       return this.items.filter((item) => item.getOwnerId() === ownerId);
     }
     return this.items;
+  }
+
+  async findManyPaginated({
+    ownerId,
+    status,
+    search,
+    page,
+    limit,
+  }: FindManyVehiclesPaginatedParams): Promise<FindManyVehiclesPaginatedOutput> {
+    let filtered = this.items;
+
+    if (ownerId) {
+      filtered = filtered.filter((v) => v.getOwnerId() === ownerId);
+    }
+
+    if (status) {
+      filtered = filtered.filter((v) => v.getStatus() === status);
+    }
+
+    if (search && search.trim()) {
+      const term = search.toLowerCase().trim();
+      filtered = filtered.filter((v) =>
+        v.getPlate().getValue().toLowerCase().includes(term) ||
+        v.getModel().toLowerCase().includes(term) ||
+        (v.getBrand() && v.getBrand()!.toLowerCase().includes(term))
+      );
+    }
+
+    const total = filtered.length;
+    const start = (page - 1) * limit;
+    const vehicles = filtered.slice(start, start + limit);
+
+    return {
+      vehicles,
+      total,
+    };
   }
 }

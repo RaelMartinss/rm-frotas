@@ -5,6 +5,7 @@ import {
   Patch,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -19,6 +20,7 @@ import { ListDriversUseCase } from '../../application/use-cases/list-drivers.use
 import { FindDriverByIdUseCase } from '../../application/use-cases/find-driver-by-id.use-case';
 import { CreateDriverHttpDto } from './dtos/create-driver-http.dto';
 import { UpdateDriverCnhHttpDto } from './dtos/update-driver-cnh-http.dto';
+import { GetDriversQueryDto } from './dtos/get-drivers-query.dto';
 import { DriverPresenter } from './presenters/driver.presenter';
 import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
 import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
@@ -42,10 +44,26 @@ export class DriversController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos os motoristas da frota' })
-  async findAll(@CurrentUser('userId') userId: string) {
-    const drivers = await this.listDriversUseCase.execute(userId);
-    return drivers.map(DriverPresenter.toHTTP);
+  @ApiOperation({ summary: 'Listar motoristas da frota paginados com filtros' })
+  async findAll(
+    @CurrentUser('userId') userId: string,
+    @Query() query: GetDriversQueryDto,
+  ) {
+    const result = await this.listDriversUseCase.execute({
+      ownerId: userId,
+      page: query.page,
+      limit: query.limit,
+      search: query.search,
+      status: query.status,
+    });
+
+    return {
+      data: result.data.map(DriverPresenter.toHTTP),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
   }
 
   @Get(':id')

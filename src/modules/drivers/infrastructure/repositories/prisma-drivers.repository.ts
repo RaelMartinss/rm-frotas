@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
-import type { IDriversRepository } from '../../domain/repositories/drivers.repository';
+import type {
+  IDriversRepository,
+  FindManyDriversPaginatedParams,
+  FindManyDriversPaginatedOutput,
+} from '../../domain/repositories/drivers.repository';
 import { Driver } from '../../domain/entities/driver.entity';
 import { Cpf } from '../../domain/value-objects/cpf.vo';
 import { DriverMapper } from '../mappers/driver.mapper';
@@ -49,5 +53,44 @@ export class PrismaDriversRepository implements IDriversRepository {
       (driver: Awaited<ReturnType<typeof this.prisma.driver.findMany>>[number]) =>
         DriverMapper.toDomain(driver),
     );
+  }
+
+  async findManyPaginated({
+    ownerId,
+    status,
+    search,
+    page,
+    limit,
+  }: FindManyDriversPaginatedParams): Promise<FindManyDriversPaginatedOutput> {
+    const where: any = {
+      ...(ownerId && { ownerId }),
+      ...(status && { status }),
+    };
+
+    if (search && search.trim()) {
+      const term = search.trim();
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { cpf: { contains: term, mode: 'insensitive' } },
+        { cnhNumber: { contains: term, mode: 'insensitive' } },
+      ];
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [rawDrivers, total] = await Promise.all([
+      this.prisma.driver.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.driver.count({ where }),
+    ]);
+
+    return {
+      drivers: rawDrivers.map(DriverMapper.toDomain),
+      total,
+    };
   }
 }

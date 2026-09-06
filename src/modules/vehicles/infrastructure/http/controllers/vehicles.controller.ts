@@ -1,9 +1,10 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, UseFilters, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseFilters, UseGuards } from "@nestjs/common";
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { DomainExceptionFilter } from "../filters/domain-exception.filter";
 import { CreateVehicleUseCase } from "../../../application/use-cases/create-vehicle.use-case";
 import { CreateVehicleDto } from "../dtos/create-vehicle.dto";
+import { GetVehiclesQueryDto } from "../dtos/get-vehicles-query.dto";
 import { VehiclePresenter } from "../presenters/vehicle.presenter";
 import { SendVehicleToMaintenanceUseCase } from '../../../application/use-cases/send-vehicle-to-maintenance.use-case';
 import { FindVehicleByIdUseCase } from '../../../application/use-cases/find-vehicle-by-id.use-case';
@@ -35,10 +36,26 @@ export class VehiclesController {
     ) {}
 
     @Get()
-    @ApiOperation({ summary: 'Listar todos os veículos da frota' })
-    async findAll(@CurrentUser('userId') userId: string) {
-        const vehicle = await this.listVehiclesUseCase.execute(userId);
-        return vehicle.map(VehiclePresenter.toHTTP);
+    @ApiOperation({ summary: 'Listar veículos da frota paginados com filtros' })
+    async findAll(
+        @CurrentUser('userId') userId: string,
+        @Query() query: GetVehiclesQueryDto,
+    ) {
+        const result = await this.listVehiclesUseCase.execute({
+            ownerId: userId,
+            page: query.page,
+            limit: query.limit,
+            search: query.search,
+            status: query.status,
+        });
+
+        return {
+            data: result.data.map(VehiclePresenter.toHTTP),
+            total: result.total,
+            page: result.page,
+            limit: result.limit,
+            totalPages: result.totalPages,
+        };
     }
 
     @Get(':id')

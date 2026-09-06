@@ -35,8 +35,22 @@ class InMemoryVehiclesRepository implements IVehiclesRepository {
     );
   }
 
-  async findAll(): Promise<Vehicle[]> {
+  async findAll(ownerId?: string): Promise<Vehicle[]> {
+    if (ownerId) {
+      return this.items.filter((item) => item.getOwnerId() === ownerId);
+    }
     return this.items;
+  }
+
+  async findManyPaginated(params: any): Promise<any> {
+    let filtered = this.items;
+    if (params.ownerId) {
+      filtered = filtered.filter((item) => !item.getOwnerId() || item.getOwnerId() === params.ownerId);
+    }
+    return {
+      vehicles: filtered.slice((params.page - 1) * params.limit, params.page * params.limit),
+      total: filtered.length,
+    };
   }
 }
 
@@ -177,7 +191,8 @@ describe('Vehicles Endpoints (E2E)', () => {
         .set(authHeaders);
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual([]);
+      expect(response.body.data).toEqual([]);
+      expect(response.body.total).toBe(0);
     });
 
     it('deve retornar a lista de todos os veículos cadastrados', async () => {
@@ -203,9 +218,10 @@ describe('Vehicles Endpoints (E2E)', () => {
         .set(authHeaders);
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(2);
-      expect(response.body[0].plate).toBe('ABC1234');
-      expect(response.body[1].plate).toBe('XYZ9876');
+      expect(response.body.data).toHaveLength(2);
+      expect(response.body.data[0].plate).toBe('ABC1234');
+      expect(response.body.data[1].plate).toBe('XYZ9876');
+      expect(response.body.total).toBe(2);
     });
   });
 

@@ -35,8 +35,22 @@ class InMemoryDriversRepositoryE2E implements IDriversRepository {
     return this.items.find((item) => item.getCpf().equals(cpf)) ?? null;
   }
 
-  async findAll(): Promise<Driver[]> {
+  async findAll(ownerId?: string): Promise<Driver[]> {
+    if (ownerId) {
+      return this.items.filter((item) => item.getOwnerId() === ownerId);
+    }
     return this.items;
+  }
+
+  async findManyPaginated(params: any): Promise<any> {
+    let filtered = this.items;
+    if (params.ownerId) {
+      filtered = filtered.filter((item) => !item.getOwnerId() || item.getOwnerId() === params.ownerId);
+    }
+    return {
+      drivers: filtered.slice((params.page - 1) * params.limit, params.page * params.limit),
+      total: filtered.length,
+    };
   }
 }
 
