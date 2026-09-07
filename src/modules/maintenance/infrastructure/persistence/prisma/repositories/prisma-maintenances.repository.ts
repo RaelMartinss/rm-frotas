@@ -110,7 +110,9 @@ export class PrismaMaintenancesRepository implements IMaintenancesRepository {
     ]);
 
     return {
-      maintenances: records.map(PrismaMaintenanceMapper.toDomainWithVehicle),
+      maintenances: records.map((record) =>
+        PrismaMaintenanceMapper.toDomainWithVehicle(record)
+      ),
       total,
     };
   }

@@ -48,7 +48,7 @@ export class PrismaMaintenanceMapper {
   }
 
   static toDomainWithVehicle(raw: PrismaMaintenanceWithRelations): MaintenanceWithVehicleDetails {
-    const maintenance = this.toDomain(raw);
+    const maintenance = PrismaMaintenanceMapper.toDomain(raw);
     return {
       maintenance,
       vehicle: raw.vehicle
