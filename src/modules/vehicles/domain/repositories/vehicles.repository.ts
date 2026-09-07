@@ -15,8 +15,10 @@ export interface FindManyVehiclesPaginatedOutput {
 
 export abstract class IVehiclesRepository {
   abstract save(vehicle: Vehicle): Promise<void>;
+  abstract createMany(vehicles: Vehicle[]): Promise<void>;
   abstract findById(id: string): Promise<Vehicle | null>;
   abstract findByPlate(plate: string): Promise<Vehicle | null>;
+  abstract findExistingPlates(plates: string[]): Promise<string[]>;
   abstract findAll(ownerId?: string): Promise<Vehicle[]>;
   abstract findManyPaginated(
     params: FindManyVehiclesPaginatedParams

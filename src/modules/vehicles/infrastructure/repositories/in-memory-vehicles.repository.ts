@@ -21,6 +21,17 @@ export class InMemoryVehiclesRepository implements IVehiclesRepository {
     }
   }
 
+  async createMany(vehicles: Vehicle[]): Promise<void> {
+    this.items.push(...vehicles);
+  }
+
+  async findExistingPlates(plates: string[]): Promise<string[]> {
+    const platesUpper = plates.map((p) => p.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+    return this.items
+      .filter((v) => platesUpper.includes(v.getPlate().getValue().toUpperCase()))
+      .map((v) => v.getPlate().getValue());
+  }
+
   async findById(id: string): Promise<Vehicle | null> {
     const vehicle = this.items.find((item) => item.getId() === id);
     return vehicle ?? null;

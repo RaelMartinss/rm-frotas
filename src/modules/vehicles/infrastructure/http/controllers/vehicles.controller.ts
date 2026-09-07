@@ -1,10 +1,28 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseFilters, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseFilters,
+  UseGuards,
+  UseInterceptors,
+  BadRequestException,
+} from "@nestjs/common";
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { DomainExceptionFilter } from "../filters/domain-exception.filter";
 import { CreateVehicleUseCase } from "../../../application/use-cases/create-vehicle.use-case";
+import { ImportVehiclesCsvUseCase } from "../../../application/use-cases/import-vehicles-csv.use-case";
 import { CreateVehicleDto } from "../dtos/create-vehicle.dto";
 import { GetVehiclesQueryDto } from "../dtos/get-vehicles-query.dto";
+import { ImportVehiclesResultDto } from "../dtos/import-vehicles-csv.dto";
 import { VehiclePresenter } from "../presenters/vehicle.presenter";
 import { SendVehicleToMaintenanceUseCase } from '../../../application/use-cases/send-vehicle-to-maintenance.use-case';
 import { FindVehicleByIdUseCase } from '../../../application/use-cases/find-vehicle-by-id.use-case';
@@ -19,6 +37,13 @@ import { CurrentUser } from "../../../../auth/infrastructure/decorators/current-
 import { UserRole } from "../../../../auth/domain/entities/user.entity";
 
 
+export interface UploadedMulterFile {
+  buffer: Buffer;
+  originalname: string;
+  mimetype: string;
+  size: number;
+}
+
 @ApiTags('Vehicles')
 @ApiBearerAuth('JWT-auth') 
 @Controller('vehicles')
@@ -27,6 +52,7 @@ import { UserRole } from "../../../../auth/domain/entities/user.entity";
 export class VehiclesController {
     constructor(
         private readonly createVehicleUseCase: CreateVehicleUseCase,
+        private readonly importVehiclesCsvUseCase: ImportVehiclesCsvUseCase,
         private readonly sendVehicleToMaintenanceUseCase: SendVehicleToMaintenanceUseCase,
         private readonly findVehicleByIdUseCase: FindVehicleByIdUseCase,
         private readonly findVehicleByPlateUseCase: FindVehicleByPlateUseCase,
@@ -94,6 +120,74 @@ export class VehiclesController {
             ownerId: userId,
         });
         return VehiclePresenter.toHTTP(vehicle);
+    }
+
+    @Post('import')
+    @Roles(UserRole.FLEET_MANAGER)
+    @ApiOperation({ summary: 'Importar veículos em lote via arquivo CSV' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'Arquivo CSV com dados dos veículos (máx: 5MB)',
+                },
+            },
+        },
+    })
+    @ApiResponse({ status: 200, type: ImportVehiclesResultDto, description: 'Resultado do processamento da importação em lote com relatório de sucessos e erros.' })
+    @ApiResponse({ status: 400, description: 'Arquivo ausente, tipo inválido ou cabeçalhos obrigatórios ausentes.' })
+    @UseInterceptors(
+        FileInterceptor('file', {
+            limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB
+        }),
+    )
+    async importCsv(
+        @CurrentUser('userId') userId: string,
+        @UploadedFile() file?: UploadedMulterFile,
+    ): Promise<ImportVehiclesResultDto> {
+        if (!file) {
+            throw new BadRequestException('Nenhum arquivo CSV foi enviado no campo "file".');
+        }
+
+        const allowedMimeTypes = [
+            'text/csv',
+            'text/plain',
+            'application/vnd.ms-excel',
+            'application/csv',
+            'text/x-csv',
+            'application/octet-stream',
+        ];
+
+        const isCsvExtension = file.originalname.toLowerCase().endsWith('.csv');
+        const isAllowedMime = allowedMimeTypes.includes(file.mimetype.toLowerCase());
+
+        if (!isCsvExtension && !isAllowedMime) {
+            throw new BadRequestException('Formato de arquivo inválido. Apenas arquivos .csv são suportados.');
+        }
+
+        return this.importVehiclesCsvUseCase.execute({
+            fileBuffer: file.buffer,
+            ownerId: userId,
+        });
+    }
+
+    @Post('import-csv')
+    @Roles(UserRole.FLEET_MANAGER)
+    @ApiOperation({ summary: 'Alias para importação de veículos em lote via arquivo CSV' })
+    @UseInterceptors(
+        FileInterceptor('file', {
+            limits: { fileSize: 5 * 1024 * 1024 },
+        }),
+    )
+    async importCsvAlias(
+        @CurrentUser('userId') userId: string,
+        @UploadedFile() file?: UploadedMulterFile,
+    ): Promise<ImportVehiclesResultDto> {
+        return this.importCsv(userId, file);
     }
 
     @Patch(':id/maintenance')

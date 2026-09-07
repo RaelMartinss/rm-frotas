@@ -22,6 +22,15 @@ export class PrismaVehiclesRepository implements IVehiclesRepository {
     });
   }
 
+  async createMany(vehicles: Vehicle[]): Promise<void> {
+    if (vehicles.length === 0) return;
+    const data = vehicles.map(PrismaVehicleMapper.toPrisma);
+    await this.prisma.vehicle.createMany({
+      data,
+      skipDuplicates: true,
+    });
+  }
+
   async findById(id: string): Promise<Vehicle | null> {
     const vehicle = await this.prisma.vehicle.findUnique({
       where: { id },
@@ -40,6 +49,20 @@ export class PrismaVehiclesRepository implements IVehiclesRepository {
     if (!vehicle) return null;
 
     return PrismaVehicleMapper.toDomain(vehicle);
+  }
+
+  async findExistingPlates(plates: string[]): Promise<string[]> {
+    if (plates.length === 0) return [];
+    const existing = await this.prisma.vehicle.findMany({
+      where: {
+        plate: { in: plates },
+      },
+      select: {
+        plate: true,
+      },
+    });
+
+    return existing.map((v) => v.plate);
   }
 
   async findAll(ownerId?: string): Promise<Vehicle[]> {

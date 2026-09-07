@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { VehiclesController } from './infrastructure/http/controllers/vehicles.controller';
 import { CreateVehicleUseCase } from './application/use-cases/create-vehicle.use-case';
+import { ImportVehiclesCsvUseCase } from './application/use-cases/import-vehicles-csv.use-case';
 import { IVehiclesRepository } from './domain/repositories/vehicles.repository';
 import { PrismaVehiclesRepository } from './infrastructure/persistence/prisma/repositories/prisma-vehicles.repository';
 import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
@@ -20,6 +21,7 @@ import { FinishVehicleMaintenanceUseCase } from './application/use-cases/finish-
     ],
     providers: [
         CreateVehicleUseCase,
+        ImportVehiclesCsvUseCase,
         SendVehicleToMaintenanceUseCase,
         FinishVehicleMaintenanceUseCase,
         FindVehicleByIdUseCase,
