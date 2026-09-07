@@ -30,6 +30,8 @@ import { FindVehicleByPlateUseCase } from "../../../application/use-cases/find-v
 import { ListVehiclesUseCase } from "../../../application/use-cases/list-vehicles.use-case";
 import { UpdateVehicleKmUseCase } from "../../../application/use-cases/update-vehicle-km.use-case";
 import { UpdateVehicleKmDto } from "../dtos/update-vehicle-km.dto";
+import { UpdateVehicleCrlvUseCase } from "../../../application/use-cases/update-vehicle-crlv.use-case";
+import { UpdateVehicleCrlvDto } from "../dtos/update-vehicle-crlv.dto";
 import { FinishVehicleMaintenanceUseCase } from '../../../application/use-cases/finish-vehicle-maintenance.use-case';
 import { RolesGuard } from "../../../../auth/infrastructure/guards/roles.guard";
 import { Roles } from "../../../../auth/infrastructure/decorators/roles.decorator";
@@ -58,6 +60,7 @@ export class VehiclesController {
         private readonly findVehicleByPlateUseCase: FindVehicleByPlateUseCase,
         private readonly listVehiclesUseCase: ListVehiclesUseCase,
         private readonly updateVehicleKmUseCase: UpdateVehicleKmUseCase,
+        private readonly updateVehicleCrlvUseCase: UpdateVehicleCrlvUseCase,
         private readonly finishVehicleMaintenanceUseCase: FinishVehicleMaintenanceUseCase,
     ) {}
 
@@ -246,6 +249,26 @@ export class VehiclesController {
     async finishMaintenance(@Param('id') id: string) {
         const vehicle = await this.finishVehicleMaintenanceUseCase.execute({
             vehicleId: id,
+        });
+
+        return VehiclePresenter.toHTTP(vehicle);
+    }
+
+    @Patch(':id/crlv')
+    @Roles(UserRole.FLEET_MANAGER)
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Atualizar data de vencimento do CRLV de um veículo' })
+    @ApiParam({ name: 'id', description: 'UUID do veículo' })
+    @ApiResponse({ status: 200, description: 'Data de vencimento do CRLV atualizada com sucesso.' })
+    @ApiResponse({ status: 400, description: 'Data inválida.' })
+    @ApiResponse({ status: 404, description: 'Veículo não encontrado.' })
+    async updateCrlv(
+        @Param('id') id: string,
+        @Body() dto: UpdateVehicleCrlvDto,
+    ) {
+        const vehicle = await this.updateVehicleCrlvUseCase.execute({
+            vehicleId: id,
+            crlvExpiration: dto.crlvExpiration,
         });
 
         return VehiclePresenter.toHTTP(vehicle);

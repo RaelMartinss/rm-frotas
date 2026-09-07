@@ -80,6 +80,11 @@ export class Vehicle {
         this.touch();
     }
 
+    public updateCrlvExpiration(newExpiration: Date | null): void {
+        this.props.crlvExpiration = newExpiration;
+        this.touch();
+    }
+
     private touch(): void {
         this.props.updatedAt = new Date();
     }
