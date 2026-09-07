@@ -27,10 +27,13 @@ import {
   StartMaintenanceDto,
   UpdateMaintenanceDto,
 } from '../dtos/maintenance.dtos';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Maintenance } from '../../../domain/entities/maintenance.entity';
 import { MaintenanceWithVehicleDetails } from '../../../domain/repositories/maintenances.repository';
 
-@Controller('v1/maintenances')
+@ApiTags('Maintenances')
+@ApiBearerAuth('JWT-auth')
+@Controller('maintenances')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class MaintenancesController {
   constructor(
