@@ -5,6 +5,7 @@ import { TripsModule } from './modules/trips/trips.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
+import { FuelModule } from './modules/fuel/fuel.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -15,6 +16,7 @@ import { HealthModule } from './health/health.module';
     AuthModule,
     DashboardModule,
     MaintenanceModule,
+    FuelModule,
     HealthModule,
   ],
   controllers: [],

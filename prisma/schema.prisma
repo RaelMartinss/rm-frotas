@@ -36,6 +36,7 @@ model User {
   vehicles Vehicle[] @relation("VehicleOwner")
   drivers  Driver[]  @relation("DriverOwner")
   maintenances Maintenance[] @relation("MaintenanceOwner")
+  fuelRecords FuelRecord[] @relation("FuelRecordOwner")
 
   // Relacionamento 1:1 opcional (caso um usuário do tipo DRIVER esteja vinculado a um motorista da frota)
   driverProfile Driver? @relation("DriverUserAccount")
@@ -62,6 +63,7 @@ model Vehicle {
 
   trips Trip[]
   maintenances Maintenance[]
+  fuelRecords FuelRecord[]
 
   @@map("vehicles")
 }
@@ -92,6 +94,7 @@ model Driver {
   user   User?   @relation("DriverUserAccount", fields: [userId], references: [id], onDelete: SetNull)
 
   trips Trip[]
+  fuelRecords FuelRecord[]
 
   @@map("drivers")
 }
@@ -181,3 +184,41 @@ model MaintenanceItem {
 
   @@map("maintenance_items")
 }
+
+enum FuelType {
+  GASOLINA
+  ETANOL
+  DIESEL
+  DIESEL_S10
+  GNV
+  ELETRICO
+}
+
+model FuelRecord {
+  id                String   @id @default(uuid())
+  vehicleId         String   @map("vehicle_id")
+  driverId          String   @map("driver_id")
+  ownerId           String   @map("owner_id")
+  fuelType          FuelType @default(GASOLINA) @map("fuel_type")
+  liters            Float
+  pricePerUnit      Float    @map("price_per_unit")
+  totalCost         Float    @map("total_cost")
+  odometerAtFueling Int      @map("odometer_at_fueling")
+  gasStation        String?  @map("gas_station")
+  fullTank          Boolean  @default(true) @map("full_tank")
+  receiptUrl        String?  @map("receipt_url")
+  fueledAt          DateTime @default(now()) @map("fueled_at")
+  notes             String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driver  Driver  @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  owner   User    @relation("FuelRecordOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, createdAt])
+  @@index([vehicleId, fueledAt])
+  @@index([driverId, fueledAt])
+  @@map("fuel_records")
+}
+
