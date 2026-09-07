@@ -8,7 +8,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../../../auth/infrastructure/guards/jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from '../../../../auth/infrastructure/guards/roles.guard';
 import { CurrentUser } from '../../../../auth/infrastructure/decorators/current-user.decorator';
 import { ScheduleMaintenanceUseCase } from '../../../application/use-cases/schedule-maintenance.use-case';
 import { StartMaintenanceUseCase } from '../../../application/use-cases/start-maintenance.use-case';
@@ -30,7 +31,7 @@ import { Maintenance } from '../../../domain/entities/maintenance.entity';
 import { MaintenanceWithVehicleDetails } from '../../../domain/repositories/maintenances.repository';
 
 @Controller('v1/maintenances')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class MaintenancesController {
   constructor(
     private readonly scheduleMaintenanceUseCase: ScheduleMaintenanceUseCase,
