@@ -20,8 +20,8 @@ import { RolesGuard } from '../../../../auth/infrastructure/guards/roles.guard';
 import { Roles } from '../../../../auth/infrastructure/decorators/roles.decorator';
 import { CurrentUser } from '../../../../auth/infrastructure/decorators/current-user.decorator';
 import { UserRole } from '../../../../auth/domain/entities/user.entity';
-import { UserPayload } from '../../../../auth/infrastructure/strategies/jwt.strategy';
-import { PrismaService } from '../../../../../../shared/infrastructure/prisma/prisma.service';
+import type { UserPayload } from '../../../../auth/infrastructure/strategies/jwt.strategy';
+import { PrismaService } from '../../../../../shared/infrastructure/prisma/prisma.service';
 
 import { RegisterFuelRecordUseCase } from '../../../application/use-cases/register-fuel-record.use-case';
 import { UpdateFuelRecordUseCase } from '../../../application/use-cases/update-fuel-record.use-case';

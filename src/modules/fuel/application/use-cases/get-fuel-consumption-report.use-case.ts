@@ -132,7 +132,7 @@ export class GetFuelConsumptionReportUseCase {
 
       vehicleReports.push({
         vehicleId: vehicle.getId(),
-        plate: vehicle.getPlate(),
+        plate: vehicle.getPlate().getValue(),
         model: vehicle.getModel(),
         brand: vehicle.getBrand(),
         totalFuelings: records.length,

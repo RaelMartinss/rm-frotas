@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { IFuelRecordsRepository } from '../../domain/repositories/fuel-records.repository';
 import { IVehiclesRepository } from '../../../vehicles/domain/repositories/vehicles.repository';
-import { IDriversRepository } from '../../../drivers/domain/repositories/drivers.repository';
+import type { IDriversRepository } from '../../../drivers/domain/repositories/drivers.repository';
 import { FuelRecord } from '../../domain/entities/fuel-record.entity';
 import { FuelType } from '../../domain/enums/fuel-type.enum';
 import { VehicleOdometerValidator } from '../../../../shared/domain/services/vehicle-odometer.validator';
