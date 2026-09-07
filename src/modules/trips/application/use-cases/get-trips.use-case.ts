@@ -7,6 +7,7 @@ export interface GetTripsInput {
   status?: TripStatus;
   driverId?: string;
   vehicleId?: string;
+  ownerId?: string;
   page?: number;
   limit?: number;
 }
@@ -34,6 +35,7 @@ export class GetTripsUseCase {
       status: input.status,
       driverId: input.driverId,
       vehicleId: input.vehicleId,
+      ownerId: input.ownerId,
       page,
       limit,
     });

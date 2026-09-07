@@ -57,6 +57,8 @@ export class ToggleUserStatusDto {
   status?: UserStatus;
 }
 
+import { CurrentUser } from '../decorators/current-user.decorator';
+
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')
 @Controller('users')
@@ -69,10 +71,10 @@ export class UsersController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos os usuários cadastrados no sistema' })
+  @ApiOperation({ summary: 'Listar todos os usuários cadastrados no escopo da organização' })
   @ApiResponse({ status: 200, description: 'Lista de usuários retornada com sucesso.' })
-  async listUsers() {
-    const users = await this.usersRepository.findAll();
+  async listUsers(@CurrentUser('userId') currentUserId: string) {
+    const users = await this.usersRepository.findAll(currentUserId);
 
     return users.map((u) => ({
       id: u.getId(),
@@ -120,12 +122,22 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Status do usuário atualizado com sucesso.' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado.' })
   async toggleStatus(
+    @CurrentUser('userId') currentUserId: string,
     @Param('id') id: string,
     @Body() body: ToggleUserStatusDto,
   ) {
     const user = await this.usersRepository.findById(id);
     if (!user) {
       throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    // Valida se o usuário alvo pertence ao escopo do gestor autenticado
+    if (user.getId() !== currentUserId) {
+      const allowedUsers = await this.usersRepository.findAll(currentUserId);
+      const isAllowed = allowedUsers.some((u) => u.getId() === id);
+      if (!isAllowed) {
+        throw new NotFoundException('Usuário não encontrado.');
+      }
     }
 
     let newStatus: UserStatus;

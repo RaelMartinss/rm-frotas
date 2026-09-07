@@ -28,6 +28,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 import { CancelTripUseCase } from '../../application/use-cases/cancel-trip.use-case';
 import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
 import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
+import { CurrentUser } from '../../../auth/infrastructure/decorators/current-user.decorator';
 import { UserRole } from '../../../auth/domain/entities/user.entity';
 
 @ApiTags('Trips')
@@ -51,8 +52,14 @@ export class TripsController {
     status: 200,
     description: 'Lista paginada de viagens retornada com sucesso.',
   })
-  async findAll(@Query() query: GetTripsQueryDto) {
-    const result = await this.getTripsUseCase.execute(query);
+  async findAll(
+    @CurrentUser('userId') userId: string,
+    @Query() query: GetTripsQueryDto,
+  ) {
+    const result = await this.getTripsUseCase.execute({
+      ...query,
+      ownerId: userId,
+    });
 
     return {
       ...result,

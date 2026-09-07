@@ -10,6 +10,7 @@ export interface ITripsRepository {
     status?: TripStatus;
     driverId?: string;
     vehicleId?: string;
+    ownerId?: string;
     page: number;
     limit: number;
   }): Promise<{

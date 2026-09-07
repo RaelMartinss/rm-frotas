@@ -13,14 +13,8 @@ export class GetDashboardSummaryUseCase {
   constructor(private readonly prisma: PrismaService) {}
 
   async execute(userId?: string): Promise<DashboardSummaryResponseDto> {
-    const defaultOwnerId = process.env.DEFAULT_OWNER_ID;
-    const ownerConditions = [
-      ...(userId ? [{ ownerId: userId }] : []),
-      ...(defaultOwnerId ? [{ ownerId: defaultOwnerId }] : []),
-    ];
-
-
-    const ownerFilter = ownerConditions.length > 0 ? { OR: ownerConditions } : {};
+    const ownerId = userId || process.env.DEFAULT_OWNER_ID;
+    const ownerFilter = ownerId ? { ownerId } : {};
 
     // 1. Veículos e KPIs
     const vehicles = await this.prisma.vehicle.findMany({
@@ -102,7 +96,14 @@ export class GetDashboardSummaryUseCase {
     const trips = await this.prisma.trip.findMany({
       where: {
         status: { in: ['IN_PROGRESS', 'PLANNED'] },
-        ...(ownerConditions.length > 0 ? { vehicle: { OR: ownerConditions } } : {}),
+        ...(ownerId
+          ? {
+              OR: [
+                { vehicle: { ownerId } },
+                { driver: { ownerId } },
+              ],
+            }
+          : {}),
       },
       include: {
         driver: true,

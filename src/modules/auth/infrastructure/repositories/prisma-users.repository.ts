@@ -42,8 +42,18 @@ export class PrismaUsersRepository implements IUsersRepository {
     return UserMapper.toDomain(user);
   }
 
-  async findAll(): Promise<User[]> {
+  async findAll(ownerId?: string): Promise<User[]> {
+    const where = ownerId
+      ? {
+          OR: [
+            { id: ownerId },
+            { driverProfile: { ownerId } },
+          ],
+        }
+      : {};
+
     const users = await this.prisma.user.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
     });
 
