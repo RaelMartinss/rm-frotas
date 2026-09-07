@@ -110,7 +110,7 @@ describe('DriversController (E2E)', () => {
         role: 'FLEET_MANAGER',
       });
 
-    ownerUserId = registerRes.body.user.id;
+    ownerUserId = registerRes.body.id ?? registerRes.body.user?.id;
 
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
