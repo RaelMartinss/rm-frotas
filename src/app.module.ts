@@ -4,6 +4,7 @@ import { DriversModule } from './modules/drivers/drivers.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -13,6 +14,7 @@ import { HealthModule } from './health/health.module';
     TripsModule,
     AuthModule,
     DashboardModule,
+    MaintenanceModule,
     HealthModule,
   ],
   controllers: [],

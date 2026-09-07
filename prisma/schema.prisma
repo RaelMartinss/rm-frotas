@@ -35,6 +35,7 @@ model User {
   // Relacionamentos operacionais (um Gestor é dono de veículos e motoristas)
   vehicles Vehicle[] @relation("VehicleOwner")
   drivers  Driver[]  @relation("DriverOwner")
+  maintenances Maintenance[] @relation("MaintenanceOwner")
 
   // Relacionamento 1:1 opcional (caso um usuário do tipo DRIVER esteja vinculado a um motorista da frota)
   driverProfile Driver? @relation("DriverUserAccount")
@@ -60,6 +61,7 @@ model Vehicle {
   owner   User   @relation("VehicleOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   trips Trip[]
+  maintenances Maintenance[]
 
   @@map("vehicles")
 }
@@ -127,4 +129,55 @@ model Trip {
   @@index([vehicleId, status])
   @@index([driverId, status])
   @@map("trips")
+}
+
+enum MaintenanceType {
+  PREVENTIVA
+  CORRETIVA
+}
+
+enum MaintenanceStatus {
+  AGENDADA
+  EM_ANDAMENTO
+  CONCLUIDA
+  CANCELADA
+}
+
+model Maintenance {
+  id                String            @id @default(uuid())
+  vehicleId         String            @map("vehicle_id")
+  ownerId           String            @map("owner_id")
+  type              MaintenanceType   @default(PREVENTIVA)
+  status            MaintenanceStatus @default(AGENDADA)
+  description       String
+  serviceProvider   String?           @map("service_provider")
+  scheduledDate     DateTime?         @map("scheduled_date")
+  startedAt         DateTime?         @map("started_at")
+  finishedAt        DateTime?         @map("finished_at")
+  odometerAtService Int?              @map("odometer_at_service")
+  cost              Float             @default(0)
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  vehicle Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  owner   User              @relation("MaintenanceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  items   MaintenanceItem[]
+
+  @@index([vehicleId, status])
+  @@index([ownerId, status])
+  @@map("maintenances")
+}
+
+model MaintenanceItem {
+  id            String   @id @default(uuid())
+  maintenanceId String   @map("maintenance_id")
+  name          String
+  cost          Float
+  quantity      Int      @default(1)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  maintenance Maintenance @relation(fields: [maintenanceId], references: [id], onDelete: Cascade)
+
+  @@map("maintenance_items")
 }

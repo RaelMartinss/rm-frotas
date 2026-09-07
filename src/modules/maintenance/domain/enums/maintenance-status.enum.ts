@@ -1,0 +1,6 @@
+export enum MaintenanceStatus {
+  AGENDADA = 'AGENDADA',
+  EM_ANDAMENTO = 'EM_ANDAMENTO',
+  CONCLUIDA = 'CONCLUIDA',
+  CANCELADA = 'CANCELADA',
+}
