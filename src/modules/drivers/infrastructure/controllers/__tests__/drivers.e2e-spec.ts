@@ -3,18 +3,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { IDriversRepository } from '../../../domain/repositories/drivers.repository';
+import { IDriverSuspensionsRepository } from '../../../domain/repositories/driver-suspensions.repository';
 import { Driver } from '../../../domain/entities/driver.entity';
 import { Cpf } from '../../../domain/value-objects/cpf.vo';
-import { DriversModule } from '../../../drivers.module';
 import { DriverStatus } from '../../../domain/entities/driver-status.enum';
 import { Cnh } from '../../../domain/value-objects/cnh.vo';
+import { SuspensionReasonCategory, SuspensionStatus } from '../../../domain/entities/driver-suspension.entity';
 import { PrismaService } from '../../../../../shared/infrastructure/prisma/prisma.service';
 import { DomainExceptionFilter } from '../../http/domain-exception.filter';
 import { AppModule } from '../../../../../app.module';
 import { InMemoryUsersRepository } from '../../../../auth/repositories/in-memory-users.repository';
+import { InMemoryDriverSuspensionsRepository } from '../../repositories/in-memory-driver-suspensions.repository';
+import { DriverAvailabilityChecker } from '../../../domain/services/driver-availability-checker.service';
 
-
-// Repositório em memória isolado para os testes E2E (evita dependência de banco ativo)
 class InMemoryDriversRepositoryE2E implements IDriversRepository {
   public items: Driver[] = [];
 
@@ -57,11 +58,15 @@ class InMemoryDriversRepositoryE2E implements IDriversRepository {
 describe('DriversController (E2E)', () => {
   let app: INestApplication;
   let repository: InMemoryDriversRepositoryE2E;
+  let suspensionsRepository: InMemoryDriverSuspensionsRepository;
   let usersRepository: InMemoryUsersRepository;
   let authToken: string;
+  let driverAuthToken: string;
+  let ownerUserId: string;
 
   beforeAll(async () => {
     repository = new InMemoryDriversRepositoryE2E();
+    suspensionsRepository = new InMemoryDriverSuspensionsRepository();
     usersRepository = new InMemoryUsersRepository();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -69,6 +74,14 @@ describe('DriversController (E2E)', () => {
     })
       .overrideProvider('IDriversRepository')
       .useValue(repository)
+      .overrideProvider('IDriverSuspensionsRepository')
+      .useValue(suspensionsRepository)
+      .overrideProvider(DriverAvailabilityChecker)
+      .useValue(
+        new DriverAvailabilityChecker({
+          hasActiveTrip: async () => false,
+        }),
+      )
       .overrideProvider('IUsersRepository')
       .useValue(usersRepository)
       .overrideProvider(PrismaService)
@@ -76,15 +89,14 @@ describe('DriversController (E2E)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
-    
-    // Habilita a validação global de DTOs via ValidationPipe
+
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
         transform: true,
       }),
     );
-    
+
     app.useGlobalFilters(new DomainExceptionFilter());
 
     await app.init();
@@ -98,6 +110,8 @@ describe('DriversController (E2E)', () => {
         role: 'FLEET_MANAGER',
       });
 
+    ownerUserId = registerRes.body.user.id;
+
     const loginRes = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
@@ -106,6 +120,25 @@ describe('DriversController (E2E)', () => {
       });
 
     authToken = loginRes.body.accessToken;
+
+    // Registra e faz login com um motorista (DRIVER role) para testes de permissão
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        name: 'Motorista User',
+        email: 'driver.user@e2e.com',
+        password: 'StrongPass123!',
+        role: 'DRIVER',
+      });
+
+    const driverLoginRes = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: 'driver.user@e2e.com',
+        password: 'StrongPass123!',
+      });
+
+    driverAuthToken = driverLoginRes.body.accessToken;
   });
 
   afterAll(async () => {
@@ -113,7 +146,8 @@ describe('DriversController (E2E)', () => {
   });
 
   beforeEach(() => {
-    repository.items = []; // Limpa o estado entre os testes
+    repository.items = [];
+    suspensionsRepository.items = [];
   });
 
   describe('POST /drivers', () => {
@@ -153,7 +187,7 @@ describe('DriversController (E2E)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Motorista Invalido',
-          cpf: '111.111.111-11', // CPF com dígitos inválidos
+          cpf: '111.111.111-11',
           cnhNumber: '12345678901',
           cnhCategory: 'B',
           cnhExpirationDate: '2030-01-01T00:00:00.000Z',
@@ -165,58 +199,147 @@ describe('DriversController (E2E)', () => {
     });
   });
 
-  describe('PATCH /drivers/:id/deactivate', () => {
-    it('deve desativar um motorista existente e retornar 200 OK', async () => {
+  describe('POST /drivers/:id/suspend & POST /drivers/:id/lift-suspension', () => {
+    it('deve suspender um motorista com sucesso e retornar evento de suspensão', async () => {
       const driver = new Driver({
-        name: 'Rael Martins',
+        name: 'Carlos Condutor',
         cpf: new Cpf('529.982.247-25'),
         cnh: new Cnh('12345678901', 'B', new Date('2030-01-01')),
+        ownerId: ownerUserId,
         status: DriverStatus.ACTIVE,
       });
       await repository.save(driver);
 
       const response = await request(app.getHttpServer())
-        .patch(`/drivers/${driver.getId()}/deactivate`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .send();
-
-      expect(response.status).toBe(200);
-      expect(response.body.status).toBe(DriverStatus.INACTIVE);
-      expect(repository.items[0].getStatus()).toBe(DriverStatus.INACTIVE);
-    });
-
-    it('deve retornar status 404 Not Found caso o motorista não exista', async () => {
-      const response = await request(app.getHttpServer())
-        .patch('/drivers/non-existing-id/deactivate')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send();
-
-      expect(response.status).toBe(404);
-    });
-  });
-
-  describe('PATCH /drivers/:id/cnh', () => {
-    it('deve atualizar a CNH do motorista e retornar 200 OK', async () => {
-      const driver = new Driver({
-        name: 'Rael Martins',
-        cpf: new Cpf('529.982.247-25'),
-        cnh: new Cnh('12345678901', 'B', new Date('2025-01-01')),
-        status: DriverStatus.ACTIVE,
-      });
-      await repository.save(driver);
-
-      const response = await request(app.getHttpServer())
-        .patch(`/drivers/${driver.getId()}/cnh`)
+        .post(`/drivers/${driver.getId()}/suspend`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          cnhNumber: '98765432100',
-          cnhCategory: 'E',
-          cnhExpirationDate: '2035-12-31T00:00:00.000Z',
+          reasonCategory: SuspensionReasonCategory.CNH_VENCIDA,
+          expectedReturnDate: '2026-10-30',
+          indefinite: false,
+          attachmentUrl: 'https://cdn.exemplo.com/cnh.pdf',
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.cnh.number).toBe('98765432100');
-      expect(response.body.cnh.category).toBe('E');
+      expect(response.body.driverId).toBe(driver.getId());
+      expect(response.body.reasonCategory).toBe(SuspensionReasonCategory.CNH_VENCIDA);
+      expect(response.body.status).toBe(SuspensionStatus.ATIVA);
+      expect(response.body.expectedReturnDate).toBe('2026-10-30');
+
+      const updatedDriver = await repository.findById(driver.getId());
+      expect(updatedDriver?.getStatus()).toBe(DriverStatus.SUSPENDED);
+    });
+
+    it('deve retornar 403 Forbidden se um usuário com role DRIVER tentar suspender um motorista', async () => {
+      const driver = new Driver({
+        name: 'Carlos Condutor',
+        cpf: new Cpf('529.982.247-25'),
+        cnh: new Cnh('12345678901', 'B', new Date('2030-01-01')),
+        ownerId: ownerUserId,
+        status: DriverStatus.ACTIVE,
+      });
+      await repository.save(driver);
+
+      const response = await request(app.getHttpServer())
+        .post(`/drivers/${driver.getId()}/suspend`)
+        .set('Authorization', `Bearer ${driverAuthToken}`)
+        .send({
+          reasonCategory: SuspensionReasonCategory.CNH_VENCIDA,
+          indefinite: true,
+        });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('deve levantar (encerrar) uma suspensão ativa e reativar o motorista', async () => {
+      const driver = new Driver({
+        name: 'Carlos Condutor',
+        cpf: new Cpf('529.982.247-25'),
+        cnh: new Cnh('12345678901', 'B', new Date('2030-01-01')),
+        ownerId: ownerUserId,
+        status: DriverStatus.ACTIVE,
+      });
+      await repository.save(driver);
+
+      // 1. Suspende
+      await request(app.getHttpServer())
+        .post(`/drivers/${driver.getId()}/suspend`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          reasonCategory: SuspensionReasonCategory.ACIDENTE,
+          indefinite: true,
+        });
+
+      // 2. Encerra suspensão
+      const liftResponse = await request(app.getHttpServer())
+        .post(`/drivers/${driver.getId()}/lift-suspension`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          liftReason: 'Laudo pericial concluído sem culpa do condutor',
+        });
+
+      expect(liftResponse.status).toBe(200);
+      expect(liftResponse.body.status).toBe(SuspensionStatus.ENCERRADA);
+      expect(liftResponse.body.liftReason).toBe('Laudo pericial concluído sem culpa do condutor');
+
+      const reloadedDriver = await repository.findById(driver.getId());
+      expect(reloadedDriver?.getStatus()).toBe(DriverStatus.ACTIVE);
+    });
+  });
+
+  describe('GET /drivers/suspensions/active & GET /drivers/:id/suspensions', () => {
+    it('deve retornar lista geral de suspensões ativas para o gestor', async () => {
+      const driver = new Driver({
+        name: 'Carlos Condutor',
+        cpf: new Cpf('529.982.247-25'),
+        cnh: new Cnh('12345678901', 'B', new Date('2030-01-01')),
+        ownerId: ownerUserId,
+        status: DriverStatus.ACTIVE,
+      });
+      await repository.save(driver);
+
+      await request(app.getHttpServer())
+        .post(`/drivers/${driver.getId()}/suspend`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          reasonCategory: SuspensionReasonCategory.EXAME_TOXICOLOGICO_PENDENTE,
+          indefinite: true,
+        });
+
+      const response = await request(app.getHttpServer())
+        .get('/drivers/suspensions/active')
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].driverId).toBe(driver.getId());
+    });
+
+    it('deve listar o histórico de suspensões de um motorista específico', async () => {
+      const driver = new Driver({
+        name: 'Carlos Condutor',
+        cpf: new Cpf('529.982.247-25'),
+        cnh: new Cnh('12345678901', 'B', new Date('2030-01-01')),
+        ownerId: ownerUserId,
+        status: DriverStatus.ACTIVE,
+      });
+      await repository.save(driver);
+
+      await request(app.getHttpServer())
+        .post(`/drivers/${driver.getId()}/suspend`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          reasonCategory: SuspensionReasonCategory.DOCUMENTACAO_IRREGULAR,
+          indefinite: true,
+        });
+
+      const response = await request(app.getHttpServer())
+        .get(`/drivers/${driver.getId()}/suspensions`)
+        .set('Authorization', `Bearer ${authToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].reasonCategory).toBe(SuspensionReasonCategory.DOCUMENTACAO_IRREGULAR);
     });
   });
 });

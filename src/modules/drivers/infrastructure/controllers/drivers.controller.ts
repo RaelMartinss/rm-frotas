@@ -15,13 +15,21 @@ import { CreateDriverUseCase } from '../../application/use-cases/create-driver.u
 import { ActivateDriverUseCase } from '../../application/use-cases/activate-driver.use-case';
 import { DeactivateDriverUseCase } from '../../application/use-cases/deactivate-driver.use-case';
 import { SuspendDriverUseCase } from '../../application/use-cases/suspend-driver.use-case';
+import { LiftDriverSuspensionUseCase } from '../../application/use-cases/lift-driver-suspension.use-case';
+import { GetActiveSuspensionByDriverUseCase } from '../../application/use-cases/get-active-suspension-by-driver.use-case';
+import { ListSuspensionsByDriverUseCase } from '../../application/use-cases/list-suspensions-by-driver.use-case';
+import { ListActiveSuspensionsUseCase } from '../../application/use-cases/list-active-suspensions.use-case';
 import { UpdateDriverCnhUseCase } from '../../application/use-cases/update-driver-cnh.use-case';
 import { ListDriversUseCase } from '../../application/use-cases/list-drivers.use-case';
 import { FindDriverByIdUseCase } from '../../application/use-cases/find-driver-by-id.use-case';
 import { CreateDriverHttpDto } from './dtos/create-driver-http.dto';
 import { UpdateDriverCnhHttpDto } from './dtos/update-driver-cnh-http.dto';
 import { GetDriversQueryDto } from './dtos/get-drivers-query.dto';
+import { SuspendDriverHttpDto } from './dtos/suspend-driver-http.dto';
+import { LiftSuspensionHttpDto } from './dtos/lift-suspension-http.dto';
+import { GetSuspensionsQueryDto } from './dtos/get-suspensions-query.dto';
 import { DriverPresenter } from './presenters/driver.presenter';
+import { DriverSuspensionPresenter } from './presenters/driver-suspension.presenter';
 import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
 import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
 import { CurrentUser } from '../../../auth/infrastructure/decorators/current-user.decorator';
@@ -38,6 +46,10 @@ export class DriversController {
     private readonly activateDriverUseCase: ActivateDriverUseCase,
     private readonly deactivateDriverUseCase: DeactivateDriverUseCase,
     private readonly suspendDriverUseCase: SuspendDriverUseCase,
+    private readonly liftDriverSuspensionUseCase: LiftDriverSuspensionUseCase,
+    private readonly getActiveSuspensionByDriverUseCase: GetActiveSuspensionByDriverUseCase,
+    private readonly listSuspensionsByDriverUseCase: ListSuspensionsByDriverUseCase,
+    private readonly listActiveSuspensionsUseCase: ListActiveSuspensionsUseCase,
     private readonly updateDriverCnhUseCase: UpdateDriverCnhUseCase,
     private readonly listDriversUseCase: ListDriversUseCase,
     private readonly findDriverByIdUseCase: FindDriverByIdUseCase,
@@ -66,12 +78,76 @@ export class DriversController {
     };
   }
 
+  @Get('suspensions/active')
+  @Roles(UserRole.FLEET_MANAGER)
+  @ApiOperation({ summary: 'Listar todos os motoristas atualmente suspensos na frota do gestor' })
+  async listAllActiveSuspensions(
+    @CurrentUser('userId') userId: string,
+    @Query() query: GetSuspensionsQueryDto,
+  ) {
+    const result = await this.listActiveSuspensionsUseCase.execute({
+      ownerId: userId,
+      page: query.page,
+      limit: query.limit,
+    });
+
+    return {
+      data: result.data.map(DriverSuspensionPresenter.toHTTPWithDriver),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Buscar motorista por ID' })
   @ApiParam({ name: 'id', description: 'UUID do motorista' })
   async findById(@Param('id') id: string) {
     const driver = await this.findDriverByIdUseCase.execute(id);
     return DriverPresenter.toHTTP(driver);
+  }
+
+  @Get(':id/suspensions')
+  @Roles(UserRole.FLEET_MANAGER)
+  @ApiOperation({ summary: 'Histórico de suspensões de um motorista' })
+  @ApiParam({ name: 'id', description: 'UUID do motorista' })
+  async listDriverSuspensions(
+    @CurrentUser('userId') userId: string,
+    @Param('id') id: string,
+    @Query() query: GetSuspensionsQueryDto,
+  ) {
+    const result = await this.listSuspensionsByDriverUseCase.execute({
+      driverId: id,
+      ownerId: userId,
+      page: query.page,
+      limit: query.limit,
+    });
+
+    return {
+      data: result.data.map(DriverSuspensionPresenter.toHTTP),
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
+  }
+
+  @Get(':id/suspensions/active')
+  @Roles(UserRole.FLEET_MANAGER)
+  @ApiOperation({ summary: 'Buscar a suspensão ativa de um motorista' })
+  @ApiParam({ name: 'id', description: 'UUID do motorista' })
+  async getActiveSuspension(
+    @CurrentUser('userId') userId: string,
+    @Param('id') id: string,
+  ) {
+    const suspension = await this.getActiveSuspensionByDriverUseCase.execute({
+      driverId: id,
+      ownerId: userId,
+    });
+
+    if (!suspension) return null;
+    return DriverSuspensionPresenter.toHTTP(suspension);
   }
 
   @Post()
@@ -96,6 +172,58 @@ export class DriversController {
     return DriverPresenter.toHTTP(driver);
   }
 
+  @Post(':id/suspend')
+  @Roles(UserRole.FLEET_MANAGER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Suspender motorista com registro de evento e justificativa' })
+  @ApiParam({ name: 'id', description: 'UUID do motorista' })
+  @ApiResponse({ status: 200, description: 'Motorista suspenso com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos ou data inconsistente.' })
+  @ApiResponse({ status: 404, description: 'Motorista não encontrado.' })
+  @ApiResponse({ status: 409, description: 'Motorista já suspenso ou com viagem em andamento.' })
+  async suspendDriver(
+    @CurrentUser('userId') userId: string,
+    @Param('id') id: string,
+    @Body() dto: SuspendDriverHttpDto,
+  ) {
+    const suspension = await this.suspendDriverUseCase.execute({
+      driverId: id,
+      ownerId: userId,
+      suspendedBy: userId,
+      reasonCategory: dto.reasonCategory,
+      reasonDetails: dto.reasonDetails,
+      expectedReturnDate: dto.expectedReturnDate
+        ? new Date(dto.expectedReturnDate)
+        : null,
+      indefinite: dto.indefinite,
+      attachmentUrl: dto.attachmentUrl,
+    });
+
+    return DriverSuspensionPresenter.toHTTP(suspension);
+  }
+
+  @Post(':id/lift-suspension')
+  @Roles(UserRole.FLEET_MANAGER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Encerrar suspensão ativa e reativar o motorista' })
+  @ApiParam({ name: 'id', description: 'UUID do motorista' })
+  @ApiResponse({ status: 200, description: 'Suspensão encerrada e motorista reativado.' })
+  @ApiResponse({ status: 404, description: 'Motorista ou suspensão ativa não encontrada.' })
+  async liftSuspension(
+    @CurrentUser('userId') userId: string,
+    @Param('id') id: string,
+    @Body() dto: LiftSuspensionHttpDto,
+  ) {
+    const suspension = await this.liftDriverSuspensionUseCase.execute({
+      driverId: id,
+      ownerId: userId,
+      liftedBy: userId,
+      liftReason: dto.liftReason,
+    });
+
+    return DriverSuspensionPresenter.toHTTP(suspension);
+  }
+
   @Patch(':id/activate')
   @Roles(UserRole.FLEET_MANAGER)
   @HttpCode(HttpStatus.OK)
@@ -117,18 +245,6 @@ export class DriversController {
   @ApiResponse({ status: 404, description: 'Motorista não encontrado.' })
   async deactivate(@Param('id') id: string) {
     const driver = await this.deactivateDriverUseCase.execute(id);
-    return DriverPresenter.toHTTP(driver);
-  }
-
-  @Patch(':id/suspend')
-  @Roles(UserRole.FLEET_MANAGER)
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Suspender um motorista temporariamente' })
-  @ApiParam({ name: 'id', description: 'UUID do motorista' })
-  @ApiResponse({ status: 200, description: 'Motorista suspenso com sucesso.' })
-  @ApiResponse({ status: 404, description: 'Motorista não encontrado.' })
-  async suspend(@Param('id') id: string) {
-    const driver = await this.suspendDriverUseCase.execute(id);
     return DriverPresenter.toHTTP(driver);
   }
 

@@ -37,6 +37,7 @@ model User {
   drivers  Driver[]  @relation("DriverOwner")
   maintenances Maintenance[] @relation("MaintenanceOwner")
   fuelRecords FuelRecord[] @relation("FuelRecordOwner")
+  driverSuspensions DriverSuspension[] @relation("DriverSuspensionOwner")
 
   // Relacionamento 1:1 opcional (caso um usuário do tipo DRIVER esteja vinculado a um motorista da frota)
   driverProfile Driver? @relation("DriverUserAccount")
@@ -95,8 +96,49 @@ model Driver {
 
   trips Trip[]
   fuelRecords FuelRecord[]
+  suspensions DriverSuspension[]
 
   @@map("drivers")
+}
+
+enum SuspensionReasonCategory {
+  CNH_VENCIDA
+  ACIDENTE
+  PROCESSO_DISCIPLINAR
+  EXAME_TOXICOLOGICO_PENDENTE
+  DOCUMENTACAO_IRREGULAR
+  OUTRO
+}
+
+enum SuspensionStatus {
+  ATIVA
+  ENCERRADA
+}
+
+model DriverSuspension {
+  id                 String                   @id @default(uuid())
+  driverId           String                   @map("driver_id")
+  ownerId            String                   @map("owner_id")
+  reasonCategory     SuspensionReasonCategory @map("reason_category")
+  reasonDetails      String?                  @map("reason_details")
+  suspendedBy        String                   @map("suspended_by")
+  suspendedAt        DateTime                 @default(now()) @map("suspended_at")
+  expectedReturnDate DateTime?                @map("expected_return_date")
+  indefinite         Boolean                  @default(false)
+  attachmentUrl      String?                  @map("attachment_url")
+  liftedAt           DateTime?                @map("lifted_at")
+  liftedBy           String?                  @map("lifted_by")
+  liftReason         String?                  @map("lift_reason")
+  status             SuspensionStatus         @default(ATIVA)
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  updatedAt          DateTime                 @updatedAt @map("updated_at")
+
+  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  owner  User   @relation("DriverSuspensionOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([driverId, status])
+  @@index([ownerId, status])
+  @@map("driver_suspensions")
 }
 
 enum TripStatus {
