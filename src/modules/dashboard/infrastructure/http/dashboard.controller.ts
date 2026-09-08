@@ -19,7 +19,8 @@ export class DashboardController {
   @ApiResponse({ status: 200, description: 'Resumo da dashboard retornado com sucesso.' })
   async getSummary(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
   ): Promise<DashboardSummaryResponseDto> {
-    return this.getDashboardSummaryUseCase.execute(userId);
+    return this.getDashboardSummaryUseCase.execute(userId, clientId);
   }
 }

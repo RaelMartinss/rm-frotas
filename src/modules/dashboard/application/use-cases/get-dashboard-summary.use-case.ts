@@ -6,21 +6,36 @@ import {
   UpcomingExpirationDto,
   OngoingTripDto,
   RecentAlertDto,
+  WeeklyActivityDayDto,
+  WeeklyActivitySummaryDto,
 } from '../dtos/dashboard-summary.dto';
 
 @Injectable()
 export class GetDashboardSummaryUseCase {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(userId?: string): Promise<DashboardSummaryResponseDto> {
-    const ownerId = userId || process.env.DEFAULT_OWNER_ID;
-    const ownerFilter = ownerId ? { ownerId } : {};
+  async execute(userId?: string, clientId?: string | null): Promise<DashboardSummaryResponseDto> {
+    const tenantFilter = clientId
+      ? { clientId }
+      : userId
+      ? { ownerId: userId }
+      : {};
+
+    const tripTenantFilter = clientId
+      ? { clientId }
+      : userId
+      ? {
+          OR: [
+            { vehicle: { ownerId: userId } },
+            { driver: { ownerId: userId } },
+          ],
+        }
+      : {};
 
     // 1. Veículos e KPIs
     const vehicles = await this.prisma.vehicle.findMany({
-      where: ownerFilter,
+      where: tenantFilter,
     });
-
 
     const totalVehicles = vehicles.length;
     const availableVehicles = vehicles.filter((v) => v.status === 'AVAILABLE').length;
@@ -67,7 +82,7 @@ export class GetDashboardSummaryUseCase {
 
     // Expirações de CNH
     const drivers = await this.prisma.driver.findMany({
-      where: ownerFilter,
+      where: tenantFilter,
     });
 
     for (const d of drivers) {
@@ -96,14 +111,7 @@ export class GetDashboardSummaryUseCase {
     const trips = await this.prisma.trip.findMany({
       where: {
         status: { in: ['IN_PROGRESS', 'PLANNED'] },
-        ...(ownerId
-          ? {
-              OR: [
-                { vehicle: { ownerId } },
-                { driver: { ownerId } },
-              ],
-            }
-          : {}),
+        ...tripTenantFilter,
       },
       include: {
         driver: true,
@@ -138,7 +146,102 @@ export class GetDashboardSummaryUseCase {
       };
     });
 
-    // 4. Alertas Recentes
+    // 4. Atividade Operacional Semanal de Viagens (Segunda a Domingo)
+    const dayOfWeek = now.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+    const diffToMonday = (dayOfWeek + 6) % 7; // dias desde Segunda-feira
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - diffToMonday);
+    monday.setHours(0, 0, 0, 0);
+
+    const weekDaysMeta = [
+      { label: 'Seg', offset: 0 },
+      { label: 'Ter', offset: 1 },
+      { label: 'Qua', offset: 2 },
+      { label: 'Qui', offset: 3 },
+      { label: 'Sex', offset: 4 },
+      { label: 'Sáb', offset: 5 },
+      { label: 'Dom', offset: 6 },
+    ].map(({ label, offset }) => {
+      const dStart = new Date(monday);
+      dStart.setDate(monday.getDate() + offset);
+      dStart.setHours(0, 0, 0, 0);
+
+      const dEnd = new Date(dStart);
+      dEnd.setHours(23, 59, 59, 999);
+
+      const formattedDate = `${String(dStart.getDate()).padStart(2, '0')}/${String(dStart.getMonth() + 1).padStart(2, '0')}`;
+
+      return {
+        label,
+        formattedDate,
+        start: dStart,
+        end: dEnd,
+      };
+    });
+
+    const startOfWeek = weekDaysMeta[0].start;
+    const endOfWeek = weekDaysMeta[6].end;
+
+    const weekTrips = await this.prisma.trip.findMany({
+      where: {
+        ...tripTenantFilter,
+        OR: [
+          {
+            completedAt: {
+              gte: startOfWeek,
+              lte: endOfWeek,
+            },
+          },
+          {
+            startedAt: {
+              gte: startOfWeek,
+              lte: endOfWeek,
+            },
+          },
+          {
+            createdAt: {
+              gte: startOfWeek,
+              lte: endOfWeek,
+            },
+          },
+        ],
+      },
+    });
+
+    const weeklyDays: WeeklyActivityDayDto[] = weekDaysMeta.map((dayMeta) => {
+      const completedCount = weekTrips.filter((t) => {
+        if (t.status !== 'COMPLETED') return false;
+        const dateToCheck = t.completedAt ? new Date(t.completedAt) : new Date(t.updatedAt);
+        return dateToCheck >= dayMeta.start && dateToCheck <= dayMeta.end;
+      }).length;
+
+      const ongoingCount = weekTrips.filter((t) => {
+        if (t.status !== 'IN_PROGRESS' && t.status !== 'PLANNED') return false;
+        const dateToCheck = t.startedAt ? new Date(t.startedAt) : new Date(t.createdAt);
+        return dateToCheck >= dayMeta.start && dateToCheck <= dayMeta.end;
+      }).length;
+
+      return {
+        day: dayMeta.label,
+        date: dayMeta.formattedDate,
+        completedTrips: completedCount,
+        ongoingTrips: ongoingCount,
+      };
+    });
+
+    const totalCompleted = weeklyDays.reduce((acc, d) => acc + d.completedTrips, 0);
+    const totalOngoing = weeklyDays.reduce((acc, d) => acc + d.ongoingTrips, 0);
+    const totalWeekly = totalCompleted + totalOngoing;
+    const dailyAverage = totalWeekly > 0 ? Math.round((totalWeekly / 7) * 10) / 10 : 0;
+
+    const weeklyActivity: WeeklyActivitySummaryDto = {
+      days: weeklyDays,
+      dailyAverage,
+      totalCompleted,
+      totalOngoing,
+    };
+
+    // 5. Alertas Recentes
     const alerts: RecentAlertDto[] = [];
 
     // Alertas de expiração
@@ -189,6 +292,8 @@ export class GetDashboardSummaryUseCase {
       expirations,
       trips: ongoingTrips,
       alerts,
+      weeklyActivity,
     };
   }
 }
+
