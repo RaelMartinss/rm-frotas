@@ -35,6 +35,7 @@ export class CreateDriverUseCase {
       name: input.name,
       cpf,
       cnh,
+      clientId: input.clientId,
       ownerId: input.ownerId,
     });
 

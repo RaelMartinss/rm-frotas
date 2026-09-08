@@ -39,14 +39,26 @@ export class PrismaTripsRepository implements ITripsRepository {
     status,
     driverId,
     vehicleId,
+    ownerId,
+    clientId,
     page,
     limit,
   }: FindManyPaginatedParams): Promise<FindManyPaginatedOutput> {
-    const where = {
+    const where: any = {
       ...(status && { status }),
       ...(driverId && { driverId }),
       ...(vehicleId && { vehicleId }),
     };
+
+    if (clientId) {
+      where.clientId = clientId;
+    } else if (ownerId) {
+      where.OR = [
+        { clientId: ownerId },
+        { vehicle: { ownerId } },
+        { driver: { ownerId } },
+      ];
+    }
 
     const skip = (page - 1) * limit;
 

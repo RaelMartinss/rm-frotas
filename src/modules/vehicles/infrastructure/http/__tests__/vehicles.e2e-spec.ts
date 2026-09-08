@@ -25,6 +25,10 @@ class InMemoryVehiclesRepository implements IVehiclesRepository {
     }
   }
 
+  async createMany(vehicles: Vehicle[]): Promise<void> {
+    this.items.push(...vehicles);
+  }
+
   async findById(id: string): Promise<Vehicle | null> {
     return this.items.find((item) => item.getId() === id) ?? null;
   }
@@ -33,6 +37,12 @@ class InMemoryVehiclesRepository implements IVehiclesRepository {
     return (
       this.items.find((item) => item.getPlate().getValue() === plate) ?? null
     );
+  }
+
+  async findExistingPlates(plates: string[]): Promise<string[]> {
+    return this.items
+      .filter((item) => plates.includes(item.getPlate().getValue()))
+      .map((item) => item.getPlate().getValue());
   }
 
   async findAll(ownerId?: string): Promise<Vehicle[]> {

@@ -13,6 +13,7 @@ import { DriverHasActiveTripException } from '../../domain/exceptions/driver-has
 
 export interface SuspendDriverInput {
   driverId: string;
+  clientId?: string;
   ownerId: string;
   suspendedBy: string;
   reasonCategory: SuspensionReasonCategory;
@@ -40,7 +41,7 @@ export class SuspendDriverUseCase {
       throw new DriverNotFoundException(input.driverId);
     }
 
-    if (driver.getOwnerId() && driver.getOwnerId() !== input.ownerId) {
+    if (input.clientId && driver.getClientId() && driver.getClientId() !== input.clientId) {
       throw new DriverNotFoundException(input.driverId);
     }
 
@@ -66,6 +67,7 @@ export class SuspendDriverUseCase {
     // 4. Cria a entidade de Suspensão com validações de domínio
     const suspension = new DriverSuspension({
       driverId: input.driverId,
+      clientId: input.clientId ?? driver.getClientId(),
       ownerId: input.ownerId,
       reasonCategory: input.reasonCategory,
       reasonDetails: input.reasonDetails,

@@ -14,6 +14,7 @@ export class DriverSuspensionMapper {
     return new DriverSuspension(
       {
         driverId: raw.driverId,
+        clientId: raw.clientId,
         ownerId: raw.ownerId,
         reasonCategory: raw.reasonCategory as SuspensionReasonCategory,
         reasonDetails: raw.reasonDetails,
@@ -34,9 +35,15 @@ export class DriverSuspensionMapper {
   }
 
   static toPrisma(suspension: DriverSuspension): PrismaDriverSuspension {
+    const clientId = suspension.getClientId() ?? process.env.DEFAULT_CLIENT_ID;
+    if (!clientId) {
+      throw new Error(`DriverSuspension ${suspension.getId()} must have a clientId to be persisted.`);
+    }
+
     return {
       id: suspension.getId(),
       driverId: suspension.getDriverId(),
+      clientId,
       ownerId: suspension.getOwnerId(),
       reasonCategory:
         suspension.getReasonCategory() as PrismaSuspensionReasonCategory,

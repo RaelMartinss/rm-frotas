@@ -7,7 +7,9 @@ datasource db {
 }
 
 enum UserRole {
+  SUPER_ADMIN
   FLEET_MANAGER
+  ADMIN
   DRIVER
 }
 
@@ -16,56 +18,105 @@ enum UserStatus {
   INACTIVE
 }
 
+enum ClientStatus {
+  ATIVO
+  SUSPENSO
+  CANCELADO
+}
+
 enum VehicleStatus {
   AVAILABLE
   IN_MAINTENANCE
   IN_USE
 }
 
-model User {
-  id        String     @id @default(uuid())
-  name      String
-  email     String     @unique
-  password  String
-  role      UserRole   @default(FLEET_MANAGER)
-  status    UserStatus @default(ACTIVE)
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
+model Client {
+  id           String       @id @default(uuid())
+  legalName    String       @map("legal_name")
+  tradeName    String       @map("trade_name")
+  document     String       @unique
+  billingEmail String       @map("billing_email")
+  status       ClientStatus @default(ATIVO)
 
-  // Relacionamentos operacionais (um Gestor é dono de veículos e motoristas)
-  vehicles Vehicle[] @relation("VehicleOwner")
-  drivers  Driver[]  @relation("DriverOwner")
-  maintenances Maintenance[] @relation("MaintenanceOwner")
-  fuelRecords FuelRecord[] @relation("FuelRecordOwner")
+  // Endereço
+  street       String?
+  number       String?
+  complement   String?
+  neighborhood String?
+  city         String?
+  state        String?
+  zipCode      String?      @map("zip_code")
+
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  users             User[]
+  vehicles          Vehicle[]
+  drivers           Driver[]
+  trips             Trip[]
+  maintenances      Maintenance[]
+  fuelRecords       FuelRecord[]
+  driverSuspensions DriverSuspension[]
+
+  @@map("clients")
+}
+
+model User {
+  id                     String     @id @default(uuid())
+  name                   String
+  email                  String     @unique
+  password               String
+  role                   UserRole   @default(FLEET_MANAGER)
+  status                 UserStatus @default(ACTIVE)
+  mustChangePassword     Boolean    @default(false) @map("must_change_password")
+  temporaryPasswordSetAt DateTime?  @map("temporary_password_set_at")
+  createdAt              DateTime   @default(now()) @map("created_at")
+  updatedAt              DateTime   @updatedAt @map("updated_at")
+
+  // Vínculo com a Organização/Empresa Cliente (nulo apenas para SUPER_ADMIN)
+  clientId String? @map("client_id")
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Relacionamentos operacionais auditáveis (quem criou/gerenciou)
+  vehicles          Vehicle[]          @relation("VehicleOwner")
+  drivers           Driver[]           @relation("DriverOwner")
+  maintenances      Maintenance[]      @relation("MaintenanceOwner")
+  fuelRecords       FuelRecord[]       @relation("FuelRecordOwner")
   driverSuspensions DriverSuspension[] @relation("DriverSuspensionOwner")
 
   // Relacionamento 1:1 opcional (caso um usuário do tipo DRIVER esteja vinculado a um motorista da frota)
   driverProfile Driver? @relation("DriverUserAccount")
 
+  @@index([clientId])
   @@map("users")
 }
 
 model Vehicle {
-  id              String        @id @default(uuid())
-  plate           String        @unique
-  brand           String?
-  model           String
-  year            Int
-  currentKm       Int           @map("current_km")
-  crlvExpiration  DateTime?     @map("crlv_expiration")
-  status          VehicleStatus @default(AVAILABLE)
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
+  id             String        @id @default(uuid())
+  plate          String        @unique
+  brand          String?
+  model          String
+  year           Int
+  currentKm      Int           @map("current_km")
+  crlvExpiration DateTime?     @map("crlv_expiration")
+  status         VehicleStatus @default(AVAILABLE)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
 
+  // Vínculo Multi-Tenant por Cliente
+  clientId String @map("client_id")
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  // Vínculo com o Gestor responsável (Proprietário dos dados)
+  // Auditoria de quem cadastrou
   ownerId String @map("owner_id")
   owner   User   @relation("VehicleOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
-  trips Trip[]
+  trips        Trip[]
   maintenances Maintenance[]
-  fuelRecords FuelRecord[]
+  fuelRecords  FuelRecord[]
 
+  @@index([clientId])
+  @@index([clientId, status])
   @@map("vehicles")
 }
 
@@ -86,7 +137,11 @@ model Driver {
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
 
-  // Vínculo com o Gestor responsável (Proprietário dos dados)
+  // Vínculo Multi-Tenant por Cliente
+  clientId String @map("client_id")
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Auditoria de quem cadastrou
   ownerId String @map("owner_id")
   owner   User   @relation("DriverOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
@@ -94,10 +149,12 @@ model Driver {
   userId String? @unique @map("user_id")
   user   User?   @relation("DriverUserAccount", fields: [userId], references: [id], onDelete: SetNull)
 
-  trips Trip[]
+  trips       Trip[]
   fuelRecords FuelRecord[]
   suspensions DriverSuspension[]
 
+  @@index([clientId])
+  @@index([clientId, status])
   @@map("drivers")
 }
 
@@ -118,6 +175,7 @@ enum SuspensionStatus {
 model DriverSuspension {
   id                 String                   @id @default(uuid())
   driverId           String                   @map("driver_id")
+  clientId           String                   @map("client_id")
   ownerId            String                   @map("owner_id")
   reasonCategory     SuspensionReasonCategory @map("reason_category")
   reasonDetails      String?                  @map("reason_details")
@@ -134,9 +192,11 @@ model DriverSuspension {
   updatedAt          DateTime                 @updatedAt @map("updated_at")
 
   driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
   owner  User   @relation("DriverSuspensionOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([driverId, status])
+  @@index([clientId, status])
   @@index([ownerId, status])
   @@map("driver_suspensions")
 }
@@ -152,6 +212,7 @@ model Trip {
   id                   String     @id @default(uuid())
   driverId             String     @map("driver_id")
   vehicleId            String     @map("vehicle_id")
+  clientId             String     @map("client_id")
   originAddress        String     @map("origin_address")
   originCity           String     @map("origin_city")
   originState          String     @map("origin_state")
@@ -170,7 +231,9 @@ model Trip {
 
   driver  Driver  @relation(fields: [driverId], references: [id])
   vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
+  @@index([clientId, status])
   @@index([vehicleId, status])
   @@index([driverId, status])
   @@map("trips")
@@ -191,6 +254,7 @@ enum MaintenanceStatus {
 model Maintenance {
   id                String            @id @default(uuid())
   vehicleId         String            @map("vehicle_id")
+  clientId          String            @map("client_id")
   ownerId           String            @map("owner_id")
   type              MaintenanceType   @default(PREVENTIVA)
   status            MaintenanceStatus @default(AGENDADA)
@@ -205,9 +269,11 @@ model Maintenance {
   updatedAt         DateTime          @updatedAt @map("updated_at")
 
   vehicle Vehicle           @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  client  Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
   owner   User              @relation("MaintenanceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   items   MaintenanceItem[]
 
+  @@index([clientId, status])
   @@index([vehicleId, status])
   @@index([ownerId, status])
   @@map("maintenances")
@@ -240,6 +306,7 @@ model FuelRecord {
   id                String   @id @default(uuid())
   vehicleId         String   @map("vehicle_id")
   driverId          String   @map("driver_id")
+  clientId          String   @map("client_id")
   ownerId           String   @map("owner_id")
   fuelType          FuelType @default(GASOLINA) @map("fuel_type")
   liters            Float
@@ -256,8 +323,10 @@ model FuelRecord {
 
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   driver  Driver  @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   owner   User    @relation("FuelRecordOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
+  @@index([clientId, createdAt])
   @@index([ownerId, createdAt])
   @@index([vehicleId, fueledAt])
   @@index([driverId, fueledAt])

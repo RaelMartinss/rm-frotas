@@ -45,7 +45,7 @@ export class PrismaDriversRepository implements IDriversRepository {
 
   async findAll(ownerId?: string): Promise<Driver[]> {
     const drivers = await this.prisma.driver.findMany({
-      where: ownerId ? { ownerId } : undefined,
+      where: ownerId ? { OR: [{ ownerId }, { clientId: ownerId }] } : undefined,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -57,23 +57,33 @@ export class PrismaDriversRepository implements IDriversRepository {
 
   async findManyPaginated({
     ownerId,
+    clientId,
     status,
     search,
     page,
     limit,
   }: FindManyDriversPaginatedParams): Promise<FindManyDriversPaginatedOutput> {
-    const targetOwnerId = ownerId ?? '__NO_OWNER__';
     const where: any = {
-      ownerId: targetOwnerId,
       ...(status && { status }),
     };
 
+    if (clientId) {
+      where.clientId = clientId;
+    } else if (ownerId) {
+      where.OR = [{ ownerId }, { clientId: ownerId }];
+    }
+
     if (search && search.trim()) {
       const term = search.trim();
-      where.OR = [
-        { name: { contains: term, mode: 'insensitive' } },
-        { cpf: { contains: term, mode: 'insensitive' } },
-        { cnhNumber: { contains: term, mode: 'insensitive' } },
+      where.AND = [
+        ...(where.AND ?? []),
+        {
+          OR: [
+            { name: { contains: term, mode: 'insensitive' } },
+            { cpf: { contains: term, mode: 'insensitive' } },
+            { cnhNumber: { contains: term, mode: 'insensitive' } },
+          ],
+        },
       ];
     }
 

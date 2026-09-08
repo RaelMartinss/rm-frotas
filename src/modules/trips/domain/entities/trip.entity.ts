@@ -6,6 +6,7 @@ import { InvalidTripStatusTransitionException } from '../exceptions/invalid-trip
 export interface TripProps {
   driverId: string;
   vehicleId: string;
+  clientId?: string;
   origin: Location;
   destination: Location;
   status: TripStatus;
@@ -18,6 +19,7 @@ export interface TripProps {
 export interface CreateTripProps {
   driverId: string;
   vehicleId: string;
+  clientId?: string;
   origin: Location;
   destination: Location;
   status?: TripStatus;
@@ -44,6 +46,7 @@ export class Trip {
   public getId(): string { return this.id; }
   public getDriverId(): string { return this.props.driverId; }
   public getVehicleId(): string { return this.props.vehicleId; }
+  public getClientId(): string | undefined { return this.props.clientId; }
   public getOrigin(): Location { return this.props.origin; }
   public getDestination(): Location { return this.props.destination; }
   public getStatus(): TripStatus { return this.props.status; }

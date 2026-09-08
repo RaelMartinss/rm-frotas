@@ -5,5 +5,6 @@ export interface CreateVehicleInput {
     year: number;
     currentKm: number;
     crlvExpiration?: string;
+    clientId?: string;
     ownerId?: string;
 }

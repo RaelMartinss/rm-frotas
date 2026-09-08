@@ -5,17 +5,20 @@ import { Password } from '../../../domain/value-objects/password.vo';
 import { RefreshTokenUseCase } from '../refresh-token.use-case';
 import { FakeTokenGenerator } from '../../../cryptography/fake-token-generator';
 import { InMemoryUsersRepository } from '../../../repositories/in-memory-users.repository';
+import { InMemoryClientsRepository } from '../../../../clients/repositories/in-memory-clients.repository';
 import { UnauthorizedException } from '@nestjs/common';
 
 describe('RefreshTokenUseCase', () => {
   let inMemoryUsersRepository: InMemoryUsersRepository;
+  let inMemoryClientsRepository: InMemoryClientsRepository;
   let fakeTokenGenerator: FakeTokenGenerator;
   let sut: RefreshTokenUseCase;
 
   beforeEach(() => {
     inMemoryUsersRepository = new InMemoryUsersRepository();
+    inMemoryClientsRepository = new InMemoryClientsRepository();
     fakeTokenGenerator = new FakeTokenGenerator();
-    sut = new RefreshTokenUseCase(inMemoryUsersRepository, fakeTokenGenerator);
+    sut = new RefreshTokenUseCase(inMemoryUsersRepository, fakeTokenGenerator, inMemoryClientsRepository);
   });
 
   it('deve renovar os tokens com sucesso a partir de um refresh token válido', async () => {

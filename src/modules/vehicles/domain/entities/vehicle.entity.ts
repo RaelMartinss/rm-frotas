@@ -17,6 +17,7 @@ export interface VehicleProps {
     currentKm: number;
     crlvExpiration?: Date | null;
     status?: VehicleStatus;
+    clientId?: string;
     ownerId?: string;
     createdAt?: Date;
     updatedAt?: Date;
@@ -31,6 +32,7 @@ interface VehicleInternalProps {
     currentKm: number;
     crlvExpiration?: Date | null;
     status: VehicleStatus;
+    clientId?: string;
     ownerId?: string;
     createdAt: Date;
     updatedAt: Date;
@@ -47,6 +49,7 @@ export class Vehicle {
             ...props,
             id: props.id ?? randomUUID(), // 2. Se não passar ID, gera um UUID v4 nativo do Node
             status: props.status ?? VehicleStatus.AVAILABLE,
+            clientId: props.clientId,
             ownerId: props.ownerId,
             createdAt: props.createdAt ?? new Date(),
             updatedAt: props.updatedAt ?? new Date(),
@@ -119,6 +122,7 @@ export class Vehicle {
     public getStatus(): VehicleStatus { return this.props.status; }
     public getCreatedAt(): Date { return this.props.createdAt; }
     public getUpdatedAt(): Date { return this.props.updatedAt; }
+    public getClientId(): string | undefined { return this.props.clientId; }
     public getOwnerId(): string | undefined { return this.props.ownerId; }
 
 }

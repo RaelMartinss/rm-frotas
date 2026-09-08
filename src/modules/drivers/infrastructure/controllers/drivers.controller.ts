@@ -59,10 +59,12 @@ export class DriversController {
   @ApiOperation({ summary: 'Listar motoristas da frota paginados com filtros' })
   async findAll(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
     @Query() query: GetDriversQueryDto,
   ) {
     const result = await this.listDriversUseCase.execute({
       ownerId: userId,
+      clientId: clientId ?? undefined,
       page: query.page,
       limit: query.limit,
       search: query.search,
@@ -79,7 +81,7 @@ export class DriversController {
   }
 
   @Get('suspensions/active')
-  @Roles(UserRole.FLEET_MANAGER)
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Listar todos os motoristas atualmente suspensos na frota do gestor' })
   async listAllActiveSuspensions(
     @CurrentUser('userId') userId: string,
@@ -109,7 +111,7 @@ export class DriversController {
   }
 
   @Get(':id/suspensions')
-  @Roles(UserRole.FLEET_MANAGER)
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Histórico de suspensões de um motorista' })
   @ApiParam({ name: 'id', description: 'UUID do motorista' })
   async listDriverSuspensions(
@@ -134,7 +136,7 @@ export class DriversController {
   }
 
   @Get(':id/suspensions/active')
-  @Roles(UserRole.FLEET_MANAGER)
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Buscar a suspensão ativa de um motorista' })
   @ApiParam({ name: 'id', description: 'UUID do motorista' })
   async getActiveSuspension(
@@ -151,13 +153,14 @@ export class DriversController {
   }
 
   @Post()
-  @Roles(UserRole.FLEET_MANAGER)
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Cadastrar um novo motorista na frota' })
   @ApiResponse({ status: 201, description: 'Motorista cadastrado com sucesso.' })
   @ApiResponse({ status: 400, description: 'Dados de entrada inválidos ou CPF/CNH com formato incorreto.' })
   @ApiResponse({ status: 409, description: 'Motorista com este CPF ou CNH já cadastrado.' })
   async create(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
     @Body() dto: CreateDriverHttpDto,
   ) {
     const driver = await this.createDriverUseCase.execute({
@@ -166,6 +169,7 @@ export class DriversController {
       cnhNumber: dto.cnhNumber,
       cnhCategory: dto.cnhCategory,
       cnhExpirationDate: new Date(dto.cnhExpirationDate),
+      clientId: clientId ?? undefined,
       ownerId: userId,
     });
 
@@ -173,7 +177,7 @@ export class DriversController {
   }
 
   @Post(':id/suspend')
-  @Roles(UserRole.FLEET_MANAGER)
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Suspender motorista com registro de evento e justificativa' })
   @ApiParam({ name: 'id', description: 'UUID do motorista' })
@@ -183,11 +187,13 @@ export class DriversController {
   @ApiResponse({ status: 409, description: 'Motorista já suspenso ou com viagem em andamento.' })
   async suspendDriver(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
     @Param('id') id: string,
     @Body() dto: SuspendDriverHttpDto,
   ) {
     const suspension = await this.suspendDriverUseCase.execute({
       driverId: id,
+      clientId: clientId ?? undefined,
       ownerId: userId,
       suspendedBy: userId,
       reasonCategory: dto.reasonCategory,

@@ -123,6 +123,8 @@ describe('Auth Endpoints (E2E)', () => {
         name: 'Rael Martins',
         email: 'rael@example.com',
         role: UserRole.FLEET_MANAGER,
+        clientId: null,
+        mustChangePassword: false,
       });
     });
 

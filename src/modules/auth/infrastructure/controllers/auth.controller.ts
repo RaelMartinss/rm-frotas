@@ -7,14 +7,19 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token.use-case';
+import { ChangeOwnPasswordUseCase } from '../../application/use-cases/change-own-password.use-case';
 import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/login.dto';
+import { ChangePasswordDto } from './dtos/change-password.dto';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { CurrentUser } from '../decorators/current-user.decorator';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 const isProduction = process.env.NODE_ENV === 'production';
@@ -34,7 +39,33 @@ export class AuthController {
     private readonly registerUserUseCase: RegisterUserUseCase,
     private readonly loginUseCase: LoginUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
+    private readonly changeOwnPasswordUseCase: ChangeOwnPasswordUseCase,
   ) {}
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Alterar a própria senha (usado para primeiro acesso com senha temporária ou troca regular)' })
+  @ApiResponse({ status: 200, description: 'Senha alterada com sucesso.' })
+  async changePassword(
+    @CurrentUser('userId') currentUserId: string,
+    @Body() body: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.changeOwnPasswordUseCase.execute({
+      userId: currentUserId,
+      currentPassword: body.currentPassword,
+      newPassword: body.newPassword,
+    });
+
+    res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getCookieOptions());
+
+    return {
+      message: result.message,
+      accessToken: result.accessToken,
+    };
+  }
 
   @Post('register')
   @ApiOperation({ summary: 'Registrar um novo usuário no sistema' })

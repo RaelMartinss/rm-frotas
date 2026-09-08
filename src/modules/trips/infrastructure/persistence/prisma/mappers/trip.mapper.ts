@@ -25,6 +25,7 @@ export class TripMapper {
       {
         driverId: raw.driverId,
         vehicleId: raw.vehicleId,
+        clientId: raw.clientId,
         status: raw.status as TripStatus,
         origin,
         destination,
@@ -40,11 +41,16 @@ export class TripMapper {
   static toPrisma(trip: Trip) {
     const origin = trip.getOrigin();
     const destination = trip.getDestination();
+    const clientId = trip.getClientId() ?? process.env.DEFAULT_CLIENT_ID;
+    if (!clientId) {
+      throw new Error(`Trip ${trip.getId()} must have a clientId to be persisted.`);
+    }
 
     return {
       id: trip.getId(),
       driverId: trip.getDriverId(),
       vehicleId: trip.getVehicleId(),
+      clientId,
       originAddress: origin.getAddress(),
       originCity: origin.getCity(),
       originState: origin.getState(),

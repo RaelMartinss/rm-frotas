@@ -51,14 +51,14 @@ describe('Fuel Module Use Cases', () => {
 
     vehicle = new Vehicle(
       {
+        id: 'vehicle-uuid-1',
         plate: new LicensePlate('ABC1D23'),
         brand: 'Mercedes-Benz',
         model: 'Sprinter 415',
         year: 2022,
         currentKm: 50000,
         ownerId,
-      },
-      'vehicle-uuid-1'
+      }
     );
     await vehicleRepo.save(vehicle);
 

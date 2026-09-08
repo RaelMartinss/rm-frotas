@@ -11,6 +11,9 @@ export class UserMapper {
         email: new Email(raw.email),
         password: Password.fromHash(raw.password),
         role: raw.role as unknown as UserRole,
+        clientId: raw.clientId,
+        mustChangePassword: raw.mustChangePassword,
+        temporaryPasswordSetAt: raw.temporaryPasswordSetAt,
         status: raw.status as unknown as UserStatus,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
@@ -25,6 +28,9 @@ export class UserMapper {
     email: string;
     password: string;
     role: PrismaUserRole;
+    clientId: string | null;
+    mustChangePassword: boolean;
+    temporaryPasswordSetAt: Date | null;
     status: PrismaUserStatus;
     createdAt: Date;
     updatedAt: Date;
@@ -35,6 +41,9 @@ export class UserMapper {
       email: user.getEmail().getValue(),
       password: user.getPassword().getHash(),
       role: user.getRole() as unknown as PrismaUserRole,
+      clientId: user.getClientId() ?? null,
+      mustChangePassword: user.getMustChangePassword(),
+      temporaryPasswordSetAt: user.getTemporaryPasswordSetAt() ?? null,
       status: user.getStatus() as unknown as PrismaUserStatus,
       createdAt: user.getCreatedAt(),
       updatedAt: user.getUpdatedAt(),

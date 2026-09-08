@@ -67,7 +67,7 @@ export class PrismaVehiclesRepository implements IVehiclesRepository {
 
   async findAll(ownerId?: string): Promise<Vehicle[]> {
     const vehicle = await this.prisma.vehicle.findMany({
-      where: ownerId ? { ownerId } : undefined,
+      where: ownerId ? { OR: [{ ownerId }, { clientId: ownerId }] } : undefined,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -76,23 +76,33 @@ export class PrismaVehiclesRepository implements IVehiclesRepository {
 
   async findManyPaginated({
     ownerId,
+    clientId,
     status,
     search,
     page,
     limit,
   }: FindManyVehiclesPaginatedParams): Promise<FindManyVehiclesPaginatedOutput> {
-    const targetOwnerId = ownerId ?? '__NO_OWNER__';
     const where: any = {
-      ownerId: targetOwnerId,
       ...(status && { status }),
     };
 
+    if (clientId) {
+      where.clientId = clientId;
+    } else if (ownerId) {
+      where.OR = [{ ownerId }, { clientId: ownerId }];
+    }
+
     if (search && search.trim()) {
       const term = search.trim();
-      where.OR = [
-        { plate: { contains: term, mode: 'insensitive' } },
-        { model: { contains: term, mode: 'insensitive' } },
-        { brand: { contains: term, mode: 'insensitive' } },
+      where.AND = [
+        ...(where.AND ?? []),
+        {
+          OR: [
+            { plate: { contains: term, mode: 'insensitive' } },
+            { model: { contains: term, mode: 'insensitive' } },
+            { brand: { contains: term, mode: 'insensitive' } },
+          ],
+        },
       ];
     }
 

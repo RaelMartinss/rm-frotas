@@ -45,7 +45,7 @@ export class TripsController {
   ) {}
 
   @Get()
-  @Roles(UserRole.FLEET_MANAGER, UserRole.DRIVER)
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN, UserRole.DRIVER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Listar viagens paginadas com filtros' })
   @ApiResponse({
@@ -54,10 +54,12 @@ export class TripsController {
   })
   async findAll(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
     @Query() query: GetTripsQueryDto,
   ) {
     const result = await this.getTripsUseCase.execute({
       ...query,
+      clientId: clientId ?? undefined,
       ownerId: userId,
     });
 
@@ -85,14 +87,20 @@ export class TripsController {
   }
 
   @Post()
-  @Roles(UserRole.FLEET_MANAGER)
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Registrar uma nova viagem para a frota' })
   @ApiResponse({ status: 201, description: 'Viagem criada com sucesso.' })
   @ApiResponse({ status: 400, description: 'Dados de entrada inválidos, motorista ou veículo indisponíveis.' })
-  async create(@Body() dto: CreateTripHttpDto) {
+  async create(
+    @CurrentUser('clientId') clientId: string | null,
+    @Body() dto: CreateTripHttpDto,
+  ) {
     try {
-      const trip = await this.createTripUseCase.execute(dto);
+      const trip = await this.createTripUseCase.execute({
+        ...dto,
+        clientId: clientId ?? undefined,
+      });
 
       return {
         id: trip.getId(),

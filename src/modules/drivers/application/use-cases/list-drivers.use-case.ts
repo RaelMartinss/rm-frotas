@@ -4,6 +4,7 @@ import { Driver, DriverStatus } from '../../domain/entities/driver.entity';
 
 export interface ListDriversInput {
   ownerId?: string;
+  clientId?: string;
   status?: DriverStatus;
   search?: string;
   page?: number;
@@ -31,6 +32,7 @@ export class ListDriversUseCase {
 
     const { drivers, total } = await this.driversRepository.findManyPaginated({
       ownerId: input.ownerId,
+      clientId: input.clientId,
       status: input.status,
       search: input.search,
       page,

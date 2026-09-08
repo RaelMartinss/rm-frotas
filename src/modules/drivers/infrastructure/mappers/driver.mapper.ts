@@ -23,6 +23,7 @@ export class DriverMapper {
         ),
         cnhExpirationDate: raw.cnhExpirationDate,
         status: raw.status as unknown as DriverStatus,
+        clientId: raw.clientId,
         ownerId: raw.ownerId,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
@@ -41,6 +42,11 @@ export class DriverMapper {
       throw new Error(`Driver ${driver.getId()} must have an ownerId to be persisted.`);
     }
 
+    const clientId = driver.getClientId() ?? process.env.DEFAULT_CLIENT_ID;
+    if (!clientId) {
+      throw new Error(`Driver ${driver.getId()} must have a clientId to be persisted.`);
+    }
+
     return {
       id: driver.getId(),
       name: driver.getName(),
@@ -49,6 +55,7 @@ export class DriverMapper {
       cnhCategory: driver.getCnh().getCategory(),
       cnhExpirationDate: driver.getCnh().getExpirationDate(),
       status: driver.getStatus() as unknown as PrismaDriverStatus,
+      clientId,
       ownerId,
       createdAt: driver.getCreatedAt(),
       updatedAt: driver.getUpdatedAt(),

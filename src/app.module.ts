@@ -7,9 +7,11 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { FuelModule } from './modules/fuel/fuel.module';
 import { HealthModule } from './health/health.module';
+import { ClientsModule } from './modules/clients/clients.module';
 
 @Module({
   imports: [
+    ClientsModule,
     DriversModule,
     VehiclesModule,
     TripsModule,

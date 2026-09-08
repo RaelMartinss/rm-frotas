@@ -3,6 +3,7 @@ import { Cpf } from '../value-objects/cpf.vo';
 
 export interface FindManyDriversPaginatedParams {
   ownerId?: string;
+  clientId?: string;
   status?: DriverStatus;
   search?: string;
   page: number;

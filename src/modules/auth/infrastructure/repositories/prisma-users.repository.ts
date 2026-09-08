@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IUsersRepository } from '../../domain/repositories/users.repository.interface';
+import { IUsersRepository, FindAllUsersParams } from '../../domain/repositories/users.repository.interface';
 import { User } from '../../domain/entities/user.entity';
 import { UserMapper } from '../mappers/user.mapper';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
@@ -42,17 +42,37 @@ export class PrismaUsersRepository implements IUsersRepository {
     return UserMapper.toDomain(user);
   }
 
-  async findAll(ownerId?: string): Promise<User[]> {
-    const targetOwnerId = ownerId ?? '__NO_OWNER__';
-    const where = {
-      OR: [
-        { id: targetOwnerId },
-        { driverProfile: { ownerId: targetOwnerId } },
-      ],
-    };
+  async findAll(params?: FindAllUsersParams | string): Promise<User[]> {
+    let where: any = {};
+
+    if (typeof params === 'string') {
+      // Backward compatibility if called with an ownerId string
+      where = {
+        OR: [
+          { id: params },
+          { driverProfile: { ownerId: params } },
+        ],
+      };
+    } else if (params) {
+      if (params.clientId !== undefined) {
+        where.clientId = params.clientId;
+      }
+      if (params.role) {
+        where.role = params.role;
+      }
+    }
 
     const users = await this.prisma.user.findMany({
       where,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return users.map(UserMapper.toDomain);
+  }
+
+  async findByClientId(clientId: string): Promise<User[]> {
+    const users = await this.prisma.user.findMany({
+      where: { clientId },
       orderBy: { createdAt: 'desc' },
     });
 

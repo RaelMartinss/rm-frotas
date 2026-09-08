@@ -11,6 +11,7 @@ export class PrismaFuelRecordMapper {
         vehicleId: raw.vehicleId,
         driverId: raw.driverId,
         ownerId: raw.ownerId,
+        clientId: raw.clientId,
         fuelType: raw.fuelType as unknown as FuelType,
         liters: raw.liters,
         pricePerUnit: new Money(raw.pricePerUnit),
@@ -59,6 +60,7 @@ export class PrismaFuelRecordMapper {
   static toPrisma(fuelRecord: FuelRecord): PrismaFuelRecord {
     return {
       id: fuelRecord.getId(),
+      clientId: fuelRecord.getClientId() ?? process.env.DEFAULT_CLIENT_ID ?? '',
       vehicleId: fuelRecord.getVehicleId(),
       driverId: fuelRecord.getDriverId(),
       ownerId: fuelRecord.getOwnerId(),

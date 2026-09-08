@@ -73,6 +73,7 @@ export class PrismaTripsRepository implements ITripsRepository {
     driverId,
     vehicleId,
     ownerId,
+    clientId,
     page,
     limit,
   }: {
@@ -80,19 +81,25 @@ export class PrismaTripsRepository implements ITripsRepository {
     driverId?: string;
     vehicleId?: string;
     ownerId?: string;
+    clientId?: string;
     page: number;
     limit: number;
   }): Promise<{ trips: Trip[]; total: number }> {
-    const targetOwnerId = ownerId ?? '__NO_OWNER__';
-    const where = {
+    const where: any = {
       ...(status !== undefined && { status }),
       ...(driverId && { driverId }),
       ...(vehicleId && { vehicleId }),
-      OR: [
-        { vehicle: { ownerId: targetOwnerId } },
-        { driver: { ownerId: targetOwnerId } },
-      ],
     };
+
+    if (clientId) {
+      where.clientId = clientId;
+    } else if (ownerId) {
+      where.OR = [
+        { clientId: ownerId },
+        { vehicle: { ownerId } },
+        { driver: { ownerId } },
+      ];
+    }
 
     const skip = (page - 1) * limit;
 

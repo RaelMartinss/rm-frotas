@@ -2,6 +2,7 @@ import { Vehicle, VehicleStatus } from "../entities/vehicle.entity";
 
 export interface FindManyVehiclesPaginatedParams {
   ownerId?: string;
+  clientId?: string;
   status?: VehicleStatus;
   search?: string;
   page: number;

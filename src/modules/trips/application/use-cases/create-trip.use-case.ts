@@ -51,6 +51,7 @@ export class CreateTripUseCase {
     const trip = new Trip({
       driverId: input.driverId,
       vehicleId: input.vehicleId,
+      clientId: input.clientId ?? vehicle.getClientId() ?? driver.getClientId(),
       origin,
       destination,
     });

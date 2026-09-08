@@ -11,6 +11,7 @@ export interface ITripsRepository {
     driverId?: string;
     vehicleId?: string;
     ownerId?: string;
+    clientId?: string;
     page: number;
     limit: number;
   }): Promise<{

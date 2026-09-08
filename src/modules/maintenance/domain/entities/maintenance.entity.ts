@@ -13,6 +13,7 @@ import {
 export interface MaintenanceProps {
   id?: string;
   vehicleId: string;
+  clientId?: string;
   ownerId: string;
   type?: MaintenanceType;
   status?: MaintenanceStatus;
@@ -31,6 +32,7 @@ export interface MaintenanceProps {
 interface MaintenanceInternalProps {
   id: string;
   vehicleId: string;
+  clientId?: string;
   ownerId: string;
   type: MaintenanceType;
   status: MaintenanceStatus;
@@ -66,6 +68,7 @@ export class Maintenance {
     this.props = {
       id: props.id ?? randomUUID(),
       vehicleId: props.vehicleId,
+      clientId: props.clientId,
       ownerId: props.ownerId,
       type: props.type ?? MaintenanceType.PREVENTIVA,
       status: props.status ?? MaintenanceStatus.AGENDADA,
@@ -210,6 +213,7 @@ export class Maintenance {
   // --- Getters ---
   public getId(): string { return this.props.id; }
   public getVehicleId(): string { return this.props.vehicleId; }
+  public getClientId(): string | undefined { return this.props.clientId; }
   public getOwnerId(): string { return this.props.ownerId; }
   public getType(): MaintenanceType { return this.props.type; }
   public getStatus(): MaintenanceStatus { return this.props.status; }

@@ -26,6 +26,7 @@ export class CreateVehicleUseCase {
       year: input.year,
       currentKm: input.currentKm,
       crlvExpiration: input.crlvExpiration ? new Date(input.crlvExpiration) : null,
+      clientId: input.clientId,
       ownerId: input.ownerId,
     });
 

@@ -4,6 +4,7 @@ import { Vehicle, VehicleStatus } from "../../domain/entities/vehicle.entity";
 
 export interface ListVehiclesInput {
   ownerId?: string;
+  clientId?: string;
   status?: VehicleStatus;
   search?: string;
   page?: number;
@@ -28,6 +29,7 @@ export class ListVehiclesUseCase {
 
     const { vehicles, total } = await this.vehiclesRepository.findManyPaginated({
       ownerId: input.ownerId,
+      clientId: input.clientId,
       status: input.status,
       search: input.search,
       page,

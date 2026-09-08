@@ -1,4 +1,4 @@
-import { IUsersRepository } from '../domain/repositories/users.repository.interface';
+import { IUsersRepository, FindAllUsersParams } from '../domain/repositories/users.repository.interface';
 import { User } from '../domain/entities/user.entity';
 
 export class InMemoryUsersRepository implements IUsersRepository {
@@ -36,7 +36,14 @@ export class InMemoryUsersRepository implements IUsersRepository {
     return user;
   }
 
-  async findAll(_ownerId?: string): Promise<User[]> {
+  async findAll(params?: FindAllUsersParams | string): Promise<User[]> {
+    if (typeof params === 'object' && params?.clientId) {
+      return this.items.filter((item) => item.getClientId() === params.clientId);
+    }
     return [...this.items];
+  }
+
+  async findByClientId(clientId: string): Promise<User[]> {
+    return this.items.filter((item) => item.getClientId() === clientId);
   }
 }

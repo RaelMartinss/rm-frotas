@@ -6,6 +6,7 @@ import { CsvRowErrorDto, ImportVehiclesResultDto } from '../../infrastructure/ht
 
 interface ImportVehiclesCsvInput {
   fileBuffer: Buffer;
+  clientId?: string;
   ownerId: string;
 }
 
@@ -18,7 +19,7 @@ interface ParsedRow {
 export class ImportVehiclesCsvUseCase {
   constructor(private readonly vehiclesRepository: IVehiclesRepository) {}
 
-  async execute({ fileBuffer, ownerId }: ImportVehiclesCsvInput): Promise<ImportVehiclesResultDto> {
+  async execute({ fileBuffer, clientId, ownerId }: ImportVehiclesCsvInput): Promise<ImportVehiclesResultDto> {
     if (!fileBuffer || fileBuffer.length === 0) {
       throw new BadRequestException('O arquivo CSV está vazio.');
     }
@@ -198,6 +199,7 @@ export class ImportVehiclesCsvUseCase {
           year: cand.year,
           currentKm: cand.currentKm,
           crlvExpiration: cand.crlvExpiration,
+          clientId: clientId,
           ownerId: ownerId, // Segurança estrita: sempre atribuído pelo token JWT do usuário autenticado
         });
         finalVehiclesToCreate.push(vehicle);

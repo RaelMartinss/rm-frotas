@@ -68,10 +68,12 @@ export class VehiclesController {
     @ApiOperation({ summary: 'Listar veículos da frota paginados com filtros' })
     async findAll(
         @CurrentUser('userId') userId: string,
+        @CurrentUser('clientId') clientId: string | null,
         @Query() query: GetVehiclesQueryDto,
     ) {
         const result = await this.listVehiclesUseCase.execute({
             ownerId: userId,
+            clientId: clientId ?? undefined,
             page: query.page,
             limit: query.limit,
             search: query.search,
@@ -104,13 +106,14 @@ export class VehiclesController {
     }
 
     @Post()
-    @Roles(UserRole.FLEET_MANAGER)
+    @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
     @ApiOperation({ summary: 'Cadastrar um novo veículo na frota' })
     @ApiResponse({ status: 201, description: 'Veículo criado com sucesso.' })
     @ApiResponse({ status: 400, description: 'Dados de entrada inválidos ou placa em formato incorreto.' })
     @ApiResponse({ status: 409, description: 'Veículo com esta placa já cadastrado.' })
     async create(
         @CurrentUser('userId') userId: string,
+        @CurrentUser('clientId') clientId: string | null,
         @Body() dto: CreateVehicleDto,
     ) {
         const vehicle = await this.createVehicleUseCase.execute({
@@ -120,13 +123,14 @@ export class VehiclesController {
             year: dto.year,
             currentKm: dto.currentKm,
             crlvExpiration: dto.crlvExpiration,
+            clientId: clientId ?? undefined,
             ownerId: userId,
         });
         return VehiclePresenter.toHTTP(vehicle);
     }
 
     @Post('import')
-    @Roles(UserRole.FLEET_MANAGER)
+    @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
     @ApiOperation({ summary: 'Importar veículos em lote via arquivo CSV' })
     @ApiConsumes('multipart/form-data')
     @ApiBody({
@@ -150,6 +154,7 @@ export class VehiclesController {
     )
     async importCsv(
         @CurrentUser('userId') userId: string,
+        @CurrentUser('clientId') clientId: string | null,
         @UploadedFile() file?: UploadedMulterFile,
     ): Promise<ImportVehiclesResultDto> {
         if (!file) {
@@ -174,6 +179,7 @@ export class VehiclesController {
 
         return this.importVehiclesCsvUseCase.execute({
             fileBuffer: file.buffer,
+            clientId: clientId ?? undefined,
             ownerId: userId,
         });
     }
@@ -188,9 +194,10 @@ export class VehiclesController {
     )
     async importCsvAlias(
         @CurrentUser('userId') userId: string,
+        @CurrentUser('clientId') clientId: string | null,
         @UploadedFile() file?: UploadedMulterFile,
     ): Promise<ImportVehiclesResultDto> {
-        return this.importCsv(userId, file);
+        return this.importCsv(userId, clientId, file);
     }
 
     @Patch(':id/maintenance')

@@ -9,6 +9,7 @@ export { SuspensionReasonCategory, SuspensionStatus };
 
 export interface DriverSuspensionProps {
   driverId: string;
+  clientId?: string;
   ownerId: string;
   reasonCategory: SuspensionReasonCategory;
   reasonDetails?: string | null;
@@ -27,6 +28,7 @@ export interface DriverSuspensionProps {
 
 export interface CreateDriverSuspensionProps {
   driverId: string;
+  clientId?: string;
   ownerId: string;
   reasonCategory: SuspensionReasonCategory;
   reasonDetails?: string | null;
@@ -87,6 +89,7 @@ export class DriverSuspension {
 
     this.props = {
       driverId: props.driverId,
+      clientId: props.clientId,
       ownerId: props.ownerId,
       reasonCategory: props.reasonCategory,
       reasonDetails: props.reasonDetails ?? null,
@@ -110,6 +113,10 @@ export class DriverSuspension {
 
   public getDriverId(): string {
     return this.props.driverId;
+  }
+
+  public getClientId(): string | undefined {
+    return this.props.clientId;
   }
 
   public getOwnerId(): string {

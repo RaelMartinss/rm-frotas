@@ -9,6 +9,7 @@ import {
 export interface FuelRecordProps {
   vehicleId: string;
   driverId: string;
+  clientId?: string;
   ownerId: string;
   fuelType: FuelType;
   liters: number;
@@ -27,6 +28,7 @@ export interface FuelRecordProps {
 export interface CreateFuelRecordProps {
   vehicleId: string;
   driverId: string;
+  clientId?: string;
   ownerId: string;
   fuelType: FuelType;
   liters: number;
@@ -85,6 +87,7 @@ export class FuelRecord {
     this.props = {
       vehicleId: props.vehicleId,
       driverId: props.driverId,
+      clientId: props.clientId,
       ownerId: props.ownerId,
       fuelType: props.fuelType,
       liters: props.liters,
@@ -146,6 +149,7 @@ export class FuelRecord {
   public getId(): string { return this.id; }
   public getVehicleId(): string { return this.props.vehicleId; }
   public getDriverId(): string { return this.props.driverId; }
+  public getClientId(): string | undefined { return this.props.clientId; }
   public getOwnerId(): string { return this.props.ownerId; }
   public getFuelType(): FuelType { return this.props.fuelType; }
   public getLiters(): number { return this.props.liters; }

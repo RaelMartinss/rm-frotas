@@ -2,6 +2,8 @@ export interface TokenPayload {
   sub: string;
   email: string;
   role: string;
+  clientId?: string | null;
+  mustChangePassword?: boolean;
 }
 
 export interface GeneratedTokens {

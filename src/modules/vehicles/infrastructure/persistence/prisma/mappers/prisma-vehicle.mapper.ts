@@ -16,6 +16,7 @@ export class PrismaVehicleMapper {
       currentKm: raw.currentKm,
       crlvExpiration: raw.crlvExpiration,
       status: raw.status as VehicleStatus,
+      clientId: raw.clientId,
       ownerId: raw.ownerId,
       createdAt: raw.createdAt,
       updatedAt: raw.updatedAt,
@@ -29,6 +30,11 @@ export class PrismaVehicleMapper {
       throw new Error(`Vehicle ${vehicle.getId()} must have an ownerId to be persisted.`);
     }
 
+    const clientId = vehicle.getClientId() ?? process.env.DEFAULT_CLIENT_ID;
+    if (!clientId) {
+      throw new Error(`Vehicle ${vehicle.getId()} must have a clientId to be persisted.`);
+    }
+
     return {
       id: vehicle.getId(),
       plate: vehicle.getPlate().getValue(),
@@ -38,6 +44,7 @@ export class PrismaVehicleMapper {
       currentKm: vehicle.getCurrentKm(),
       crlvExpiration: vehicle.getCrlvExpiration() ?? null,
       status: vehicle.getStatus() as PrismaStatus,
+      clientId,
       ownerId,
       createdAt: vehicle.getCreatedAt(),
       updatedAt: vehicle.getUpdatedAt(),

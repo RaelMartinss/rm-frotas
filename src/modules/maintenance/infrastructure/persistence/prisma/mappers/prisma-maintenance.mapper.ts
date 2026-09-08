@@ -31,6 +31,7 @@ export class PrismaMaintenanceMapper {
     return new Maintenance({
       id: raw.id,
       vehicleId: raw.vehicleId,
+      clientId: raw.clientId,
       ownerId: raw.ownerId,
       type: raw.type as MaintenanceType,
       status: raw.status as MaintenanceStatus,
@@ -84,9 +85,15 @@ export class PrismaMaintenanceMapper {
       quantity: item.quantity,
     }));
 
+    const clientId = maintenance.getClientId() ?? process.env.DEFAULT_CLIENT_ID;
+    if (!clientId) {
+      throw new Error(`Maintenance ${maintenance.getId()} must have a clientId to be persisted.`);
+    }
+
     const maintenanceData = {
       id: maintenance.getId(),
       vehicleId: maintenance.getVehicleId(),
+      clientId,
       ownerId: maintenance.getOwnerId(),
       type: maintenance.getType() as PrismaMaintenanceType,
       status: maintenance.getStatus() as PrismaMaintenanceStatus,

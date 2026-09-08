@@ -6,6 +6,7 @@ export interface FindManyPaginatedParams {
   driverId?: string;
   vehicleId?: string;
   ownerId?: string;
+  clientId?: string;
   page: number;
   limit: number;
 }

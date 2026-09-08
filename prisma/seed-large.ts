@@ -112,19 +112,53 @@ async function main() {
     `📊 Configuração: ${TOTAL_OWNERS} Gestores | ${TOTAL_VEHICLES} Veículos | ${TOTAL_DRIVERS} Motoristas | ${TOTAL_TRIPS} Viagens\n`
   );
 
+  // 0. Garante o Cliente Padrão e Super Admin
+  console.log('🏢 Preparando Cliente Padrão e Super Admin...');
+  const defaultClient = await prisma.client.upsert({
+    where: { document: '12345678000195' },
+    update: {},
+    create: {
+      legalName: 'Transportes RM Ltda',
+      tradeName: 'RM Frotas Matriz',
+      document: '12345678000195',
+      billingEmail: 'contato@rmfrotas.com',
+      status: 'ATIVO',
+      street: 'Av. Paulista',
+      number: '1000',
+      neighborhood: 'Bela Vista',
+      city: 'São Paulo',
+      state: 'SP',
+      zipCode: '01310100',
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: 'superadmin@frotas.com' },
+    update: { role: UserRole.SUPER_ADMIN },
+    create: {
+      name: 'Super Administrador',
+      email: 'superadmin@frotas.com',
+      password: '$2b$10$YourHashedPasswordHereOrRegister',
+      role: UserRole.SUPER_ADMIN,
+      clientId: null,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
   // 1. Usuários Gestores (Owners)
   console.log('👤 Preparando Gestores (Owners)...');
 
   // Garante o usuário gestor principal
   await prisma.user.upsert({
     where: { email: 'rael@example.com' },
-    update: {},
+    update: { clientId: defaultClient.id },
     create: {
       name: 'Rael Martins (Admin)',
       email: 'rael@example.com',
       password: '$2b$10$YourHashedPasswordHereOrRegister',
       role: UserRole.FLEET_MANAGER,
       status: UserStatus.ACTIVE,
+      clientId: defaultClient.id,
     },
   });
 
@@ -134,6 +168,7 @@ async function main() {
     password: '$2b$10$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRS', // hash fake
     role: UserRole.FLEET_MANAGER,
     status: UserStatus.ACTIVE,
+    clientId: defaultClient.id,
   }));
 
   await insertInBatches('Owners (Usuários Gestores)', additionalOwners, (batch) =>
@@ -143,7 +178,7 @@ async function main() {
   // Busca os IDs REAIS dos gestores existentes no banco
   const dbOwners = await prisma.user.findMany({
     where: { role: UserRole.FLEET_MANAGER },
-    select: { id: true },
+    select: { id: true, clientId: true },
   });
   const ownerIds = dbOwners.map((u) => u.id);
 
@@ -176,6 +211,7 @@ async function main() {
     }),
     status: faker.helpers.arrayElement(vehicleStatuses),
     ownerId: faker.helpers.arrayElement(ownerIds),
+    clientId: defaultClient.id,
   }));
 
   await insertInBatches('Veículos', vehicles, (batch) =>
@@ -206,6 +242,7 @@ async function main() {
     }),
     status: faker.helpers.arrayElement(driverStatuses),
     ownerId: faker.helpers.arrayElement(ownerIds),
+    clientId: defaultClient.id,
     userId: null,
   }));
 
@@ -233,6 +270,7 @@ async function main() {
       id: randomUUID(),
       driverId: faker.helpers.arrayElement(driverIds),
       vehicleId: faker.helpers.arrayElement(vehicleIds),
+      clientId: defaultClient.id,
       originAddress: faker.location.streetAddress(),
       originCity: faker.location.city(),
       originState: faker.helpers.arrayElement(BRAZIL_STATES),

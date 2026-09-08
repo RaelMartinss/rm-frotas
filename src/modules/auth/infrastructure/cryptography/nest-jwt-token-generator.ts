@@ -44,6 +44,8 @@ export class NestJwtTokenGenerator implements ITokenGenerator {
         sub: decoded.sub,
         email: decoded.email,
         role: decoded.role,
+        clientId: decoded.clientId,
+        mustChangePassword: decoded.mustChangePassword,
       };
     } catch {
       throw new UnauthorizedException('Token de atualização inválido ou expirado.');
