@@ -8,6 +8,7 @@ import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { FuelModule } from './modules/fuel/fuel.module';
 import { HealthModule } from './health/health.module';
 import { ClientsModule } from './modules/clients/clients.module';
+import { DriverPortalModule } from './modules/driver-portal/driver-portal.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ClientsModule } from './modules/clients/clients.module';
     MaintenanceModule,
     FuelModule,
     HealthModule,
+    DriverPortalModule,
   ],
   controllers: [],
   providers: [],
