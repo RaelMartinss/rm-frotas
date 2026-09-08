@@ -8,6 +8,7 @@ import { MaintenanceItem } from '../../domain/value-objects/maintenance-item.vo'
 
 export interface ScheduleMaintenanceInput {
   ownerId: string;
+  clientId?: string;
   vehicleId: string;
   type?: MaintenanceType;
   description: string;
@@ -44,6 +45,7 @@ export class ScheduleMaintenanceUseCase {
 
     const maintenance = new Maintenance({
       vehicleId: input.vehicleId,
+      clientId: input.clientId ?? vehicle.getClientId(),
       ownerId: input.ownerId,
       type: input.type ?? MaintenanceType.PREVENTIVA,
       status: MaintenanceStatus.AGENDADA,

@@ -9,6 +9,7 @@ import { VehicleAlreadyInMaintenanceException } from '../../domain/exceptions/ma
 
 export interface StartMaintenanceInput {
   ownerId: string;
+  clientId?: string;
   maintenanceId?: string;
   vehicleId?: string;
   type?: MaintenanceType;
@@ -43,8 +44,13 @@ export class StartMaintenanceUseCase {
       if (!input.description) {
         throw new BadRequestException('A descrição da manutenção é obrigatória ao iniciar diretamente.');
       }
+      const vehicle = await this.vehiclesRepository.findById(targetVehicleId);
+      if (!vehicle) {
+        throw new NotFoundException('Veículo não encontrado.');
+      }
       maintenance = new Maintenance({
         vehicleId: input.vehicleId,
+        clientId: input.clientId ?? vehicle.getClientId(),
         ownerId: input.ownerId,
         type: input.type ?? MaintenanceType.CORRETIVA,
         status: MaintenanceStatus.EM_ANDAMENTO,

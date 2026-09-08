@@ -77,10 +77,12 @@ export class MaintenancesController {
   @Post()
   async create(
     @CurrentUser('userId') ownerId: string,
+    @CurrentUser('clientId') clientId: string | undefined,
     @Body() dto: CreateMaintenanceDto
   ) {
     const maintenance = await this.scheduleMaintenanceUseCase.execute({
       ownerId,
+      clientId,
       vehicleId: dto.vehicleId,
       type: dto.type,
       description: dto.description,
@@ -95,10 +97,12 @@ export class MaintenancesController {
   @Post('start')
   async startDirect(
     @CurrentUser('userId') ownerId: string,
+    @CurrentUser('clientId') clientId: string | undefined,
     @Body() dto: StartMaintenanceDto
   ) {
     const maintenance = await this.startMaintenanceUseCase.execute({
       ownerId,
+      clientId,
       vehicleId: dto.vehicleId,
       type: dto.type,
       description: dto.description,
@@ -112,11 +116,13 @@ export class MaintenancesController {
   @Post(':id/start')
   async start(
     @CurrentUser('userId') ownerId: string,
+    @CurrentUser('clientId') clientId: string | undefined,
     @Param('id') id: string,
     @Body() dto: StartMaintenanceDto
   ) {
     const maintenance = await this.startMaintenanceUseCase.execute({
       ownerId,
+      clientId,
       maintenanceId: id,
       startedAt: dto.startedAt ? new Date(dto.startedAt) : new Date(),
     });
