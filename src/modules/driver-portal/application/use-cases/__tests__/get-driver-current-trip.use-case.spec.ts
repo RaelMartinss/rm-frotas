@@ -17,6 +17,9 @@ describe('GetDriverCurrentTripUseCase', () => {
         findFirst: vi.fn(),
         count: vi.fn(),
       },
+      fuelRecord: {
+        count: vi.fn(),
+      },
     };
 
     useCase = new GetDriverCurrentTripUseCase(prismaMock);
@@ -64,6 +67,7 @@ describe('GetDriverCurrentTripUseCase', () => {
     });
 
     prismaMock.trip.count.mockResolvedValue(12);
+    prismaMock.fuelRecord.count.mockResolvedValue(2);
 
     const result = await useCase.execute('user-1', 'client-1');
 
@@ -74,6 +78,7 @@ describe('GetDriverCurrentTripUseCase', () => {
     expect(result.trip?.originCity).toBe('São Paulo');
     expect(result.trip?.vehicle.plate).toBe('ABC1D23');
     expect(result.recentTripsCount).toBe(12);
+    expect(result.pendingReceiptsCount).toBe(2);
   });
 
   it('deve retornar trip null quando o motorista não tiver viagem em andamento ou planejada', async () => {
@@ -96,11 +101,13 @@ describe('GetDriverCurrentTripUseCase', () => {
 
     prismaMock.trip.findFirst.mockResolvedValue(null);
     prismaMock.trip.count.mockResolvedValue(5);
+    prismaMock.fuelRecord.count.mockResolvedValue(0);
 
     const result = await useCase.execute('user-1', 'client-1');
 
     expect(result.driver).toBeDefined();
     expect(result.trip).toBeNull();
     expect(result.recentTripsCount).toBe(5);
+    expect(result.pendingReceiptsCount).toBe(0);
   });
 });

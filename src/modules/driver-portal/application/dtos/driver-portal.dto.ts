@@ -93,3 +93,26 @@ export class ReportIncidentDto {
   @IsNotEmpty({ message: 'A descrição da ocorrência é obrigatória.' })
   description: string;
 }
+
+export class UpdateDriverFuelReceiptDto {
+  @ApiProperty({ description: 'Foto ou URL do comprovante fiscal (Base64 DataURL ou link)' })
+  @IsString()
+  @IsNotEmpty({ message: 'A foto do comprovante é obrigatória.' })
+  receiptUrl: string;
+
+  @ApiPropertyOptional({ description: 'Observações adicionais' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @ApiPropertyOptional({ description: 'Nome ou bandeira do posto' })
+  @IsOptional()
+  @IsString()
+  gasStation?: string;
+}
+
+export class GetDriverFuelHistoryQueryDto {
+  @ApiPropertyOptional({ description: 'Filtrar apenas abastecimentos sem comprovante pendente' })
+  @IsOptional()
+  pendingReceiptOnly?: string;
+}

@@ -5,6 +5,8 @@ import { DriverPortalController } from './infrastructure/http/driver-portal.cont
 import { GetDriverCurrentTripUseCase } from './application/use-cases/get-driver-current-trip.use-case';
 import { GetDriverHistoryUseCase } from './application/use-cases/get-driver-history.use-case';
 import { RecordTripLocationUseCase } from './application/use-cases/record-trip-location.use-case';
+import { GetDriverFuelHistoryUseCase } from './application/use-cases/get-driver-fuel-history.use-case';
+import { UpdateDriverFuelReceiptUseCase } from './application/use-cases/update-driver-fuel-receipt.use-case';
 
 @Module({
   imports: [
@@ -16,11 +18,15 @@ import { RecordTripLocationUseCase } from './application/use-cases/record-trip-l
     GetDriverCurrentTripUseCase,
     GetDriverHistoryUseCase,
     RecordTripLocationUseCase,
+    GetDriverFuelHistoryUseCase,
+    UpdateDriverFuelReceiptUseCase,
   ],
   exports: [
     GetDriverCurrentTripUseCase,
     GetDriverHistoryUseCase,
     RecordTripLocationUseCase,
+    GetDriverFuelHistoryUseCase,
+    UpdateDriverFuelReceiptUseCase,
   ],
 })
 export class DriverPortalModule {}

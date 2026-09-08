@@ -35,6 +35,7 @@ export interface DriverCurrentTripOutput {
     };
   } | null;
   recentTripsCount: number;
+  pendingReceiptsCount: number;
 }
 
 @Injectable()
@@ -96,6 +97,7 @@ export class GetDriverCurrentTripUseCase {
         driver: null,
         trip: null,
         recentTripsCount: 0,
+        pendingReceiptsCount: 0,
       };
     }
 
@@ -115,13 +117,21 @@ export class GetDriverCurrentTripUseCase {
       ],
     });
 
-    // 3. Contagem de viagens concluídas pelo motorista
-    const recentTripsCount = await this.prisma.trip.count({
-      where: {
-        driverId: driver.id,
-        status: 'COMPLETED',
-      },
-    });
+    // 3. Contagens de viagens concluídas e abastecimentos com comprovante pendente
+    const [recentTripsCount, pendingReceiptsCount] = await Promise.all([
+      this.prisma.trip.count({
+        where: {
+          driverId: driver.id,
+          status: 'COMPLETED',
+        },
+      }),
+      this.prisma.fuelRecord.count({
+        where: {
+          driverId: driver.id,
+          OR: [{ receiptUrl: null }, { receiptUrl: '' }],
+        },
+      }),
+    ]);
 
     return {
       driver: driverData,
@@ -152,6 +162,7 @@ export class GetDriverCurrentTripUseCase {
           }
         : null,
       recentTripsCount,
+      pendingReceiptsCount,
     };
   }
 }

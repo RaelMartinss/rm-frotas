@@ -5,7 +5,9 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
+  Query,
   UseGuards,
   NotFoundException,
   BadRequestException,
@@ -16,11 +18,15 @@ import { CurrentUser } from '../../../auth/infrastructure/decorators/current-use
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import { GetDriverCurrentTripUseCase } from '../../application/use-cases/get-driver-current-trip.use-case';
 import { GetDriverHistoryUseCase } from '../../application/use-cases/get-driver-history.use-case';
+import { GetDriverFuelHistoryUseCase } from '../../application/use-cases/get-driver-fuel-history.use-case';
+import { UpdateDriverFuelReceiptUseCase } from '../../application/use-cases/update-driver-fuel-receipt.use-case';
 import {
   StartDriverTripDto,
   CompleteDriverTripDto,
   CreateDriverFuelDto,
   ReportIncidentDto,
+  UpdateDriverFuelReceiptDto,
+  GetDriverFuelHistoryQueryDto,
 } from '../../application/dtos/driver-portal.dto';
 import { RecordLocationBatchDto } from '../../application/dtos/record-location.dto';
 import { RecordTripLocationUseCase } from '../../application/use-cases/record-trip-location.use-case';
@@ -34,6 +40,8 @@ export class DriverPortalController {
     private readonly prisma: PrismaService,
     private readonly getDriverCurrentTripUseCase: GetDriverCurrentTripUseCase,
     private readonly getDriverHistoryUseCase: GetDriverHistoryUseCase,
+    private readonly getDriverFuelHistoryUseCase: GetDriverFuelHistoryUseCase,
+    private readonly updateDriverFuelReceiptUseCase: UpdateDriverFuelReceiptUseCase,
     private readonly recordTripLocationUseCase: RecordTripLocationUseCase,
   ) {}
 
@@ -301,5 +309,32 @@ export class DriverPortalController {
   @ApiOperation({ summary: 'Histórico de viagens do motorista' })
   async getHistory(@CurrentUser('userId') userId: string) {
     return this.getDriverHistoryUseCase.execute(userId);
+  }
+
+  @Get('fuel-history')
+  @ApiOperation({ summary: 'Histórico de abastecimentos do motorista com status de comprovante' })
+  async getFuelHistory(
+    @CurrentUser('userId') userId: string,
+    @Query() query: GetDriverFuelHistoryQueryDto,
+  ) {
+    const pendingOnly = query.pendingReceiptOnly === 'true' || query.pendingReceiptOnly === '1';
+    return this.getDriverFuelHistoryUseCase.execute(userId, pendingOnly);
+  }
+
+  @Patch('fuel-records/:id/receipt')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Anexar ou atualizar foto do comprovante fiscal do abastecimento' })
+  async updateFuelReceipt(
+    @CurrentUser('userId') userId: string,
+    @Param('id') id: string,
+    @Body() body: UpdateDriverFuelReceiptDto,
+  ) {
+    return this.updateDriverFuelReceiptUseCase.execute({
+      userId,
+      fuelRecordId: id,
+      receiptUrl: body.receiptUrl,
+      notes: body.notes,
+      gasStation: body.gasStation,
+    });
   }
 }
