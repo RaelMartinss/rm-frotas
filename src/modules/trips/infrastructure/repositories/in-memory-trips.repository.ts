@@ -79,4 +79,30 @@ export class InMemoryTripsRepository implements ITripsRepository {
       total,
     };
   }
+
+  async findActiveTrips(params: {
+    clientId?: string;
+    ownerId?: string;
+    excludeTripId?: string;
+  }): Promise<Trip[]> {
+    return this.items.filter((trip) => {
+      if (params.excludeTripId && trip.getId() === params.excludeTripId) {
+        return false;
+      }
+
+      const isActive =
+        trip.getStatus() === TripStatus.PLANNED ||
+        trip.getStatus() === TripStatus.IN_PROGRESS;
+
+      if (!isActive) {
+        return false;
+      }
+
+      if (params.clientId && trip.getClientId() && trip.getClientId() !== params.clientId) {
+        return false;
+      }
+
+      return true;
+    });
+  }
 }

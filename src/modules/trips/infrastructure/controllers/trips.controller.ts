@@ -26,6 +26,9 @@ import { InvalidLocationException } from '../../domain/exceptions/invalid-locati
 import { InvalidTripStatusTransitionException } from '../../domain/exceptions/invalid-trip-status-transition.exception';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CancelTripUseCase } from '../../application/use-cases/cancel-trip.use-case';
+import { GetTripAvailabilityUseCase } from '../../application/use-cases/get-trip-availability.use-case';
+import { VehiclePresenter } from '../../../vehicles/infrastructure/http/presenters/vehicle.presenter';
+import { DriverPresenter } from '../../../drivers/infrastructure/controllers/presenters/driver.presenter';
 import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
 import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
 import { CurrentUser } from '../../../auth/infrastructure/decorators/current-user.decorator';
@@ -42,7 +45,33 @@ export class TripsController {
     private readonly startTripUseCase: StartTripUseCase,
     private readonly completeTripUseCase: CompleteTripUseCase,
     private readonly cancelTripUseCase: CancelTripUseCase,
+    private readonly getTripAvailabilityUseCase: GetTripAvailabilityUseCase,
   ) {}
+
+  @Get('availability')
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obter veículos e motoristas disponíveis para alocação em viagem' })
+  @ApiResponse({
+    status: 200,
+    description: 'Listas de veículos e motoristas disponíveis retornadas com sucesso.',
+  })
+  async getAvailability(
+    @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
+    @Query('excludeTripId') excludeTripId?: string,
+  ) {
+    const result = await this.getTripAvailabilityUseCase.execute({
+      clientId: clientId ?? undefined,
+      ownerId: userId,
+      excludeTripId,
+    });
+
+    return {
+      vehicles: result.vehicles.map(VehiclePresenter.toHTTP),
+      drivers: result.drivers.map(DriverPresenter.toHTTP),
+    };
+  }
 
   @Get()
   @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN, UserRole.DRIVER)

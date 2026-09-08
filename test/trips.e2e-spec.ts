@@ -142,6 +142,22 @@ class InMemoryTripsRepository implements ITripsRepository {
     return { trips, total };
   }
 
+  async findActiveTrips(params: {
+    clientId?: string;
+    ownerId?: string;
+    excludeTripId?: string;
+  }): Promise<Trip[]> {
+    return this.items.filter((trip) => {
+      if (params.excludeTripId && trip.getId() === params.excludeTripId) {
+        return false;
+      }
+      return (
+        trip.getStatus() === 'PLANNED' ||
+        trip.getStatus() === 'IN_PROGRESS'
+      );
+    });
+  }
+
   async save(trip: Trip): Promise<void> {
     const index = this.items.findIndex((item) => item.getId() === trip.getId());
     if (index >= 0) {
@@ -280,5 +296,48 @@ describe('TripsController (E2E) - Lifecycle', () => {
       .expect(200);
 
     expect(completeRes.body.status).toBe('COMPLETED');
+  });
+
+  it('deve listar disponibilidade de veículos e motoristas via GET /trips/availability', async () => {
+    // 1. Antes de criar viagem, o veículo e motorista criados no setup devem estar disponíveis (já que a viagem anterior foi COMPLETED)
+    const res = await request(app.getHttpServer())
+      .get('/trips/availability')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(res.body).toHaveProperty('vehicles');
+    expect(res.body).toHaveProperty('drivers');
+    expect(res.body.vehicles.some((v: any) => v.id === createdVehicleId)).toBe(true);
+    expect(res.body.drivers.some((d: any) => d.id === createdDriverId)).toBe(true);
+
+    // 2. Cria uma nova viagem PLANNED
+    const tripRes = await request(app.getHttpServer())
+      .post('/trips')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        driverId: createdDriverId,
+        vehicleId: createdVehicleId,
+        origin: { address: 'Rua A', city: 'Belém', state: 'PA' },
+        destination: { address: 'Rua B', city: 'Santarém', state: 'PA' },
+      })
+      .expect(201);
+
+    // 3. Após agendamento, veículo e motorista não devem constar na disponibilidade geral
+    const busyRes = await request(app.getHttpServer())
+      .get('/trips/availability')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(busyRes.body.vehicles.some((v: any) => v.id === createdVehicleId)).toBe(false);
+    expect(busyRes.body.drivers.some((d: any) => d.id === createdDriverId)).toBe(false);
+
+    // 4. Com excludeTripId, devem reaparecer como disponíveis para aquela viagem específica
+    const excludeRes = await request(app.getHttpServer())
+      .get(`/trips/availability?excludeTripId=${tripRes.body.id}`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
+
+    expect(excludeRes.body.vehicles.some((v: any) => v.id === createdVehicleId)).toBe(true);
+    expect(excludeRes.body.drivers.some((d: any) => d.id === createdDriverId)).toBe(true);
   });
 });

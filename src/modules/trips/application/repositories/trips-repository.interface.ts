@@ -18,5 +18,10 @@ export interface ITripsRepository {
     trips: Trip[];
     total: number;
   }>;
+  findActiveTrips(params: {
+    clientId?: string;
+    ownerId?: string;
+    excludeTripId?: string;
+  }): Promise<Trip[]>;
   save(trip: Trip): Promise<void>;
 }

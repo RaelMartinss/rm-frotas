@@ -120,4 +120,33 @@ export class PrismaTripsRepository implements ITripsRepository {
       total,
     };
   }
+
+  async findActiveTrips(params: {
+    clientId?: string;
+    ownerId?: string;
+    excludeTripId?: string;
+  }): Promise<Trip[]> {
+    const where: any = {
+      status: {
+        in: [TripStatus.PLANNED, TripStatus.IN_PROGRESS],
+      },
+    };
+
+    if (params.excludeTripId) {
+      where.id = { not: params.excludeTripId };
+    }
+
+    if (params.clientId) {
+      where.clientId = params.clientId;
+    } else if (params.ownerId) {
+      where.OR = [
+        { clientId: params.ownerId },
+        { vehicle: { ownerId: params.ownerId } },
+        { driver: { ownerId: params.ownerId } },
+      ];
+    }
+
+    const rawTrips = await this.prisma.trip.findMany({ where });
+    return rawTrips.map(TripMapper.toDomain);
+  }
 }

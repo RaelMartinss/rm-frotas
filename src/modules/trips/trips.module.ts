@@ -13,6 +13,7 @@ import { StartTripUseCase } from './application/use-cases/start-trip.use-case';
 import { CompleteTripUseCase } from './application/use-cases/complete-trip.use-case';
 import { CancelTripUseCase } from './application/use-cases/cancel-trip.use-case';
 import { GetTripsUseCase } from './application/use-cases/get-trips.use-case';
+import { GetTripAvailabilityUseCase } from './application/use-cases/get-trip-availability.use-case';
 import { ITripsRepository } from './application/repositories/trips-repository.interface';
 import { IDriversRepository } from '../drivers/domain/repositories/drivers.repository';
 import { IVehiclesRepository } from '../vehicles/domain/repositories/vehicles.repository';
@@ -53,6 +54,17 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
       inject: ['ITripsRepository'],
     },
     {
+      provide: GetTripAvailabilityUseCase,
+      useFactory: (
+        tripsRepo: ITripsRepository,
+        vehiclesRepo: IVehiclesRepository,
+        driversRepo: IDriversRepository,
+      ) => {
+        return new GetTripAvailabilityUseCase(tripsRepo, vehiclesRepo, driversRepo);
+      },
+      inject: ['ITripsRepository', IVehiclesRepository, 'IDriversRepository'],
+    },
+    {
       provide: StartTripUseCase,
       useFactory: (
         tripsRepo: ITripsRepository,
@@ -87,6 +99,7 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
   exports: [
     CreateTripUseCase,
     GetTripsUseCase,
+    GetTripAvailabilityUseCase,
     StartTripUseCase,
     CompleteTripUseCase,
     CancelTripUseCase,
