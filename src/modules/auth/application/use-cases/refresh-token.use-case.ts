@@ -18,6 +18,7 @@ export interface RefreshTokenUseCaseResponse {
     email: string;
     role: string;
     clientId: string | null;
+    clientName: string | null;
     mustChangePassword: boolean;
   };
 }
@@ -52,11 +53,13 @@ export class RefreshTokenUseCase {
     }
 
     // Se o usuário pertencer a uma empresa cliente, verifica se ela está ativa
+    let clientName: string | null = null;
     if (user.getClientId()) {
       const client = await this.clientsRepository.findById(user.getClientId()!);
       if (client && (client.getStatus() === ClientStatus.SUSPENSO || client.getStatus() === ClientStatus.CANCELADO)) {
         throw new UnauthorizedException('Acesso bloqueado: a empresa contratante está suspensa ou cancelada.');
       }
+      clientName = client?.getTradeName() ?? null;
     }
 
     const tokens = await this.tokenGenerator.generate({
@@ -76,6 +79,7 @@ export class RefreshTokenUseCase {
         email: user.getEmail().getValue(),
         role: user.getRole(),
         clientId: user.getClientId() ?? null,
+        clientName,
         mustChangePassword: user.getMustChangePassword(),
       },
     };

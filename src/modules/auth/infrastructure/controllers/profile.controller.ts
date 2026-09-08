@@ -17,6 +17,7 @@ import { IsNotEmpty, IsString, MinLength } from 'class-validator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import type { UserPayload } from '../strategies/jwt.strategy';
 import type { IUsersRepository } from '../../domain/repositories/users.repository.interface';
+import { IClientsRepository } from '../../../clients/domain/repositories/clients.repository.interface';
 import { Password } from '../../domain/value-objects/password.vo';
 
 export class UpdateProfileDto {
@@ -47,6 +48,7 @@ export class ProfileController {
   constructor(
     @Inject('IUsersRepository')
     private readonly usersRepository: IUsersRepository,
+    private readonly clientsRepository: IClientsRepository,
   ) {}
 
   @Get()
@@ -61,7 +63,15 @@ export class ProfileController {
         name: currentUser.email.split('@')[0] || 'Usuário',
         email: currentUser.email,
         role: currentUser.role,
+        clientId: currentUser.clientId ?? null,
+        clientName: null,
       };
+    }
+
+    let clientName: string | null = null;
+    if (user.getClientId()) {
+      const client = await this.clientsRepository.findById(user.getClientId()!);
+      clientName = client?.getTradeName() ?? null;
     }
 
     return {
@@ -69,6 +79,8 @@ export class ProfileController {
       name: user.getName(),
       email: user.getEmail().getValue(),
       role: user.getRole(),
+      clientId: user.getClientId() ?? null,
+      clientName,
       status: user.getStatus(),
       createdAt: user.getCreatedAt(),
       updatedAt: user.getUpdatedAt(),
