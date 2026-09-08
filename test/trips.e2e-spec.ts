@@ -211,6 +211,7 @@ describe('TripsController (E2E) - Lifecycle', () => {
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         name: 'João Silva',
+        email: 'joao.silva.trips@fleet.com',
         cpf: '529.982.247-25',
         cnhNumber: '98765432100',
         cnhCategory: 'D',

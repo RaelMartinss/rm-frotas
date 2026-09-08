@@ -157,6 +157,7 @@ describe('DriversController (E2E)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Rael Martins',
+          email: 'rael.driver@e2e.com',
           cpf: '529.982.247-25',
           cnhNumber: '12345678901',
           cnhCategory: 'AB',
@@ -175,6 +176,13 @@ describe('DriversController (E2E)', () => {
           isExpired: false,
         },
         status: DriverStatus.ACTIVE,
+        temporaryPassword: expect.any(String),
+        user: expect.objectContaining({
+          id: expect.any(String),
+          name: 'Rael Martins',
+          email: 'rael.driver@e2e.com',
+          role: 'DRIVER',
+        }),
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
       });
@@ -187,6 +195,7 @@ describe('DriversController (E2E)', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Motorista Invalido',
+          email: 'invalido@e2e.com',
           cpf: '111.111.111-11',
           cnhNumber: '12345678901',
           cnhCategory: 'B',
