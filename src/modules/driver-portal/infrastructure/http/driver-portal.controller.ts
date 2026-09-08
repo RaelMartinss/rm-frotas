@@ -168,11 +168,23 @@ export class DriverPortalController {
     }
 
     // Busca driver associado ao user
-    const driver = await this.prisma.driver.findFirst({
+    let driver = await this.prisma.driver.findFirst({
       where: {
         OR: [{ userId }, { name: { contains: userId } }],
       },
     });
+
+    if (!driver) {
+      driver = await this.prisma.driver.findFirst({
+        where: {
+          clientId: clientId || vehicle.clientId,
+        },
+      });
+    }
+
+    if (!driver) {
+      throw new BadRequestException('Nenhum motorista vinculado encontrado para registrar o abastecimento.');
+    }
 
     const targetClientId = clientId || vehicle.clientId;
     const totalCost = Number((body.liters * body.pricePerLiter).toFixed(2));
@@ -182,15 +194,15 @@ export class DriverPortalController {
       this.prisma.fuelRecord.create({
         data: {
           vehicleId: body.vehicleId,
-          driverId: driver ? driver.id : null,
+          driverId: driver.id,
           clientId: targetClientId,
           ownerId: userId,
-          fuelType: body.fuelType as any,
+          fuelType: (body.fuelType as any) || 'DIESEL',
           liters: body.liters,
-          pricePerLiter: body.pricePerLiter,
+          pricePerUnit: body.pricePerLiter,
           totalCost,
-          currentKm: body.currentKm,
-          date: recordDate,
+          odometerAtFueling: body.currentKm,
+          fueledAt: recordDate,
         },
       }),
       // Atualiza o odômetro do veículo se for maior
