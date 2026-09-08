@@ -14,6 +14,7 @@ import { CompleteTripUseCase } from './application/use-cases/complete-trip.use-c
 import { CancelTripUseCase } from './application/use-cases/cancel-trip.use-case';
 import { GetTripsUseCase } from './application/use-cases/get-trips.use-case';
 import { GetTripAvailabilityUseCase } from './application/use-cases/get-trip-availability.use-case';
+import { GetTripRouteUseCase } from './application/use-cases/get-trip-route.use-case';
 import { ITripsRepository } from './application/repositories/trips-repository.interface';
 import { IDriversRepository } from '../drivers/domain/repositories/drivers.repository';
 import { IVehiclesRepository } from '../vehicles/domain/repositories/vehicles.repository';
@@ -27,6 +28,7 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
   controllers: [TripsController],
   providers: [
     PrismaTripsRepository,
+    GetTripRouteUseCase,
     
     // Provê a interface via Token de Injeção
     {
@@ -100,6 +102,7 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
     CreateTripUseCase,
     GetTripsUseCase,
     GetTripAvailabilityUseCase,
+    GetTripRouteUseCase,
     StartTripUseCase,
     CompleteTripUseCase,
     CancelTripUseCase,

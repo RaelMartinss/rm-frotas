@@ -27,6 +27,7 @@ import { InvalidTripStatusTransitionException } from '../../domain/exceptions/in
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CancelTripUseCase } from '../../application/use-cases/cancel-trip.use-case';
 import { GetTripAvailabilityUseCase } from '../../application/use-cases/get-trip-availability.use-case';
+import { GetTripRouteUseCase } from '../../application/use-cases/get-trip-route.use-case';
 import { VehiclePresenter } from '../../../vehicles/infrastructure/http/presenters/vehicle.presenter';
 import { DriverPresenter } from '../../../drivers/infrastructure/controllers/presenters/driver.presenter';
 import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
@@ -46,6 +47,7 @@ export class TripsController {
     private readonly completeTripUseCase: CompleteTripUseCase,
     private readonly cancelTripUseCase: CancelTripUseCase,
     private readonly getTripAvailabilityUseCase: GetTripAvailabilityUseCase,
+    private readonly getTripRouteUseCase: GetTripRouteUseCase,
   ) {}
 
   @Get('availability')
@@ -227,5 +229,24 @@ export class TripsController {
       status: trip.getStatus(),
       updatedAt: trip.getUpdatedAt(),
     };
+  }
+
+  @Get(':id/route')
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN, UserRole.DRIVER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Consultar histórico de localização e rota da viagem' })
+  @ApiParam({ name: 'id', description: 'UUID da viagem' })
+  @ApiResponse({ status: 200, description: 'Rota e telemetria da viagem retornadas com sucesso.' })
+  @ApiResponse({ status: 404, description: 'Viagem não encontrada.' })
+  async getRoute(
+    @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
+    @Param('id') id: string,
+  ) {
+    return this.getTripRouteUseCase.execute({
+      tripId: id,
+      clientId: clientId ?? undefined,
+      ownerId: userId,
+    });
   }
 }

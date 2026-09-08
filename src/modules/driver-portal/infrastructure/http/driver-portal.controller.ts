@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   UseGuards,
   NotFoundException,
@@ -21,6 +22,8 @@ import {
   CreateDriverFuelDto,
   ReportIncidentDto,
 } from '../../application/dtos/driver-portal.dto';
+import { RecordLocationBatchDto } from '../../application/dtos/record-location.dto';
+import { RecordTripLocationUseCase } from '../../application/use-cases/record-trip-location.use-case';
 
 @ApiTags('Driver Portal')
 @ApiBearerAuth('JWT-auth')
@@ -31,6 +34,7 @@ export class DriverPortalController {
     private readonly prisma: PrismaService,
     private readonly getDriverCurrentTripUseCase: GetDriverCurrentTripUseCase,
     private readonly getDriverHistoryUseCase: GetDriverHistoryUseCase,
+    private readonly recordTripLocationUseCase: RecordTripLocationUseCase,
   ) {}
 
   @Get('current-trip')
@@ -260,6 +264,33 @@ export class DriverPortalController {
       category: body.category,
       recordedAt: new Date(),
     };
+  }
+
+  @Post('trips/:tripId/location')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Registrar ping ou lote de pings de localização GPS da viagem' })
+  async recordLocation(
+    @CurrentUser('userId') userId: string,
+    @Param('tripId') tripId: string,
+    @Body() body: RecordLocationBatchDto,
+  ) {
+    let pings = body.pings || [];
+    if (body.latitude !== undefined && body.longitude !== undefined) {
+      pings = [
+        ...pings,
+        {
+          latitude: body.latitude,
+          longitude: body.longitude,
+          recordedAt: body.recordedAt,
+        },
+      ];
+    }
+
+    return this.recordTripLocationUseCase.execute({
+      userId,
+      tripId,
+      pings,
+    });
   }
 
   @Get('history')
