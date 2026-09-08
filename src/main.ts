@@ -6,10 +6,15 @@ import { DomainExceptionFilter } from './modules/drivers/infrastructure/http/dom
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { json, urlencoded } from 'express';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Configura limite de tamanho de payload para suportar upload de fotos de comprovantes (Base64)
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ extended: true, limit: '10mb' }));
 
   // Confia no proxy reverso (Render, Cloudflare, NGINX) para obter o IP real do cliente via X-Forwarded-For
   app.set('trust proxy', 1);
