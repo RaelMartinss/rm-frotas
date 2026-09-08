@@ -122,7 +122,8 @@ export class GetDashboardSummaryUseCase {
     });
 
     const ongoingTrips: OngoingTripDto[] = trips.map((t) => {
-      const initials = t.driver.name
+      const driverName = t.driver?.name || 'Motorista';
+      const initials = driverName
         .split(' ')
         .filter(Boolean)
         .map((n) => n[0])
@@ -136,11 +137,11 @@ export class GetDashboardSummaryUseCase {
 
       return {
         id: t.id,
-        driverName: t.driver.name,
+        driverName,
         driverInitials: initials || 'MO',
-        vehicleName: `${t.vehicle.brand ? t.vehicle.brand + ' ' : ''}${t.vehicle.model}`,
-        vehiclePlate: t.vehicle.plate,
-        route: `${t.originCity} (${t.originState}) → ${t.destinationCity} (${t.destinationState})`,
+        vehicleName: `${t.vehicle?.brand ? t.vehicle.brand + ' ' : ''}${t.vehicle?.model || 'Veículo'}`,
+        vehiclePlate: t.vehicle?.plate || '---',
+        route: `${t.originCity || ''} (${t.originState || ''}) → ${t.destinationCity || ''} (${t.destinationState || ''})`,
         startTime,
         status: t.status === 'IN_PROGRESS' ? 'EM_ANDAMENTO' : 'PROGRAMADA',
       };
@@ -182,27 +183,43 @@ export class GetDashboardSummaryUseCase {
     const startOfWeek = weekDaysMeta[0].start;
     const endOfWeek = weekDaysMeta[6].end;
 
+    const tripConditions: any[] = [];
+    if (clientId) {
+      tripConditions.push({ clientId });
+    } else if (userId) {
+      tripConditions.push({
+        OR: [
+          { vehicle: { ownerId: userId } },
+          { driver: { ownerId: userId } },
+        ],
+      });
+    }
+
     const weekTrips = await this.prisma.trip.findMany({
       where: {
-        ...tripTenantFilter,
-        OR: [
+        AND: [
+          ...tripConditions,
           {
-            completedAt: {
-              gte: startOfWeek,
-              lte: endOfWeek,
-            },
-          },
-          {
-            startedAt: {
-              gte: startOfWeek,
-              lte: endOfWeek,
-            },
-          },
-          {
-            createdAt: {
-              gte: startOfWeek,
-              lte: endOfWeek,
-            },
+            OR: [
+              {
+                completedAt: {
+                  gte: startOfWeek,
+                  lte: endOfWeek,
+                },
+              },
+              {
+                startedAt: {
+                  gte: startOfWeek,
+                  lte: endOfWeek,
+                },
+              },
+              {
+                createdAt: {
+                  gte: startOfWeek,
+                  lte: endOfWeek,
+                },
+              },
+            ],
           },
         ],
       },
