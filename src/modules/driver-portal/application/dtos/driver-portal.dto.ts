@@ -47,6 +47,25 @@ export class CreateDriverFuelDto {
   @IsNotEmpty()
   fuelType: string;
 
+  @ApiPropertyOptional({ description: 'Nome ou bandeira do posto de combustível' })
+  @IsOptional()
+  @IsString()
+  gasStation?: string;
+
+  @ApiPropertyOptional({ description: 'Indica se completou o tanque (padrão true)' })
+  @IsOptional()
+  fullTank?: boolean;
+
+  @ApiPropertyOptional({ description: 'Observações adicionais' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @ApiPropertyOptional({ description: 'URL ou foto do comprovante' })
+  @IsOptional()
+  @IsString()
+  receiptUrl?: string;
+
   @ApiPropertyOptional({ description: 'Data do abastecimento (ISO)' })
   @IsOptional()
   @IsString()
