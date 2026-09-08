@@ -43,14 +43,13 @@ export class PrismaUsersRepository implements IUsersRepository {
   }
 
   async findAll(ownerId?: string): Promise<User[]> {
-    const where = ownerId
-      ? {
-          OR: [
-            { id: ownerId },
-            { driverProfile: { ownerId } },
-          ],
-        }
-      : {};
+    const targetOwnerId = ownerId ?? '__NO_OWNER__';
+    const where = {
+      OR: [
+        { id: targetOwnerId },
+        { driverProfile: { ownerId: targetOwnerId } },
+      ],
+    };
 
     const users = await this.prisma.user.findMany({
       where,

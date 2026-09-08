@@ -81,8 +81,9 @@ export class PrismaVehiclesRepository implements IVehiclesRepository {
     page,
     limit,
   }: FindManyVehiclesPaginatedParams): Promise<FindManyVehiclesPaginatedOutput> {
+    const targetOwnerId = ownerId ?? '__NO_OWNER__';
     const where: any = {
-      ...(ownerId && { ownerId }),
+      ownerId: targetOwnerId,
       ...(status && { status }),
     };
 

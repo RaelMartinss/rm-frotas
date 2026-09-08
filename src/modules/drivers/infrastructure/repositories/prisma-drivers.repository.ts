@@ -62,8 +62,9 @@ export class PrismaDriversRepository implements IDriversRepository {
     page,
     limit,
   }: FindManyDriversPaginatedParams): Promise<FindManyDriversPaginatedOutput> {
+    const targetOwnerId = ownerId ?? '__NO_OWNER__';
     const where: any = {
-      ...(ownerId && { ownerId }),
+      ownerId: targetOwnerId,
       ...(status && { status }),
     };
 
