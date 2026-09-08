@@ -1,4 +1,4 @@
-import { Inject, Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import type { IUsersRepository } from '../../domain/repositories/users.repository.interface';
 import { User, UserRole } from '../../domain/entities/user.entity';
@@ -34,6 +34,11 @@ export class CreateSubordinateUserUseCase {
   ) {}
 
   async execute(input: CreateSubordinateUserInput): Promise<CreateSubordinateUserOutput> {
+    if (input.role === UserRole.DRIVER) {
+      throw new BadRequestException(
+        'A criação de motoristas deve ser realizada exclusivamente no menu Gestão de Motoristas, com preenchimento de CNH e CPF.',
+      );
+    }
     const requester = await this.usersRepository.findById(input.requesterId);
     if (!requester) {
       throw new NotFoundException('Usuário solicitante não encontrado.');

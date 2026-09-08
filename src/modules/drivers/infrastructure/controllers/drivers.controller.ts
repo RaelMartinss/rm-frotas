@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateDriverUseCase } from '../../application/use-cases/create-driver.use-case';
+import { ResetDriverPasswordUseCase } from '../../application/use-cases/reset-driver-password.use-case';
 import { ActivateDriverUseCase } from '../../application/use-cases/activate-driver.use-case';
 import { DeactivateDriverUseCase } from '../../application/use-cases/deactivate-driver.use-case';
 import { SuspendDriverUseCase } from '../../application/use-cases/suspend-driver.use-case';
@@ -43,6 +44,7 @@ import { AuthGuard } from '@nestjs/passport';
 export class DriversController {
   constructor(
     private readonly createDriverUseCase: CreateDriverUseCase,
+    private readonly resetDriverPasswordUseCase: ResetDriverPasswordUseCase,
     private readonly activateDriverUseCase: ActivateDriverUseCase,
     private readonly deactivateDriverUseCase: DeactivateDriverUseCase,
     private readonly suspendDriverUseCase: SuspendDriverUseCase,
@@ -154,18 +156,20 @@ export class DriversController {
 
   @Post()
   @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
-  @ApiOperation({ summary: 'Cadastrar um novo motorista na frota' })
-  @ApiResponse({ status: 201, description: 'Motorista cadastrado com sucesso.' })
+  @ApiOperation({ summary: 'Cadastrar um novo motorista na frota com conta de acesso' })
+  @ApiResponse({ status: 201, description: 'Motorista e usuário cadastrados com sucesso com senha temporária.' })
   @ApiResponse({ status: 400, description: 'Dados de entrada inválidos ou CPF/CNH com formato incorreto.' })
-  @ApiResponse({ status: 409, description: 'Motorista com este CPF ou CNH já cadastrado.' })
+  @ApiResponse({ status: 409, description: 'Motorista com este CPF, CNH ou E-mail já cadastrado.' })
   async create(
     @CurrentUser('userId') userId: string,
     @CurrentUser('clientId') clientId: string | null,
     @Body() dto: CreateDriverHttpDto,
   ) {
-    const driver = await this.createDriverUseCase.execute({
+    const result = await this.createDriverUseCase.execute({
       name: dto.name,
+      email: dto.email,
       cpf: dto.cpf,
+      phone: dto.phone,
       cnhNumber: dto.cnhNumber,
       cnhCategory: dto.cnhCategory,
       cnhExpirationDate: new Date(dto.cnhExpirationDate),
@@ -173,7 +177,31 @@ export class DriversController {
       ownerId: userId,
     });
 
-    return DriverPresenter.toHTTP(driver);
+    return {
+      ...DriverPresenter.toHTTP(result.driver),
+      temporaryPassword: result.temporaryPassword,
+      user: result.user,
+    };
+  }
+
+  @Post(':id/reset-password')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.FLEET_MANAGER, UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resetar administrativamente a senha do motorista gerando nova senha temporária' })
+  @ApiParam({ name: 'id', description: 'UUID do motorista' })
+  @ApiResponse({ status: 200, description: 'Senha temporária gerada com sucesso.' })
+  async resetPassword(
+    @CurrentUser('userId') currentUserId: string,
+    @CurrentUser('role') currentUserRole: string,
+    @CurrentUser('clientId') currentUserClientId: string | null,
+    @Param('id') id: string,
+  ) {
+    return this.resetDriverPasswordUseCase.execute({
+      driverId: id,
+      requesterId: currentUserId,
+      requesterRole: currentUserRole,
+      requesterClientId: currentUserClientId,
+    });
   }
 
   @Post(':id/suspend')

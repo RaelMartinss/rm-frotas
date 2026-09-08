@@ -33,6 +33,16 @@ export class PrismaDriversRepository implements IDriversRepository {
     return DriverMapper.toDomain(raw);
   }
 
+  async findByUserId(userId: string): Promise<Driver | null> {
+    const raw = await this.prisma.driver.findUnique({
+      where: { userId },
+    });
+
+    if (!raw) return null;
+
+    return DriverMapper.toDomain(raw);
+  }
+
   async findByCpf(cpf: Cpf): Promise<Driver | null> {
     const raw = await this.prisma.driver.findUnique({
       where: { cpf: cpf.getValue() },

@@ -25,6 +25,7 @@ export class DriverMapper {
         status: raw.status as unknown as DriverStatus,
         clientId: raw.clientId,
         ownerId: raw.ownerId,
+        userId: raw.userId ?? undefined,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },
@@ -57,6 +58,7 @@ export class DriverMapper {
       status: driver.getStatus() as unknown as PrismaDriverStatus,
       clientId,
       ownerId,
+      userId: driver.getUserId() ?? null,
       createdAt: driver.getCreatedAt(),
       updatedAt: driver.getUpdatedAt(),
     };

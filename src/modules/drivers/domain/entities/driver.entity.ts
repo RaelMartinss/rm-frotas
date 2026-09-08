@@ -14,6 +14,8 @@ export interface DriverProps {
   cnhExpirationDate: Date;
   clientId?: string;
   ownerId?: string;
+  userId?: string;
+  phone?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +28,8 @@ export interface CreateDriverProps {
   status?: DriverStatus;
   clientId?: string;
   ownerId?: string;
+  userId?: string;
+  phone?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -45,6 +49,8 @@ export class Driver {
       status: props.status ?? DriverStatus.ACTIVE,
       clientId: props.clientId,
       ownerId: props.ownerId,
+      userId: props.userId,
+      phone: props.phone,
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
     };
@@ -76,6 +82,20 @@ export class Driver {
   }
   public getOwnerId(): string | undefined {
     return this.props.ownerId;
+  }
+  public getUserId(): string | undefined {
+    return this.props.userId;
+  }
+  public setUserId(userId: string): void {
+    this.props.userId = userId;
+    this.touch();
+  }
+  public getPhone(): string | undefined {
+    return this.props.phone;
+  }
+  public setPhone(phone?: string): void {
+    this.props.phone = phone;
+    this.touch();
   }
 
   public activate(): void {

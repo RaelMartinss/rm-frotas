@@ -27,6 +27,11 @@ export interface IDriversRepository {
   findById(id: string): Promise<Driver | null>;
 
   /**
+   * Busca um motorista pelo ID da conta de usuário vinculada.
+   */
+  findByUserId(userId: string): Promise<Driver | null>;
+
+  /**
    * Busca um motorista pelo seu Value Object de CPF.
    */
   findByCpf(cpf: Cpf): Promise<Driver | null>;

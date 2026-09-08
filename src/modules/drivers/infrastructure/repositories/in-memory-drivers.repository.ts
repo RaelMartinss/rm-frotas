@@ -18,6 +18,11 @@ export class InMemoryDriversRepository implements IDriversRepository {
     return driver ?? null;
   }
 
+  async findByUserId(userId: string): Promise<Driver | null> {
+    const driver = this.items.find((item) => item.getUserId() === userId);
+    return driver ?? null;
+  }
+
   async findByCpf(cpf: Cpf): Promise<Driver | null> {
     const driver = this.items.find(
       (item) => item.getCpf()?.getValue() === cpf.getValue(),

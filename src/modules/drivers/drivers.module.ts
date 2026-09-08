@@ -11,6 +11,7 @@ import { DriverAvailabilityChecker } from './domain/services/driver-availability
 
 // Use Cases
 import { CreateDriverUseCase } from './application/use-cases/create-driver.use-case';
+import { ResetDriverPasswordUseCase } from './application/use-cases/reset-driver-password.use-case';
 import { ActivateDriverUseCase } from './application/use-cases/activate-driver.use-case';
 import { DeactivateDriverUseCase } from './application/use-cases/deactivate-driver.use-case';
 import { SuspendDriverUseCase } from './application/use-cases/suspend-driver.use-case';
@@ -39,6 +40,7 @@ import { DriversController } from './infrastructure/controllers/drivers.controll
     DriverAvailabilityChecker,
     // Casos de Uso
     CreateDriverUseCase,
+    ResetDriverPasswordUseCase,
     ActivateDriverUseCase,
     DeactivateDriverUseCase,
     SuspendDriverUseCase,
@@ -55,6 +57,7 @@ import { DriversController } from './infrastructure/controllers/drivers.controll
     'IDriverSuspensionsRepository',
     DriverAvailabilityChecker,
     CreateDriverUseCase,
+    ResetDriverPasswordUseCase,
     ActivateDriverUseCase,
     DeactivateDriverUseCase,
     SuspendDriverUseCase,

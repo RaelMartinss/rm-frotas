@@ -16,11 +16,11 @@ export class CreateSubordinateUserDto {
 
   @ApiProperty({
     example: 'ADMIN',
-    enum: [UserRole.ADMIN, UserRole.DRIVER],
-    description: 'Papel do usuário na equipe (ADMIN ou DRIVER)',
+    enum: [UserRole.FLEET_MANAGER, UserRole.ADMIN],
+    description: 'Papel do usuário administrativo na equipe (FLEET_MANAGER ou ADMIN)',
   })
-  @IsEnum([UserRole.ADMIN, UserRole.DRIVER], {
-    message: 'Papel inválido. Apenas ADMIN ou DRIVER podem ser criados pela gestão.',
+  @IsEnum([UserRole.FLEET_MANAGER, UserRole.ADMIN], {
+    message: 'Papel inválido. Apenas papéis administrativos (ADMIN ou FLEET_MANAGER) podem ser criados aqui. Motoristas devem ser cadastrados no menu Motoristas.',
   })
   role: UserRole;
 }

@@ -12,13 +12,13 @@ export class RoleHierarchyPolicy {
    */
   static canCreateRole(requester: UserContext, targetRole: UserRole): boolean {
     if (requester.role === UserRole.SUPER_ADMIN) {
-      // SUPER_ADMIN pode criar FLEET_MANAGER durante o onboarding ou administrativamente
-      return targetRole === UserRole.FLEET_MANAGER || targetRole === UserRole.ADMIN || targetRole === UserRole.DRIVER;
+      // SUPER_ADMIN pode criar FLEET_MANAGER durante o onboarding ou ADMIN
+      return targetRole === UserRole.FLEET_MANAGER || targetRole === UserRole.ADMIN;
     }
 
     if (requester.role === UserRole.FLEET_MANAGER) {
-      // FLEET_MANAGER só pode criar ADMIN e DRIVER para seu próprio cliente
-      return targetRole === UserRole.ADMIN || targetRole === UserRole.DRIVER;
+      // FLEET_MANAGER só pode criar ADMIN para seu próprio cliente
+      return targetRole === UserRole.ADMIN;
     }
 
     return false;

@@ -4,18 +4,18 @@ import { UserRole } from '../../entities/user.entity';
 
 describe('RoleHierarchyPolicy', () => {
   describe('canCreateRole', () => {
-    it('SUPER_ADMIN can create FLEET_MANAGER, ADMIN, DRIVER', () => {
+    it('SUPER_ADMIN can create FLEET_MANAGER and ADMIN (DRIVER must be created in Driver module)', () => {
       const sa = { id: 'sa-1', role: UserRole.SUPER_ADMIN, clientId: null };
       expect(RoleHierarchyPolicy.canCreateRole(sa, UserRole.FLEET_MANAGER)).toBe(true);
       expect(RoleHierarchyPolicy.canCreateRole(sa, UserRole.ADMIN)).toBe(true);
-      expect(RoleHierarchyPolicy.canCreateRole(sa, UserRole.DRIVER)).toBe(true);
+      expect(RoleHierarchyPolicy.canCreateRole(sa, UserRole.DRIVER)).toBe(false);
       expect(RoleHierarchyPolicy.canCreateRole(sa, UserRole.SUPER_ADMIN)).toBe(false);
     });
 
-    it('FLEET_MANAGER can only create ADMIN and DRIVER', () => {
+    it('FLEET_MANAGER can only create ADMIN', () => {
       const fm = { id: 'fm-1', role: UserRole.FLEET_MANAGER, clientId: 'client-1' };
       expect(RoleHierarchyPolicy.canCreateRole(fm, UserRole.ADMIN)).toBe(true);
-      expect(RoleHierarchyPolicy.canCreateRole(fm, UserRole.DRIVER)).toBe(true);
+      expect(RoleHierarchyPolicy.canCreateRole(fm, UserRole.DRIVER)).toBe(false);
       expect(RoleHierarchyPolicy.canCreateRole(fm, UserRole.FLEET_MANAGER)).toBe(false);
       expect(RoleHierarchyPolicy.canCreateRole(fm, UserRole.SUPER_ADMIN)).toBe(false);
     });

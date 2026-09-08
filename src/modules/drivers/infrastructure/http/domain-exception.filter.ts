@@ -3,6 +3,7 @@ import {
   Catch,
   ArgumentsHost,
   HttpStatus,
+  HttpException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { InvalidCpfException } from '../../domain/exceptions/invalid-cpf.exception';
@@ -16,6 +17,8 @@ import { InvalidSuspensionReasonException } from '../../domain/exceptions/invali
 import { DriverNotFoundException } from '../../domain/exceptions/driver-not-found.exception';
 import { DriverSuspensionNotFoundException } from '../../domain/exceptions/driver-suspension-not-found.exception';
 import { DriverAlreadyExistsException } from '../../domain/exceptions/driver-already-exists.exception';
+import { UserEmailAlreadyExistsException } from '../../../auth/domain/exceptions/role-hierarchy.exceptions';
+import { InvalidEmailException } from '../../../auth/domain/exceptions/invalid-email.exception';
 
 @Catch(
   InvalidCpfException,
@@ -29,6 +32,8 @@ import { DriverAlreadyExistsException } from '../../domain/exceptions/driver-alr
   DriverNotFoundException,
   DriverSuspensionNotFoundException,
   DriverAlreadyExistsException,
+  UserEmailAlreadyExistsException,
+  InvalidEmailException,
 )
 export class DomainExceptionFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -47,7 +52,8 @@ export class DomainExceptionFilter implements ExceptionFilter {
     } else if (
       exception instanceof DriverAlreadySuspendedException ||
       exception instanceof DriverHasActiveTripException ||
-      exception instanceof DriverAlreadyExistsException
+      exception instanceof DriverAlreadyExistsException ||
+      exception instanceof UserEmailAlreadyExistsException
     ) {
       statusCode = HttpStatus.CONFLICT;
       errorName = 'Conflict';
