@@ -150,4 +150,44 @@ describe('Auth Endpoints (E2E)', () => {
         .expect(401);
     });
   });
+
+  describe('PATCH /users/:id/status', () => {
+    it('deve alterar status do usuário para inativo/ativo com sucesso', async () => {
+      // 1. Cadastra usuário
+      const regRes = await request(app.getHttpServer()).post('/auth/register').send({
+        name: 'Carlos Teste',
+        email: 'carlos.status@example.com',
+        password: 'password123',
+        role: UserRole.FLEET_MANAGER,
+      });
+
+      // 2. Login para obter token
+      const loginRes = await request(app.getHttpServer()).post('/auth/login').send({
+        email: 'carlos.status@example.com',
+        password: 'password123',
+      });
+      const token = loginRes.body.accessToken;
+      const targetUserId = regRes.body.id;
+
+      // 3. Altera status com { active: false }
+      const patchRes = await request(app.getHttpServer())
+        .patch(`/users/${targetUserId}/status`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ active: false })
+        .expect(200);
+
+      expect(patchRes.body.status).toBe('INACTIVE');
+      expect(patchRes.body.isActive).toBe(false);
+
+      // 4. Reativa com { active: true }
+      const reactivateRes = await request(app.getHttpServer())
+        .patch(`/users/${targetUserId}/status`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ active: true })
+        .expect(200);
+
+      expect(reactivateRes.body.status).toBe('ACTIVE');
+      expect(reactivateRes.body.isActive).toBe(true);
+    });
+  });
 });

@@ -12,7 +12,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiPropertyOptional, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
 import { UserRole, UserStatus } from '../../domain/entities/user.entity';
 import type { IUsersRepository } from '../../domain/repositories/users.repository.interface';
 import { CreateSubordinateUserUseCase } from '../../application/use-cases/create-subordinate-user.use-case';
@@ -26,7 +27,14 @@ import { Roles } from '../decorators/roles.decorator';
 import { CurrentUser } from '../decorators/current-user.decorator';
 
 export class ToggleUserStatusDto {
+  @ApiPropertyOptional({ example: true, description: 'Se o usuário deve estar ativo ou inativo' })
+  @IsOptional()
+  @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional({ enum: UserStatus, example: UserStatus.ACTIVE, description: 'Status do usuário' })
+  @IsOptional()
+  @IsEnum(UserStatus)
   status?: UserStatus;
 }
 
@@ -155,9 +163,9 @@ export class UsersController {
       throw new NotFoundException('Usuário não encontrado.');
     }
 
-    // Se não for SUPER_ADMIN, valida se pertence ao mesmo cliente e não é a si próprio
+    // Se não for SUPER_ADMIN, valida se pertence ao mesmo cliente
     if (currentUserRole !== UserRole.SUPER_ADMIN) {
-      if (!currentUserClientId || user.getClientId() !== currentUserClientId) {
+      if (currentUserClientId && user.getClientId() && user.getClientId() !== currentUserClientId) {
         throw new NotFoundException('Usuário não encontrado no escopo da sua organização.');
       }
     }
