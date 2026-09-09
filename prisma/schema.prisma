@@ -57,6 +57,7 @@ model Client {
   maintenances      Maintenance[]
   fuelRecords       FuelRecord[]
   driverSuspensions DriverSuspension[]
+  incidents         Incident[]
 
   @@map("clients")
 }
@@ -114,6 +115,7 @@ model Vehicle {
   trips        Trip[]
   maintenances Maintenance[]
   fuelRecords  FuelRecord[]
+  incidents    Incident[]
 
   @@index([clientId])
   @@index([clientId, status])
@@ -152,6 +154,7 @@ model Driver {
   trips       Trip[]
   fuelRecords FuelRecord[]
   suspensions DriverSuspension[]
+  incidents   Incident[]
 
   @@index([clientId])
   @@index([clientId, status])
@@ -235,6 +238,7 @@ model Trip {
   client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   locationPings TripLocationPing[]
+  incidents     Incident[]
 
   @@index([clientId, status])
   @@index([vehicleId, status])
@@ -349,4 +353,46 @@ model FuelRecord {
   @@index([driverId, fueledAt])
   @@map("fuel_records")
 }
+
+enum IncidentCategory {
+  PNEU
+  MECANICA
+  ELETRICA
+  ACIDENTE
+  ATRASO
+  OUTRO
+}
+
+enum IncidentStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model Incident {
+  id          String           @id @default(uuid())
+  driverId    String?          @map("driver_id")
+  vehicleId   String?          @map("vehicle_id")
+  tripId      String?          @map("trip_id")
+  clientId    String           @map("client_id")
+  category    IncidentCategory @default(OUTRO)
+  description String
+  status      IncidentStatus   @default(OPEN)
+  resolvedAt  DateTime?        @map("resolved_at")
+  resolvedBy  String?          @map("resolved_by")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  driver  Driver?  @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  trip    Trip?    @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  client  Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, status])
+  @@index([tripId, status])
+  @@index([vehicleId, status])
+  @@index([driverId, status])
+  @@map("incidents")
+}
+
 

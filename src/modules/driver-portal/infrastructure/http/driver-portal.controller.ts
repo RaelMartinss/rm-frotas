@@ -250,31 +250,87 @@ export class DriverPortalController {
     @CurrentUser('clientId') clientId: string | null,
     @Body() body: ReportIncidentDto,
   ) {
-    // Se o veículo estiver especificado e for mecânica/pneu, pode criar registro de manutenção preventiva/corretiva
-    if (body.vehicleId) {
-      const vehicle = await this.prisma.vehicle.findUnique({
-        where: { id: body.vehicleId },
-      });
+    // 1. Identifica o motorista vinculado ao usuário ou à viagem
+    let driver = await this.prisma.driver.findFirst({
+      where: { userId },
+    });
 
-      if (vehicle) {
-        await this.prisma.maintenance.create({
-          data: {
-            vehicleId: body.vehicleId,
-            clientId: clientId || vehicle.clientId,
-            ownerId: userId,
-            type: 'CORRETIVA',
-            status: 'AGENDADA',
-            description: `[ALERTA SOS MOTORISTA - ${body.category}] ${body.description}`,
-            scheduledDate: new Date(),
-          },
-        });
+    let trip = null;
+    if (body.tripId) {
+      trip = await this.prisma.trip.findUnique({
+        where: { id: body.tripId },
+        include: { driver: true, vehicle: true },
+      });
+      if (!driver && trip?.driver) {
+        driver = trip.driver;
       }
     }
 
+    const vehicleId = body.vehicleId || trip?.vehicleId || null;
+    let effectiveClientId = clientId;
+
+    let vehicle = null;
+    if (vehicleId) {
+      vehicle = await this.prisma.vehicle.findUnique({
+        where: { id: vehicleId },
+      });
+      if (!effectiveClientId && vehicle?.clientId) {
+        effectiveClientId = vehicle.clientId;
+      }
+    }
+
+    if (!effectiveClientId && driver?.clientId) {
+      effectiveClientId = driver.clientId;
+    }
+
+    if (!effectiveClientId) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      effectiveClientId = user?.clientId || null;
+    }
+
+    const validCategories = ['PNEU', 'MECANICA', 'ELETRICA', 'ACIDENTE', 'ATRASO', 'OUTRO'];
+    const category = validCategories.includes(body.category?.toUpperCase())
+      ? (body.category.toUpperCase() as any)
+      : 'OUTRO';
+
+    // 2. Persiste o registro de incidente SOS
+    const incident = await this.prisma.incident.create({
+      data: {
+        driverId: driver?.id || null,
+        vehicleId: vehicleId || null,
+        tripId: body.tripId || null,
+        clientId: effectiveClientId!,
+        category,
+        description: body.description,
+        status: 'OPEN',
+      },
+      include: {
+        driver: true,
+        vehicle: true,
+        trip: true,
+      },
+    });
+
+    // 3. Se for mecânica/pneu/elétrica e tiver veículo, abre manutenção corretiva preventiva
+    if (vehicleId && effectiveClientId) {
+      await this.prisma.maintenance.create({
+        data: {
+          vehicleId,
+          clientId: effectiveClientId,
+          ownerId: userId,
+          type: 'CORRETIVA',
+          status: 'AGENDADA',
+          description: `[ALERTA SOS MOTORISTA - ${category}] ${body.description}`,
+          scheduledDate: new Date(),
+        },
+      });
+    }
+
     return {
-      message: 'Alerta de ocorrência enviado com sucesso ao gestor da frota!',
-      category: body.category,
-      recordedAt: new Date(),
+      message: 'Alerta de SOS reportado com sucesso ao gestor da frota!',
+      incidentId: incident.id,
+      category: incident.category,
+      recordedAt: incident.createdAt,
     };
   }
 

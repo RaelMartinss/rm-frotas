@@ -261,6 +261,37 @@ export class GetDashboardSummaryUseCase {
     // 5. Alertas Recentes
     const alerts: RecentAlertDto[] = [];
 
+    // 5.1 Alertas Críticos de SOS (Incidentes Abertos de Motoristas)
+    const openIncidents = await this.prisma.incident.findMany({
+      where: {
+        status: 'OPEN',
+        ...(clientId ? { clientId } : {}),
+      },
+      include: {
+        driver: true,
+        vehicle: true,
+        trip: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
+    for (const inc of openIncidents) {
+      const driverName = inc.driver?.name || 'Motorista';
+      const vehicleInfo = inc.vehicle?.plate ? ` (${inc.vehicle.plate})` : '';
+      const routeInfo = inc.trip
+        ? ` • ${inc.trip.originCity || ''} → ${inc.trip.destinationCity || ''}`
+        : '';
+
+      alerts.push({
+        id: `alert-sos-${inc.id}`,
+        type: 'DANGER',
+        title: `🚨 SOS: ${driverName} precisa de ajuda! [${inc.category}]`,
+        subtitle: `"${inc.description}"${vehicleInfo}${routeInfo}`,
+        timeAgo: 'SOS Urgente',
+      });
+    }
+
     // Alertas de expiração
     for (const exp of expirations.slice(0, 3)) {
       if (exp.daysRemaining <= 0) {
