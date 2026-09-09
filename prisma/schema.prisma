@@ -224,6 +224,7 @@ model Trip {
   destinationLatitude  Float?     @map("destination_latitude")
   destinationLongitude Float?     @map("destination_longitude")
   status               TripStatus @default(PLANNED)
+  scheduledDate        DateTime?  @map("scheduled_date")
   startedAt            DateTime?  @map("started_at")
   completedAt          DateTime?  @map("completed_at")
   createdAt            DateTime   @default(now()) @map("created_at")

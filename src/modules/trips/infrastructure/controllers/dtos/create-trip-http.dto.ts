@@ -7,6 +7,7 @@ import {
   IsObject,
   ValidateNested,
   Length,
+  IsDateString,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -72,4 +73,12 @@ export class CreateTripHttpDto {
   @ValidateNested()
   @Type(() => LocationHttpDto)
   destination: LocationHttpDto;
+
+  @ApiPropertyOptional({
+    example: '2026-09-10T14:30:00.000Z',
+    description: 'Data e hora prevista para início da viagem',
+  })
+  @IsOptional()
+  @IsDateString()
+  scheduledDate?: string;
 }

@@ -10,6 +10,7 @@ export interface TripProps {
   origin: Location;
   destination: Location;
   status: TripStatus;
+  scheduledDate?: Date | null;
   startedAt?: Date | null;
   completedAt?: Date | null;
   createdAt: Date;
@@ -23,6 +24,7 @@ export interface CreateTripProps {
   origin: Location;
   destination: Location;
   status?: TripStatus;
+  scheduledDate?: Date | null;
   startedAt?: Date | null;
   completedAt?: Date | null;
   createdAt?: Date;
@@ -50,6 +52,7 @@ export class Trip {
   public getOrigin(): Location { return this.props.origin; }
   public getDestination(): Location { return this.props.destination; }
   public getStatus(): TripStatus { return this.props.status; }
+  public getScheduledDate(): Date | null | undefined { return this.props.scheduledDate; }
   public getStartedAt(): Date | null | undefined { return this.props.startedAt; }
   public getCompletedAt(): Date | null | undefined { return this.props.completedAt; }
   public getCreatedAt(): Date { return this.props.createdAt; }

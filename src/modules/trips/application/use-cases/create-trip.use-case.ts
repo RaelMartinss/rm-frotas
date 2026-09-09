@@ -54,6 +54,7 @@ export class CreateTripUseCase {
       clientId: input.clientId ?? vehicle.getClientId() ?? driver.getClientId(),
       origin,
       destination,
+      scheduledDate: input.scheduledDate ? new Date(input.scheduledDate) : null,
     });
 
     await this.tripRepository.create(trip);

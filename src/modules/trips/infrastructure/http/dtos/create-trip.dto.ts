@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsNumber,
   ValidateNested,
+  IsDateString,
 } from 'class-validator';
 
 export class LocationDto {
@@ -55,4 +56,9 @@ export class CreateTripDto {
   @ValidateNested()
   @Type(() => LocationDto)
   destination: LocationDto;
+
+  @ApiPropertyOptional({ example: '2026-09-10T14:30:00.000Z' })
+  @IsOptional()
+  @IsDateString()
+  scheduledDate?: string;
 }

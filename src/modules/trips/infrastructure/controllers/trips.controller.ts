@@ -109,6 +109,7 @@ export class TripsController {
         destinationCity: trip.getDestination().getCity(),
         destinationState: trip.getDestination().getState(),
         status: trip.getStatus(),
+        scheduledDate: trip.getScheduledDate(),
         startedAt: trip.getStartedAt(),
         completedAt: trip.getCompletedAt(),
         createdAt: trip.getCreatedAt(),
@@ -140,6 +141,7 @@ export class TripsController {
         origin: trip.getOrigin().getValue(),
         destination: trip.getDestination().getValue(),
         status: trip.getStatus(),
+        scheduledDate: trip.getScheduledDate(),
         createdAt: trip.getCreatedAt(),
       };
     } catch (error) {
