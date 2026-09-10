@@ -393,4 +393,29 @@ export class DriverPortalController {
       gasStation: body.gasStation,
     });
   }
+
+  @Post('push-token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Registrar ou atualizar o Push Token FCM do motorista' })
+  async registerPushToken(
+    @CurrentUser('userId') userId: string,
+    @Body() body: { token: string },
+  ) {
+    if (!body?.token) {
+      throw new BadRequestException('Token é obrigatório.');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { pushToken: body.token },
+    });
+
+    // Se houver perfil de motorista vinculado, atualiza também
+    await this.prisma.driver.updateMany({
+      where: { userId },
+      data: { pushToken: body.token },
+    });
+
+    return { success: true, message: 'Push token registrado com sucesso.' };
+  }
 }

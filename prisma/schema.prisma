@@ -74,6 +74,9 @@ model User {
   createdAt              DateTime   @default(now()) @map("created_at")
   updatedAt              DateTime   @updatedAt @map("updated_at")
 
+  // Push Notification FCM Token
+  pushToken              String?    @map("push_token")
+
   // Vínculo com a Organização/Empresa Cliente (nulo apenas para SUPER_ADMIN)
   clientId String? @map("client_id")
   client   Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -136,6 +139,7 @@ model Driver {
   cnhCategory       String       @map("cnh_category")
   cnhExpirationDate DateTime     @map("cnh_expiration_date")
   status            DriverStatus @default(ACTIVE)
+  pushToken         String?      @map("push_token")
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
 

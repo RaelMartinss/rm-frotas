@@ -34,6 +34,7 @@ import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
 import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
 import { CurrentUser } from '../../../auth/infrastructure/decorators/current-user.decorator';
 import { UserRole } from '../../../auth/domain/entities/user.entity';
+import { FcmNotificationService } from '../../../../shared/infrastructure/notifications/fcm-notification.service';
 
 @ApiTags('Trips')
 @ApiBearerAuth('JWT-auth')
@@ -48,6 +49,7 @@ export class TripsController {
     private readonly cancelTripUseCase: CancelTripUseCase,
     private readonly getTripAvailabilityUseCase: GetTripAvailabilityUseCase,
     private readonly getTripRouteUseCase: GetTripRouteUseCase,
+    private readonly fcmNotificationService: FcmNotificationService,
   ) {}
 
   @Get('availability')
@@ -133,6 +135,14 @@ export class TripsController {
         ...dto,
         clientId: clientId ?? undefined,
       });
+
+      // Dispara notificação push para o celular do motorista
+      this.fcmNotificationService.sendPushToDriver(
+        trip.getDriverId(),
+        '🚚 Nova Viagem Atribuída!',
+        `Você tem uma nova viagem escalada para ${trip.getDestination().getValue()}.`,
+        { tripId: trip.getId(), type: 'NEW_TRIP' },
+      ).catch(() => {});
 
       return {
         id: trip.getId(),

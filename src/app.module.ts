@@ -9,9 +9,11 @@ import { FuelModule } from './modules/fuel/fuel.module';
 import { HealthModule } from './health/health.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { DriverPortalModule } from './modules/driver-portal/driver-portal.module';
+import { NotificationsModule } from './shared/infrastructure/notifications/notifications.module';
 
 @Module({
   imports: [
+    NotificationsModule,
     ClientsModule,
     DriversModule,
     VehiclesModule,
