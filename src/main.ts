@@ -29,28 +29,6 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  // Rate Limiting Global: 60 requisições por minuto por IP
-  app.use(
-    rateLimit({
-      windowMs: 60 * 1000,
-      limit: 60,
-      standardHeaders: 'draft-8',
-      legacyHeaders: false,
-      message: { statusCode: 429, message: 'Muitas requisições. Tente novamente em um minuto.' },
-    }),
-  );
-
-  // Rate Limiting Estrito para rotas sensíveis: 5 tentativas por minuto por IP
-  const authLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    limit: 5,
-    standardHeaders: 'draft-8',
-    legacyHeaders: false,
-    message: { statusCode: 429, message: 'Muitas tentativas. Tente novamente em 1 minuto.' },
-  });
-  app.use('/v1/auth/login', authLimiter);
-  app.use('/v1/me/password', authLimiter);
-
   const allowedOrigins = [
     'http://localhost:4200',
     'http://127.0.0.1:4200',
@@ -61,6 +39,7 @@ async function bootstrap() {
     ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim()) : []),
   ];
 
+  // CORS deve ser registrado antes do rate limit para que respostas de erro (429, etc) incluam os headers CORS
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       // Permite requisições sem origin (como mobile apps, curl, health checks) ou origens autorizadas
@@ -79,6 +58,28 @@ async function bootstrap() {
     },
     credentials: true,
   });
+
+  // Rate Limiting Global: 300 requisições por minuto por IP (permite múltiplos dispositivos/abas na mesma rede)
+  app.use(
+    rateLimit({
+      windowMs: 60 * 1000,
+      limit: 300,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+      message: { statusCode: 429, message: 'Muitas requisições. Tente novamente em um minuto.' },
+    }),
+  );
+
+  // Rate Limiting Estrito para rotas sensíveis: 10 tentativas por minuto por IP
+  const authLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 10,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { statusCode: 429, message: 'Muitas tentativas. Tente novamente em 1 minuto.' },
+  });
+  app.use('/v1/auth/login', authLimiter);
+  app.use('/v1/me/password', authLimiter);
 
   app.enableVersioning({
     type: VersioningType.URI,

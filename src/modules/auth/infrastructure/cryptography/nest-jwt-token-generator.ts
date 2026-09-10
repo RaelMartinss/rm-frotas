@@ -22,7 +22,7 @@ export class NestJwtTokenGenerator implements ITokenGenerator {
 
   async generate(payload: TokenPayload): Promise<GeneratedTokens> {
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, { expiresIn: '15m' }),
+      this.jwtService.signAsync(payload, { expiresIn: '2h' }),
       this.jwtService.signAsync(payload, {
         secret: this.refreshSecret,
         expiresIn: '7d',

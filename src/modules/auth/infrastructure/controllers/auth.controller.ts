@@ -64,6 +64,7 @@ export class AuthController {
     return {
       message: result.message,
       accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     };
   }
 
@@ -90,7 +91,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description:
-      'Autenticação realizada com sucesso (retorna accessToken e grava cookie HttpOnly).',
+      'Autenticação realizada com sucesso (retorna accessToken, refreshToken e grava cookie HttpOnly).',
   })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas.' })
   async login(
@@ -104,6 +105,7 @@ export class AuthController {
 
     return {
       accessToken,
+      refreshToken,
       user,
     };
   }
@@ -135,6 +137,7 @@ export class AuthController {
 
     return {
       accessToken,
+      refreshToken: newRefreshToken,
       user,
     };
   }
