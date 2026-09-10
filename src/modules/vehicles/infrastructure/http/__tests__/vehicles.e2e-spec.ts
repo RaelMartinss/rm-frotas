@@ -4,6 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../../../../../app.module';
 import { PrismaService } from '../../../../../shared/infrastructure/prisma/prisma.service';
 import { InMemoryUsersRepository } from '../../../../auth/repositories/in-memory-users.repository';
+import { InMemoryRefreshTokenSessionRepository } from '../../../../auth/repositories/in-memory-refresh-token-session.repository';
 import {
   Vehicle,
   VehicleStatus,
@@ -82,6 +83,8 @@ describe('Vehicles Endpoints (E2E)', () => {
       .useValue(repository)
       .overrideProvider('IUsersRepository')
       .useValue(usersRepository)
+      .overrideProvider('IRefreshTokenSessionRepository')
+      .useValue(new InMemoryRefreshTokenSessionRepository())
       .overrideProvider(PrismaService)
       .useValue({
         $connect: async () => {},

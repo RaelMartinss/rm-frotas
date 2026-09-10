@@ -15,6 +15,7 @@ import { Vehicle } from '../src/modules/vehicles/domain/entities/vehicle.entity'
 import { LicensePlate } from '../src/modules/vehicles/domain/value-objects/license-plate.vo';
 import { Trip } from '../src/modules/trips/domain/entities/trip.entity';
 import { InMemoryUsersRepository } from '../src/modules/auth/repositories/in-memory-users.repository';
+import { InMemoryRefreshTokenSessionRepository } from '../src/modules/auth/repositories/in-memory-refresh-token-session.repository';
 
 // Repositório em memória para Drivers
 class InMemoryDriversRepository implements IDriversRepository {
@@ -194,6 +195,8 @@ describe('TripsController (E2E) - Lifecycle', () => {
       .useValue(tripsRepository)
       .overrideProvider('IUsersRepository')
       .useValue(new InMemoryUsersRepository())
+      .overrideProvider('IRefreshTokenSessionRepository')
+      .useValue(new InMemoryRefreshTokenSessionRepository())
       .overrideProvider(PrismaService)
       .useValue({})
       .compile();

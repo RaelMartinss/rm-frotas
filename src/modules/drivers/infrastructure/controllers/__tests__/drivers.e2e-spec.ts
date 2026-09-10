@@ -13,6 +13,7 @@ import { PrismaService } from '../../../../../shared/infrastructure/prisma/prism
 import { DomainExceptionFilter } from '../../http/domain-exception.filter';
 import { AppModule } from '../../../../../app.module';
 import { InMemoryUsersRepository } from '../../../../auth/repositories/in-memory-users.repository';
+import { InMemoryRefreshTokenSessionRepository } from '../../../../auth/repositories/in-memory-refresh-token-session.repository';
 import { InMemoryDriverSuspensionsRepository } from '../../repositories/in-memory-driver-suspensions.repository';
 import { DriverAvailabilityChecker } from '../../../domain/services/driver-availability-checker.service';
 
@@ -84,6 +85,8 @@ describe('DriversController (E2E)', () => {
       )
       .overrideProvider('IUsersRepository')
       .useValue(usersRepository)
+      .overrideProvider('IRefreshTokenSessionRepository')
+      .useValue(new InMemoryRefreshTokenSessionRepository())
       .overrideProvider(PrismaService)
       .useValue({})
       .compile();
