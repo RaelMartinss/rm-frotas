@@ -111,6 +111,8 @@ export class FcmNotificationService implements OnModuleInit {
       const driver = await this.prisma.driver.findUnique({
         where: { id: driverId },
         select: {
+          clientId: true,
+          name: true,
           pushToken: true,
           user: {
             select: { pushToken: true },
@@ -123,9 +125,21 @@ export class FcmNotificationService implements OnModuleInit {
         return false;
       }
 
-      const token = driver.pushToken || driver.user?.pushToken;
+      let token = driver.pushToken || driver.user?.pushToken;
+      if (!token && driver.clientId) {
+        const matchingUser = await this.prisma.user.findFirst({
+          where: {
+            clientId: driver.clientId,
+            name: { equals: driver.name, mode: 'insensitive' },
+            pushToken: { not: null },
+          },
+          select: { pushToken: true },
+        });
+        token = matchingUser?.pushToken ?? null;
+      }
+
       if (!token) {
-        this.logger.debug(`Motorista ${driverId} não possui token push registrado.`);
+        this.logger.debug(`Motorista ${driverId} (${driver.name}) não possui token push registrado.`);
         return false;
       }
 

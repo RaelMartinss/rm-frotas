@@ -405,15 +405,34 @@ export class DriverPortalController {
       throw new BadRequestException('Token é obrigatório.');
     }
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Usuário não encontrado.');
+    }
+
     await this.prisma.user.update({
       where: { id: userId },
       data: { pushToken: body.token },
     });
 
-    // Se houver perfil de motorista vinculado, atualiza também
+    // Vincula o motorista por userId ou pelo nome no mesmo tenant e salva o token
     await this.prisma.driver.updateMany({
-      where: { userId },
-      data: { pushToken: body.token },
+      where: {
+        OR: [
+          { userId },
+          {
+            clientId: user.clientId ?? undefined,
+            name: { equals: user.name, mode: 'insensitive' },
+          },
+        ],
+      },
+      data: {
+        pushToken: body.token,
+        userId: userId,
+      },
     });
 
     return { success: true, message: 'Push token registrado com sucesso.' };
