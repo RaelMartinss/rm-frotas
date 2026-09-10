@@ -54,13 +54,24 @@ async function bootstrap() {
   const allowedOrigins = [
     'http://localhost:4200',
     'http://127.0.0.1:4200',
+    'https://localhost',
+    'http://localhost',
+    'capacitor://localhost',
+    'ionic://localhost',
     ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim()) : []),
   ];
 
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
       // Permite requisições sem origin (como mobile apps, curl, health checks) ou origens autorizadas
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') ||
+        origin.startsWith('https://localhost') ||
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('capacitor://')
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Origem não permitida pelo CORS.'), false);
