@@ -132,4 +132,49 @@ describe('Driver Entity', () => {
       expect(driver.getUpdatedAt().getTime()).toBeGreaterThanOrEqual(oldUpdatedAt.getTime());
     });
   });
+
+  describe('Validação de Vencimento de CNH e Prazos', () => {
+    it('deve calcular corretamente os dias até o vencimento', () => {
+      const expirationDate = new Date('2026-09-15');
+      const driver = new Driver({
+        name: 'Gael Silva',
+        cpf: validCpf,
+        cnh: new Cnh('12345678900', 'B', expirationDate),
+      });
+
+      const refDate = new Date('2026-09-10');
+      expect(driver.getDaysUntilCnhExpires(refDate)).toBe(5);
+    });
+
+    it('deve retornar <= 1 dia como bloqueado para viagem', () => {
+      const expirationDate = new Date('2026-09-11');
+      const driver = new Driver({
+        name: 'Gael Silva',
+        cpf: validCpf,
+        cnh: new Cnh('12345678900', 'B', expirationDate),
+      });
+
+      // Hoje = 10/09, Vence = 11/09 (1 dia restante) -> DEVE BLOQUEAR
+      const refToday = new Date('2026-09-10');
+      expect(driver.getDaysUntilCnhExpires(refToday)).toBe(1);
+      expect(driver.isCnhInvalidOrExpiringSoon(refToday, 1)).toBe(true);
+      expect(driver.isCnhExpired(refToday)).toBe(false);
+
+      // Hoje = 11/09 (vence hoje) -> DEVE BLOQUEAR
+      const refExpirationDay = new Date('2026-09-11');
+      expect(driver.getDaysUntilCnhExpires(refExpirationDay)).toBe(0);
+      expect(driver.isCnhInvalidOrExpiringSoon(refExpirationDay, 1)).toBe(true);
+
+      // Hoje = 12/09 (vencida) -> DEVE BLOQUEAR e constar como vencida
+      const refExpired = new Date('2026-09-12');
+      expect(driver.getDaysUntilCnhExpires(refExpired)).toBe(-1);
+      expect(driver.isCnhExpired(refExpired)).toBe(true);
+      expect(driver.isCnhInvalidOrExpiringSoon(refExpired, 1)).toBe(true);
+
+      // Hoje = 09/09 (2 dias restantes) -> NÃO DEVE BLOQUEAR no threshold de 1 dia
+      const refSafe = new Date('2026-09-09');
+      expect(driver.getDaysUntilCnhExpires(refSafe)).toBe(2);
+      expect(driver.isCnhInvalidOrExpiringSoon(refSafe, 1)).toBe(false);
+    });
+  });
 });

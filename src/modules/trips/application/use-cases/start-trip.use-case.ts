@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Trip } from '../../domain/entities/trip.entity';
 import { TripNotFoundException } from '../exceptions/trip-not-found.exception';
+import { DriverCnhInvalidForTripException } from '../exceptions/driver-cnh-invalid-for-trip.exception';
 import type { ITripsRepository } from '../repositories/trips-repository.interface';
 import type { IDriversRepository } from '../../../drivers/domain/repositories/drivers.repository';
 import { IVehiclesRepository } from '../../../vehicles/domain/repositories/vehicles.repository';
@@ -32,10 +33,17 @@ export class StartTripUseCase {
       throw new TripNotFoundException('Motorista associado não encontrado.');
     }
 
-   // Regra de Negócio: Impede incio se a CNH estiver vencida
-   if (driver.isCnhExpired(new Date())) {
-      throw new Error('Não é possível iniciar a viagem: CNH do motorista está vencida.');
-   }
+    // Regra de Negócio: Impede início se a CNH estiver vencida ou a <= 1 dia do vencimento
+    const daysUntilCnhExpires = driver.getDaysUntilCnhExpires();
+    if (driver.isCnhInvalidOrExpiringSoon()) {
+      const msg =
+        daysUntilCnhExpires < 0
+          ? 'Não é possível iniciar a viagem: CNH do motorista está vencida.'
+          : daysUntilCnhExpires === 0
+          ? 'Não é possível iniciar a viagem: CNH do motorista vence hoje.'
+          : 'Não é possível iniciar a viagem: CNH do motorista vence amanhã (bloqueio de segurança em 1 dia).';
+      throw new DriverCnhInvalidForTripException(msg);
+    }
 
     const vehicle = await this.vehiclesRepository.findById(trip.getVehicleId());
     if (!vehicle) throw new NotFoundException('Veículo não encontrado.');

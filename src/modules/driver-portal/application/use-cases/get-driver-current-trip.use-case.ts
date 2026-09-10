@@ -9,7 +9,10 @@ export interface DriverCurrentTripOutput {
     cnhNumber: string;
     cnhCategory: string;
     cnhExpirationDate: string;
+    cnhExpirationDateIso: string;
+    daysUntilCnhExpires: number;
     isCnhExpired: boolean;
+    canStartTrip: boolean;
     status: string;
   } | null;
   trip: {
@@ -79,6 +82,22 @@ export class GetDriverCurrentTripUseCase {
 
     // Se ainda não houver driver cadastrado, retorna driver com dados do user
     const now = new Date();
+    const refDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const expDate = driver
+      ? new Date(
+          driver.cnhExpirationDate.getFullYear(),
+          driver.cnhExpirationDate.getMonth(),
+          driver.cnhExpirationDate.getDate(),
+        )
+      : null;
+    const daysUntilCnhExpires = expDate
+      ? Math.round((expDate.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+    const isCnhExpired = daysUntilCnhExpires < 0;
+    const canStartTrip = driver
+      ? driver.status === 'ACTIVE' && daysUntilCnhExpires > 1
+      : false;
+
     const driverData = driver
       ? {
           id: driver.id,
@@ -87,7 +106,10 @@ export class GetDriverCurrentTripUseCase {
           cnhNumber: driver.cnhNumber,
           cnhCategory: driver.cnhCategory,
           cnhExpirationDate: driver.cnhExpirationDate.toLocaleDateString('pt-BR'),
-          isCnhExpired: driver.cnhExpirationDate < now,
+          cnhExpirationDateIso: driver.cnhExpirationDate.toISOString(),
+          daysUntilCnhExpires,
+          isCnhExpired,
+          canStartTrip,
           status: driver.status,
         }
       : null;

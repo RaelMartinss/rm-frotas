@@ -150,17 +150,48 @@ export class Driver {
     this.props.updatedAt = new Date();
   }
 
+  public getCnhExpirationDate(): Date {
+    return new Date(
+      this.props.cnhExpirationDate ?? this.props.cnh.getExpirationDate(),
+    );
+  }
+
+  /**
+   * Retorna os dias restantes para o vencimento da CNH (positivo = no prazo, 0 = vence hoje, negativo = vencida).
+   * Normalizado por data civil local.
+   */
+  public getDaysUntilCnhExpires(referenceDate: Date = new Date()): number {
+    const expirationDate = this.getCnhExpirationDate();
+
+    const ref = new Date(
+      referenceDate.getFullYear(),
+      referenceDate.getMonth(),
+      referenceDate.getDate(),
+    );
+    const exp = new Date(
+      expirationDate.getFullYear(),
+      expirationDate.getMonth(),
+      expirationDate.getDate(),
+    );
+
+    const diffMs = exp.getTime() - ref.getTime();
+    return Math.round(diffMs / (1000 * 60 * 60 * 24));
+  }
+
   /**
    * Verifica se a CNH do motorista está vencida em relação à data informada (ou data atual)
    */
   public isCnhExpired(referenceDate: Date = new Date()): boolean {
-    const expirationDate =
-      this.props.cnhExpirationDate ?? this.props.cnh.getExpirationDate();
+    return this.getDaysUntilCnhExpires(referenceDate) < 0;
+  }
 
-    // Normaliza para comparar apenas a data sem interferência de fuso/horário
-    const expiration = new Date(expirationDate);
-    expiration.setHours(23, 59, 59, 999);
-
-    return referenceDate > expiration;
+  /**
+   * Verifica se a CNH está vencida ou com vencimento iminente (<= thresholdDays, default 1 dia)
+   */
+  public isCnhInvalidOrExpiringSoon(
+    referenceDate: Date = new Date(),
+    thresholdDays: number = 1,
+  ): boolean {
+    return this.getDaysUntilCnhExpires(referenceDate) <= thresholdDays;
   }
 }

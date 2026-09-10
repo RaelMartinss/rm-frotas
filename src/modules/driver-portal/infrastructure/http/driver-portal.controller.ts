@@ -76,8 +76,24 @@ export class DriverPortalController {
     }
 
     const now = new Date();
-    if (trip.driver.cnhExpirationDate < now) {
-      throw new BadRequestException('Não é possível iniciar a viagem: CNH do motorista está vencida.');
+    const refDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const expDate = new Date(
+      trip.driver.cnhExpirationDate.getFullYear(),
+      trip.driver.cnhExpirationDate.getMonth(),
+      trip.driver.cnhExpirationDate.getDate(),
+    );
+    const diffDays = Math.round(
+      (expDate.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (diffDays <= 1) {
+      const msg =
+        diffDays < 0
+          ? 'Não é possível iniciar a viagem: CNH do motorista está vencida.'
+          : diffDays === 0
+          ? 'Não é possível iniciar a viagem: CNH do motorista vence hoje.'
+          : 'Não é possível iniciar a viagem: CNH do motorista vence amanhã (bloqueio de segurança em 1 dia).';
+      throw new BadRequestException(msg);
     }
 
     // Atualiza viagem e veículo
