@@ -178,6 +178,13 @@ export class TripsController {
     try {
       const trip = await this.startTripUseCase.execute({ tripId: id });
 
+      this.fcmNotificationService.sendPushToDriver(
+        trip.getDriverId(),
+        '🚀 Viagem Iniciada!',
+        `A sua viagem para ${trip.getDestination().getValue()} foi iniciada pelo gestor.`,
+        { tripId: trip.getId(), type: 'TRIP_STARTED' },
+      ).catch(() => {});
+
       return {
         id: trip.getId(),
         status: trip.getStatus(),
@@ -198,7 +205,7 @@ export class TripsController {
   @Patch(':id/complete')
   @Roles(UserRole.FLEET_MANAGER, UserRole.DRIVER)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Concluir uma viagem em andamento' })
+  @ApiOperation({ summary: 'Concluir uma viagem em mitigation' })
   @ApiParam({ name: 'id', description: 'UUID da viagem' })
   @ApiResponse({ status: 200, description: 'Viagem concluída com sucesso (status COMPLETED).' })
   @ApiResponse({ status: 400, description: 'Transição de status inválida.' })
@@ -206,6 +213,13 @@ export class TripsController {
   async complete(@Param('id') id: string) {
     try {
       const trip = await this.completeTripUseCase.execute({ tripId: id });
+
+      this.fcmNotificationService.sendPushToDriver(
+        trip.getDriverId(),
+        '✅ Viagem Concluída!',
+        `A viagem para ${trip.getDestination().getValue()} foi concluída pelo gestor.`,
+        { tripId: trip.getId(), type: 'TRIP_COMPLETED' },
+      ).catch(() => {});
 
       return {
         id: trip.getId(),
@@ -236,6 +250,14 @@ export class TripsController {
   })
   async cancel(@Param('id') id: string) {
     const trip = await this.cancelTripUseCase.execute({ tripId: id });
+
+    this.fcmNotificationService.sendPushToDriver(
+      trip.getDriverId(),
+      '⚠️ Viagem Cancelada',
+      `A viagem para ${trip.getDestination().getValue()} foi cancelada pelo gestor.`,
+      { tripId: trip.getId(), type: 'TRIP_CANCELLED' },
+    ).catch(() => {});
+
     return {
       id: trip.getId(),
       status: trip.getStatus(),

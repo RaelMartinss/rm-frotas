@@ -156,13 +156,20 @@ export class FcmNotificationService implements OnModuleInit {
           title,
           body,
         },
-        data: data || {},
+        data: {
+          title,
+          body,
+          ...(data || {}),
+        },
         android: {
           priority: 'high',
           notification: {
-            sound: 'default',
-            clickAction: 'FLUTTER_NOTIFICATION_CLICK',
             channelId: 'rm_frotas_channel',
+            sound: 'default',
+            defaultSound: true,
+            defaultVibrateTimings: true,
+            priority: 'max',
+            visibility: 'public',
           },
         },
       };
