@@ -79,6 +79,7 @@ async function bootstrap() {
     message: { statusCode: 429, message: 'Muitas tentativas. Tente novamente em 1 minuto.' },
   });
   app.use('/v1/auth/login', authLimiter);
+  app.use('/v1/auth/verify-password', authLimiter);
   app.use('/v1/me/password', authLimiter);
 
   app.enableVersioning({

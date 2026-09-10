@@ -1,5 +1,30 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class DeviceInfoDto {
+  @ApiPropertyOptional({
+    example: 'mobile',
+    description: 'Plataforma de acesso (mobile ou web)',
+  })
+  @IsString()
+  @IsOptional()
+  platform?: 'mobile' | 'web';
+
+  @ApiPropertyOptional({
+    example: 'Mozilla/5.0...',
+    description: 'User-Agent do cliente',
+  })
+  @IsString()
+  @IsOptional()
+  userAgent?: string;
+}
 
 export class LoginDto {
   @ApiProperty({ example: 'rael@frotas.com', description: 'E-mail cadastrado' })
@@ -11,4 +36,10 @@ export class LoginDto {
   @IsString()
   @IsNotEmpty()
   password: string;
+
+  @ApiPropertyOptional({ description: 'Informações do dispositivo/cliente' })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DeviceInfoDto)
+  deviceInfo?: DeviceInfoDto;
 }

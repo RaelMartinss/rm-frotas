@@ -90,4 +90,8 @@ export class User {
     this.props.temporaryPasswordSetAt = null;
     this.props.updatedAt = new Date();
   }
+
+  async verifyPassword(plainPassword: string): Promise<boolean> {
+    return this.props.password.matches(plainPassword);
+  }
 }

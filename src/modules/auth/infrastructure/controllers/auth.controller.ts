@@ -10,14 +10,23 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token.use-case';
 import { ChangeOwnPasswordUseCase } from '../../application/use-cases/change-own-password.use-case';
+import { LogoutAllDevicesUseCase } from '../../application/use-cases/logout-all-devices.use-case';
+import { VerifyPasswordUseCase } from '../../application/use-cases/verify-password.use-case';
 import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/login.dto';
 import { ChangePasswordDto } from './dtos/change-password.dto';
+import { LogoutAllDevicesDto } from './dtos/logout-all-devices.dto';
+import { VerifyPasswordDto } from './dtos/verify-password.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 
@@ -40,13 +49,18 @@ export class AuthController {
     private readonly loginUseCase: LoginUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly changeOwnPasswordUseCase: ChangeOwnPasswordUseCase,
+    private readonly logoutAllDevicesUseCase: LogoutAllDevicesUseCase,
+    private readonly verifyPasswordUseCase: VerifyPasswordUseCase,
   ) {}
 
   @Post('change-password')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Alterar a própria senha (usado para primeiro acesso com senha temporária ou troca regular)' })
+  @ApiOperation({
+    summary:
+      'Alterar a própria senha (usado para primeiro acesso com senha temporária ou troca regular)',
+  })
   @ApiResponse({ status: 200, description: 'Senha alterada com sucesso.' })
   async changePassword(
     @CurrentUser('userId') currentUserId: string,
@@ -95,29 +109,50 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: 'Credenciais inválidas.' })
   async login(
+    @Req() req: Request,
     @Body() body: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { accessToken, refreshToken, user } =
-      await this.loginUseCase.execute(body);
+    const userAgent = req.headers['user-agent'];
+    const deviceInfo = body.deviceInfo ?? {
+      platform: 'web',
+      userAgent,
+    };
+
+    const { accessToken, refreshToken, expiresIn, user } =
+      await this.loginUseCase.execute({
+        email: body.email,
+        password: body.password,
+        deviceInfo: {
+          platform: deviceInfo.platform,
+          userAgent: deviceInfo.userAgent ?? userAgent,
+        },
+      });
 
     res.cookie(REFRESH_COOKIE_NAME, refreshToken, getCookieOptions());
 
     return {
       accessToken,
       refreshToken,
+      expiresIn,
       user,
     };
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Renovar access token utilizando o cookie de refresh token' })
+  @ApiOperation({
+    summary: 'Renovar access token utilizando o cookie ou corpo JSON com refresh token',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Novo accessToken emitido com sucesso e cookie de refresh rotacionado.',
+    description:
+      'Novo accessToken emitido com sucesso e cookie de refresh rotacionado.',
   })
-  @ApiResponse({ status: 401, description: 'Refresh token ausente, inválido ou expirado.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token ausente, inválido ou expirado.',
+  })
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -130,7 +165,7 @@ export class AuthController {
       throw new UnauthorizedException('Token de atualização não encontrado.');
     }
 
-    const { accessToken, refreshToken: newRefreshToken, user } =
+    const { accessToken, refreshToken: newRefreshToken, expiresIn, user } =
       await this.refreshTokenUseCase.execute({ refreshToken: token });
 
     res.cookie(REFRESH_COOKIE_NAME, newRefreshToken, getCookieOptions());
@@ -138,6 +173,7 @@ export class AuthController {
     return {
       accessToken,
       refreshToken: newRefreshToken,
+      expiresIn,
       user,
     };
   }
@@ -155,5 +191,69 @@ export class AuthController {
     });
 
     return { message: 'Desconectado com sucesso.' };
+  }
+
+  @Post('logout-all-devices')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Encerrar todas as sessões ativas de refresh token de todos os dispositivos',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Todas as sessões ativas foram encerradas com sucesso.',
+  })
+  @ApiResponse({ status: 401, description: 'Não autenticado.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissão para encerrar sessões de outro usuário.',
+  })
+  async logoutAllDevices(
+    @CurrentUser('userId') currentUserId: string,
+    @CurrentUser('role') currentUserRole: string,
+    @CurrentUser('clientId') currentClientId: string | null,
+    @Body() body: LogoutAllDevicesDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.logoutAllDevicesUseCase.execute({
+      currentUserId,
+      currentUserRole,
+      currentClientId,
+      targetUserId: body?.userId,
+    });
+
+    // Se o usuário estiver deslogando a si mesmo, limpa também o cookie
+    if (!body?.userId || body.userId === currentUserId) {
+      res.clearCookie(REFRESH_COOKIE_NAME, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+        path: '/',
+      });
+    }
+  }
+
+  @Post('verify-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Verificar senha atual do usuário autenticado para desbloqueio de inatividade',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Resultado da verificação de senha ({ valid: boolean }).',
+  })
+  @ApiResponse({ status: 401, description: 'Não autenticado.' })
+  async verifyPassword(
+    @CurrentUser('userId') currentUserId: string,
+    @Body() body: VerifyPasswordDto,
+  ) {
+    return this.verifyPasswordUseCase.execute({
+      userId: currentUserId,
+      password: body.password,
+    });
   }
 }

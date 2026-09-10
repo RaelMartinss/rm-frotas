@@ -10,7 +10,10 @@ import { CreateSubordinateUserUseCase } from './application/use-cases/create-sub
 import { ChangeOwnPasswordUseCase } from './application/use-cases/change-own-password.use-case';
 import { ResetUserPasswordUseCase } from './application/use-cases/reset-user-password.use-case';
 import { UpdateUserRoleUseCase } from './application/use-cases/update-user-role.use-case';
+import { LogoutAllDevicesUseCase } from './application/use-cases/logout-all-devices.use-case';
+import { VerifyPasswordUseCase } from './application/use-cases/verify-password.use-case';
 import { PrismaUsersRepository } from './infrastructure/repositories/prisma-users.repository';
+import { PrismaRefreshTokenSessionRepository } from './infrastructure/repositories/prisma-refresh-token-session.repository';
 import { NestJwtTokenGenerator } from './infrastructure/cryptography/nest-jwt-token-generator';
 import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
 import { PassportModule } from '@nestjs/passport';
@@ -39,7 +42,7 @@ import { ClientsModule } from '../clients/clients.module';
         }
         return {
           secret: secret || 'default-secret-key',
-          signOptions: { expiresIn: '15m' },
+          signOptions: { expiresIn: '2h' },
         };
       },
     }),
@@ -53,11 +56,17 @@ import { ClientsModule } from '../clients/clients.module';
     ChangeOwnPasswordUseCase,
     ResetUserPasswordUseCase,
     UpdateUserRoleUseCase,
+    LogoutAllDevicesUseCase,
+    VerifyPasswordUseCase,
     JwtStrategy,
     RolesGuard,
     {
       provide: 'IUsersRepository',
       useClass: PrismaUsersRepository,
+    },
+    {
+      provide: 'IRefreshTokenSessionRepository',
+      useClass: PrismaRefreshTokenSessionRepository,
     },
     {
       provide: 'ITokenGenerator',
@@ -66,6 +75,7 @@ import { ClientsModule } from '../clients/clients.module';
   ],
   exports: [
     'IUsersRepository',
+    'IRefreshTokenSessionRepository',
     'ITokenGenerator',
     JwtModule,
     PassportModule,
@@ -74,6 +84,8 @@ import { ClientsModule } from '../clients/clients.module';
     ChangeOwnPasswordUseCase,
     ResetUserPasswordUseCase,
     UpdateUserRoleUseCase,
+    LogoutAllDevicesUseCase,
+    VerifyPasswordUseCase,
   ],
 })
 export class AuthModule {}
