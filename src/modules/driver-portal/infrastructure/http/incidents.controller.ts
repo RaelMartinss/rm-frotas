@@ -3,6 +3,7 @@ import {
   Get,
   Patch,
   Param,
+  Body,
   Query,
   UseGuards,
   HttpCode,

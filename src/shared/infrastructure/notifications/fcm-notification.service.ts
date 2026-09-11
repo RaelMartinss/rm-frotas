@@ -108,6 +108,9 @@ export class FcmNotificationService implements OnModuleInit {
     }
 
     try {
+      if (!this.prisma?.driver) {
+        return false;
+      }
       const driver = await this.prisma.driver.findUnique({
         where: { id: driverId },
         select: {
