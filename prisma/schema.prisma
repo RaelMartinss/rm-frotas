@@ -237,6 +237,7 @@ model Trip {
   scheduledDate        DateTime?  @map("scheduled_date")
   startedAt            DateTime?  @map("started_at")
   completedAt          DateTime?  @map("completed_at")
+  checklist            Json?      @map("checklist")
   createdAt            DateTime   @default(now()) @map("created_at")
   updatedAt            DateTime   @updatedAt @map("updated_at")
 
@@ -382,9 +383,16 @@ model Incident {
   vehicleId   String?          @map("vehicle_id")
   tripId      String?          @map("trip_id")
   clientId    String           @map("client_id")
-  category    IncidentCategory @default(OUTRO)
-  description String
-  status      IncidentStatus   @default(OPEN)
+  category        IncidentCategory @default(OUTRO)
+  description     String
+  protocol        String?          @map("protocol")
+  latitude        Float?
+  longitude       Float?
+  locationAddress String?          @map("location_address")
+  photoUrl        String?          @map("photo_url")
+  photos          String[]         @default([])
+  checklist       Json?            @map("checklist")
+  status          IncidentStatus   @default(OPEN)
   resolvedAt  DateTime?        @map("resolved_at")
   resolvedBy  String?          @map("resolved_by")
   createdAt   DateTime         @default(now()) @map("created_at")

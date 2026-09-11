@@ -27,6 +27,7 @@ import {
   ReportIncidentDto,
   UpdateDriverFuelReceiptDto,
   GetDriverFuelHistoryQueryDto,
+  SaveTripChecklistDto,
 } from '../../application/dtos/driver-portal.dto';
 import { RecordLocationBatchDto } from '../../application/dtos/record-location.dto';
 import { RecordTripLocationUseCase } from '../../application/use-cases/record-trip-location.use-case';
@@ -309,15 +310,43 @@ export class DriverPortalController {
       ? (body.category.toUpperCase() as any)
       : 'OUTRO';
 
+    // Gera protocolo amigável e único (#00XXXX)
+    const count = await this.prisma.incident.count({
+      where: { clientId: effectiveClientId || undefined },
+    });
+    const protocol = '#' + String(count + 1).padStart(6, '0');
+
+    const desc =
+      body.description?.trim() ||
+      `Alerta SOS de ${category} reportado pelo motorista${
+        body.latitude
+          ? ` nas coordenadas (${body.latitude.toFixed(4)}, ${body.longitude?.toFixed(4)})`
+          : ''
+      }.`;
+
+    const photos =
+      body.photos && body.photos.length > 0
+        ? body.photos
+        : body.photoUrl
+        ? [body.photoUrl]
+        : [];
+
     // 2. Persiste o registro de incidente SOS
     const incident = await this.prisma.incident.create({
       data: {
+        protocol,
         driverId: driver?.id || null,
         vehicleId: vehicleId || null,
         tripId: body.tripId || null,
         clientId: effectiveClientId!,
         category,
-        description: body.description,
+        description: desc,
+        latitude: body.latitude ?? null,
+        longitude: body.longitude ?? null,
+        locationAddress: body.locationAddress ?? null,
+        photoUrl: body.photoUrl ?? (photos[0] || null),
+        photos,
+        checklist: body.checklist ?? null,
         status: 'OPEN',
       },
       include: {
@@ -336,7 +365,7 @@ export class DriverPortalController {
           ownerId: userId,
           type: 'CORRETIVA',
           status: 'AGENDADA',
-          description: `[ALERTA SOS MOTORISTA - ${category}] ${body.description}`,
+          description: `[ALERTA SOS ${protocol} - ${category}] ${desc}`,
           scheduledDate: new Date(),
         },
       });
@@ -345,8 +374,49 @@ export class DriverPortalController {
     return {
       message: 'Alerta de SOS reportado com sucesso ao gestor da frota!',
       incidentId: incident.id,
+      protocol: incident.protocol,
       category: incident.category,
+      description: incident.description,
       recordedAt: incident.createdAt,
+      latitude: incident.latitude,
+      longitude: incident.longitude,
+      locationAddress: incident.locationAddress,
+      photoUrl: incident.photoUrl,
+      photos: incident.photos,
+    };
+  }
+
+  @Post('checklist')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Salvar checklist veicular de pré-viagem' })
+  async saveChecklist(
+    @CurrentUser('userId') userId: string,
+    @Body() body: SaveTripChecklistDto,
+  ) {
+    const trip = await this.prisma.trip.findUnique({
+      where: { id: body.tripId },
+    });
+
+    if (!trip) {
+      throw new NotFoundException('Viagem não encontrada.');
+    }
+
+    const updatedTrip = await this.prisma.trip.update({
+      where: { id: body.tripId },
+      data: {
+        checklist: {
+          ...body.checklist,
+          savedAt: new Date().toISOString(),
+          userId,
+        },
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      message: 'Checklist veicular salvo com sucesso!',
+      tripId: updatedTrip.id,
+      checklist: updatedTrip.checklist,
     };
   }
 

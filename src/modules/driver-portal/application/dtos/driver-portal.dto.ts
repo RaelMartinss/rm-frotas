@@ -83,15 +83,54 @@ export class ReportIncidentDto {
   @IsString()
   vehicleId?: string;
 
+  @ApiPropertyOptional({ description: 'Latitude detectada pelo GPS' })
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @ApiPropertyOptional({ description: 'Longitude detectada pelo GPS' })
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
+
+  @ApiPropertyOptional({ description: 'Endereço aproximado ou rodovia detectada' })
+  @IsOptional()
+  @IsString()
+  locationAddress?: string;
+
+  @ApiPropertyOptional({ description: 'URL ou base64 da foto da avaria/dano' })
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Lista de fotos de evidências' })
+  @IsOptional()
+  photos?: string[];
+
+  @ApiPropertyOptional({ description: 'Dados do checklist veicular vinculado' })
+  @IsOptional()
+  checklist?: any;
+
   @ApiProperty({ description: 'Categoria do incidente (PNEU, MECANICA, ELETRICA, ACIDENTE, ATRASO, OUTRO)' })
   @IsString()
   @IsNotEmpty()
   category: string;
 
-  @ApiProperty({ description: 'Descrição da ocorrência' })
+  @ApiPropertyOptional({ description: 'Descrição da ocorrência' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'A descrição da ocorrência é obrigatória.' })
-  description: string;
+  description?: string;
+}
+
+export class SaveTripChecklistDto {
+  @ApiProperty({ description: 'ID da viagem' })
+  @IsString()
+  @IsNotEmpty({ message: 'O ID da viagem é obrigatório.' })
+  tripId: string;
+
+  @ApiProperty({ description: 'Dados do checklist veicular em formato JSON' })
+  @IsNotEmpty()
+  checklist: any;
 }
 
 export class UpdateDriverFuelReceiptDto {
