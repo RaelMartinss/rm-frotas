@@ -28,6 +28,7 @@ import {
 import { PrismaPg } from '@prisma/adapter-pg';
 import { faker } from '@faker-js/faker';
 import { randomUUID } from 'node:crypto';
+import bcrypt from 'bcrypt';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter, log: [] }); // sem log de query para alta performance em inserts em lote
@@ -132,18 +133,27 @@ async function main() {
     },
   });
 
-  await prisma.user.upsert({
-    where: { email: 'superadmin@frotas.com' },
-    update: { role: UserRole.SUPER_ADMIN },
+  const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || 'superadmin@frotas.com').trim().toLowerCase();
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'Admin@123';
+  const hashedSuperAdminPassword = await bcrypt.hash(superAdminPassword, 10);
+
+  const superAdmin = await prisma.user.upsert({
+    where: { email: superAdminEmail },
+    update: {
+      role: UserRole.SUPER_ADMIN,
+      password: hashedSuperAdminPassword,
+      status: UserStatus.ACTIVE,
+    },
     create: {
       name: 'Super Administrador',
-      email: 'superadmin@frotas.com',
-      password: '$2b$10$YourHashedPasswordHereOrRegister',
+      email: superAdminEmail,
+      password: hashedSuperAdminPassword,
       role: UserRole.SUPER_ADMIN,
       clientId: null,
       status: UserStatus.ACTIVE,
     },
   });
+  console.log(`👑 Super Admin configurado: ${superAdmin.email} | Senha: ${superAdminPassword}`);
 
   // 1. Usuários Gestores (Owners)
   console.log('👤 Preparando Gestores (Owners)...');

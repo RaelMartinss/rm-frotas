@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient, VehicleStatus, DriverStatus, TripStatus, UserRole, ClientStatus } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import bcrypt from 'bcrypt';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -28,22 +29,28 @@ async function main() {
   });
   console.log(`🏢 Cliente padrão: ${defaultClient.tradeName} (${defaultClient.id})`);
 
-  // 2. Cria ou garante o SUPER_ADMIN (sem clientId)
+  // 2. Cria ou garante o SUPER_ADMIN (sem clientId) com senha real hasheada
+  const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || 'superadmin@frotas.com').trim().toLowerCase();
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'Admin@123';
+  const hashedSuperAdminPassword = await bcrypt.hash(superAdminPassword, 10);
+
   const superAdmin = await prisma.user.upsert({
-    where: { email: 'superadmin@frotas.com' },
+    where: { email: superAdminEmail },
     update: {
       role: UserRole.SUPER_ADMIN,
+      password: hashedSuperAdminPassword,
+      status: 'ACTIVE',
     },
     create: {
       name: 'Super Administrador',
-      email: 'superadmin@frotas.com',
-      password: '$2b$10$YourHashedPasswordHereOrRegister',
+      email: superAdminEmail,
+      password: hashedSuperAdminPassword,
       role: UserRole.SUPER_ADMIN,
       clientId: null,
       mustChangePassword: false,
     },
   });
-  console.log(`👑 Super Admin: ${superAdmin.email} (${superAdmin.id})`);
+  console.log(`👑 Super Admin: ${superAdmin.email} (${superAdmin.id}) | Senha: ${superAdminPassword}`);
 
   // 3. Cria ou garante o FLEET_MANAGER associado ao cliente padrão
   const fleetManager = await prisma.user.upsert({
