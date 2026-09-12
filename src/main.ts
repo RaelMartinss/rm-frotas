@@ -82,6 +82,19 @@ async function bootstrap() {
   app.use('/v1/auth/verify-password', authLimiter);
   app.use('/v1/me/password', authLimiter);
 
+  // Rate Limiting de Alta Segurança para Portal do Super Admin: 5 tentativas por minuto por IP
+  const adminAuthLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 5,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: {
+      statusCode: 429,
+      message: 'Muitas tentativas no portal administrativo. Aguarde 1 minuto.',
+    },
+  });
+  app.use('/v1/auth/admin-login', adminAuthLimiter);
+
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',

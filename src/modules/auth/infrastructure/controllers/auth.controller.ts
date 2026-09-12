@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   HttpCode,
   HttpStatus,
+  Logger,
   Post,
   Req,
   Res,
@@ -29,6 +31,7 @@ import { LogoutAllDevicesDto } from './dtos/logout-all-devices.dto';
 import { VerifyPasswordDto } from './dtos/verify-password.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
+import { UserRole } from '../../domain/entities/user.entity';
 
 const REFRESH_COOKIE_NAME = 'refresh_token';
 const isProduction = process.env.NODE_ENV === 'production';
@@ -44,6 +47,8 @@ const getCookieOptions = () => ({
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly registerUserUseCase: RegisterUserUseCase,
     private readonly loginUseCase: LoginUseCase,
@@ -128,6 +133,66 @@ export class AuthController {
           userAgent: deviceInfo.userAgent ?? userAgent,
         },
       });
+
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, getCookieOptions());
+
+    return {
+      accessToken,
+      refreshToken,
+      expiresIn,
+      user,
+    };
+  }
+
+  @Post('admin-login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Autenticar exclusivamente usuário com papel SUPER_ADMIN no portal administrativo',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Autenticação de Super Admin realizada com sucesso.',
+  })
+  @ApiResponse({ status: 401, description: 'Credenciais inválidas.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Acesso negado: usuário não possui privilégios de Super Admin.',
+  })
+  async adminLogin(
+    @Req() req: Request,
+    @Body() body: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const userAgent = req.headers['user-agent'];
+    const deviceInfo = body.deviceInfo ?? {
+      platform: 'web',
+      userAgent,
+    };
+
+    const { accessToken, refreshToken, expiresIn, user } =
+      await this.loginUseCase.execute({
+        email: body.email,
+        password: body.password,
+        deviceInfo: {
+          platform: deviceInfo.platform,
+          userAgent: deviceInfo.userAgent ?? userAgent,
+        },
+      });
+
+    // Barreira de segurança real no backend: valida se o usuário autenticado é SUPER_ADMIN
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      this.logger.warn(
+        `[AUDITORIA SEGURANÇA] Tentativa de login no portal admin recusada para o usuário ${user.email} (Perfil: ${user.role}). IP: ${req.ip}`,
+      );
+      throw new ForbiddenException(
+        'Acesso negado: Este portal é restrito exclusivamente a Super Administradores da plataforma.',
+      );
+    }
+
+    this.logger.log(
+      `[AUDITORIA SEGURANÇA] Super Admin autenticado com sucesso: ${user.email}. IP: ${req.ip}`,
+    );
 
     res.cookie(REFRESH_COOKIE_NAME, refreshToken, getCookieOptions());
 
