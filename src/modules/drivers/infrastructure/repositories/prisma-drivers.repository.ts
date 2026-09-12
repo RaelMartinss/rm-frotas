@@ -26,6 +26,7 @@ export class PrismaDriversRepository implements IDriversRepository {
   async findById(id: string): Promise<Driver | null> {
     const raw = await this.prisma.driver.findUnique({
       where: { id },
+      include: { user: true },
     });
 
     if (!raw) return null;
@@ -36,6 +37,7 @@ export class PrismaDriversRepository implements IDriversRepository {
   async findByUserId(userId: string): Promise<Driver | null> {
     const raw = await this.prisma.driver.findUnique({
       where: { userId },
+      include: { user: true },
     });
 
     if (!raw) return null;
@@ -46,6 +48,7 @@ export class PrismaDriversRepository implements IDriversRepository {
   async findByCpf(cpf: Cpf): Promise<Driver | null> {
     const raw = await this.prisma.driver.findUnique({
       where: { cpf: cpf.getValue() },
+      include: { user: true },
     });
 
     if (!raw) return null;
@@ -56,11 +59,12 @@ export class PrismaDriversRepository implements IDriversRepository {
   async findAll(ownerId?: string): Promise<Driver[]> {
     const drivers = await this.prisma.driver.findMany({
       where: ownerId ? { OR: [{ ownerId }, { clientId: ownerId }] } : undefined,
+      include: { user: true },
       orderBy: { createdAt: 'desc' },
     });
 
     return drivers.map(
-      (driver: Awaited<ReturnType<typeof this.prisma.driver.findMany>>[number]) =>
+      (driver: any) =>
         DriverMapper.toDomain(driver),
     );
   }
@@ -92,6 +96,8 @@ export class PrismaDriversRepository implements IDriversRepository {
             { name: { contains: term, mode: 'insensitive' } },
             { cpf: { contains: term, mode: 'insensitive' } },
             { cnhNumber: { contains: term, mode: 'insensitive' } },
+            { email: { contains: term, mode: 'insensitive' } },
+            { user: { email: { contains: term, mode: 'insensitive' } } },
           ],
         },
       ];
@@ -104,13 +110,14 @@ export class PrismaDriversRepository implements IDriversRepository {
         where,
         skip,
         take: limit,
+        include: { user: true },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.driver.count({ where }),
     ]);
 
     return {
-      drivers: rawDrivers.map(DriverMapper.toDomain),
+      drivers: rawDrivers.map((d: any) => DriverMapper.toDomain(d)),
       total,
     };
   }

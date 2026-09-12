@@ -11,7 +11,9 @@ export class DriverMapper {
   /**
    * Converte o registro do banco (Prisma) em uma Entidade de Domínio (Driver).
    */
-  static toDomain(raw: PrismaDriver): Driver {
+  static toDomain(
+    raw: PrismaDriver & { user?: { email?: string | null; phone?: string | null } | null },
+  ): Driver {
     return new Driver(
       {
         name: raw.name,
@@ -26,6 +28,8 @@ export class DriverMapper {
         clientId: raw.clientId,
         ownerId: raw.ownerId,
         userId: raw.userId ?? undefined,
+        email: raw.email ?? raw.user?.email ?? undefined,
+        phone: raw.phone ?? raw.user?.phone ?? undefined,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },
@@ -59,6 +63,8 @@ export class DriverMapper {
       clientId,
       ownerId,
       userId: driver.getUserId() ?? null,
+      email: driver.getEmail() ?? null,
+      phone: driver.getPhone() ?? null,
       createdAt: driver.getCreatedAt(),
       updatedAt: driver.getUpdatedAt(),
     };

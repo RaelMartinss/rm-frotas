@@ -5,6 +5,8 @@ export class DriverPresenter {
     return {
       id: driver.getId(),
       name: driver.getName(),
+      email: driver.getEmail() ?? null,
+      phone: driver.getPhone() ?? null,
       cpf: driver.getCpf().getFormatted(),
       cnh: {
         number: driver.getCnh().getNumber(),

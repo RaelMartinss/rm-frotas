@@ -102,6 +102,7 @@ export class CreateDriverUseCase {
       clientId: input.clientId,
       ownerId: input.ownerId,
       userId: targetUser.getId(),
+      email: cleanEmail,
       phone: input.phone,
     });
 

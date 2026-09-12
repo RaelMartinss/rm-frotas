@@ -15,6 +15,7 @@ export interface DriverProps {
   clientId?: string;
   ownerId?: string;
   userId?: string;
+  email?: string;
   phone?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +30,7 @@ export interface CreateDriverProps {
   clientId?: string;
   ownerId?: string;
   userId?: string;
+  email?: string;
   phone?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -50,6 +52,7 @@ export class Driver {
       clientId: props.clientId,
       ownerId: props.ownerId,
       userId: props.userId,
+      email: props.email,
       phone: props.phone,
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
@@ -88,6 +91,13 @@ export class Driver {
   }
   public setUserId(userId: string): void {
     this.props.userId = userId;
+    this.touch();
+  }
+  public getEmail(): string | undefined {
+    return this.props.email;
+  }
+  public setEmail(email?: string): void {
+    this.props.email = email;
     this.touch();
   }
   public getPhone(): string | undefined {

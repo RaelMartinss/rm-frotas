@@ -143,6 +143,8 @@ model Driver {
   cnhCategory       String       @map("cnh_category")
   cnhExpirationDate DateTime     @map("cnh_expiration_date")
   status            DriverStatus @default(ACTIVE)
+  email             String?      @map("email")
+  phone             String?      @map("phone")
   pushToken         String?      @map("push_token")
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")

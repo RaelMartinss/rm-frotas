@@ -171,6 +171,8 @@ describe('DriversController (E2E)', () => {
       expect(response.body).toEqual({
         id: expect.any(String),
         name: 'Rael Martins',
+        email: 'rael.driver@e2e.com',
+        phone: null,
         cpf: '529.982.247-25',
         cnh: {
           number: '12345678901',
