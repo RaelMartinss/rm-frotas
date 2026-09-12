@@ -261,13 +261,24 @@ model Trip {
   @@map("trips")
 }
 
+enum MovementState {
+  MOVING
+  STOPPED
+}
+
 model TripLocationPing {
-  id         String   @id @default(uuid())
-  tripId     String   @map("trip_id")
-  latitude   Float
-  longitude  Float
-  recordedAt DateTime @map("recorded_at")
-  createdAt  DateTime @default(now()) @map("created_at")
+  id               String         @id @default(uuid())
+  tripId           String         @map("trip_id")
+  latitude         Float
+  longitude        Float
+  accuracy         Float?
+  speed            Float?
+  heading          Float?
+  movementState    MovementState? @map("movement_state")
+  matchedLatitude  Float?         @map("matched_latitude")
+  matchedLongitude Float?         @map("matched_longitude")
+  recordedAt       DateTime       @map("recorded_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
 
   trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
 

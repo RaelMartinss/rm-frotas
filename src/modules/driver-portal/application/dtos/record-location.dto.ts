@@ -11,6 +11,21 @@ export class RecordLocationDto {
   @IsNumber({}, { message: 'Longitude deve ser um número válido.' })
   longitude: number;
 
+  @ApiPropertyOptional({ description: 'Precisão do GPS em metros' })
+  @IsOptional()
+  @IsNumber()
+  accuracy?: number;
+
+  @ApiPropertyOptional({ description: 'Velocidade informada pelo dispositivo em km/h' })
+  @IsOptional()
+  @IsNumber()
+  speed?: number;
+
+  @ApiPropertyOptional({ description: 'Direção do movimento em graus (0-360)' })
+  @IsOptional()
+  @IsNumber()
+  heading?: number;
+
   @ApiPropertyOptional({ description: 'Timestamp em que a localização foi registrada no dispositivo (ISO string)' })
   @IsOptional()
   @IsString()
@@ -27,6 +42,21 @@ export class RecordLocationBatchDto {
   @IsOptional()
   @IsNumber()
   longitude?: number;
+
+  @ApiPropertyOptional({ description: 'Precisão do GPS em metros (se envio unitário)' })
+  @IsOptional()
+  @IsNumber()
+  accuracy?: number;
+
+  @ApiPropertyOptional({ description: 'Velocidade informada em km/h (se envio unitário)' })
+  @IsOptional()
+  @IsNumber()
+  speed?: number;
+
+  @ApiPropertyOptional({ description: 'Direção do movimento em graus (0-360) (se envio unitário)' })
+  @IsOptional()
+  @IsNumber()
+  heading?: number;
 
   @ApiPropertyOptional({ description: 'Timestamp (se envio unitário)' })
   @IsOptional()
