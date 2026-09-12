@@ -19,6 +19,13 @@ import { DriverSuspensionNotFoundException } from '../../domain/exceptions/drive
 import { DriverAlreadyExistsException } from '../../domain/exceptions/driver-already-exists.exception';
 import { UserEmailAlreadyExistsException } from '../../../auth/domain/exceptions/role-hierarchy.exceptions';
 import { InvalidEmailException } from '../../../auth/domain/exceptions/invalid-email.exception';
+import {
+  ClientDocumentAlreadyExistsException,
+  ClientNotFoundException,
+  ClientSuspendedOrCancelledException,
+  ClientAlreadyHasFleetManagerException,
+  CrossClientAccessDeniedException,
+} from '../../../clients/domain/exceptions/client.exceptions';
 
 @Catch(
   InvalidCpfException,
@@ -34,6 +41,11 @@ import { InvalidEmailException } from '../../../auth/domain/exceptions/invalid-e
   DriverAlreadyExistsException,
   UserEmailAlreadyExistsException,
   InvalidEmailException,
+  ClientDocumentAlreadyExistsException,
+  ClientNotFoundException,
+  ClientSuspendedOrCancelledException,
+  ClientAlreadyHasFleetManagerException,
+  CrossClientAccessDeniedException,
 )
 export class DomainExceptionFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -45,7 +57,8 @@ export class DomainExceptionFilter implements ExceptionFilter {
 
     if (
       exception instanceof DriverNotFoundException ||
-      exception instanceof DriverSuspensionNotFoundException
+      exception instanceof DriverSuspensionNotFoundException ||
+      exception instanceof ClientNotFoundException
     ) {
       statusCode = HttpStatus.NOT_FOUND;
       errorName = 'Not Found';
@@ -53,10 +66,18 @@ export class DomainExceptionFilter implements ExceptionFilter {
       exception instanceof DriverAlreadySuspendedException ||
       exception instanceof DriverHasActiveTripException ||
       exception instanceof DriverAlreadyExistsException ||
-      exception instanceof UserEmailAlreadyExistsException
+      exception instanceof UserEmailAlreadyExistsException ||
+      exception instanceof ClientDocumentAlreadyExistsException ||
+      exception instanceof ClientAlreadyHasFleetManagerException
     ) {
       statusCode = HttpStatus.CONFLICT;
       errorName = 'Conflict';
+    } else if (
+      exception instanceof ClientSuspendedOrCancelledException ||
+      exception instanceof CrossClientAccessDeniedException
+    ) {
+      statusCode = HttpStatus.FORBIDDEN;
+      errorName = 'Forbidden';
     }
 
     response.status(statusCode).json({

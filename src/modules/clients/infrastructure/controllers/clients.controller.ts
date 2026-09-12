@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Query,
+  UseFilters,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -15,6 +16,7 @@ import { JwtAuthGuard } from '../../../auth/infrastructure/guards/jwt-auth.guard
 import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
 import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
 import { UserRole } from '../../../auth/domain/entities/user.entity';
+import { DomainExceptionFilter } from '../../../drivers/infrastructure/http/domain-exception.filter';
 import { OnboardClientUseCase } from '../../application/use-cases/onboard-client.use-case';
 import { ListAllClientsUseCase } from '../../application/use-cases/list-all-clients.use-case';
 import { GetClientByIdUseCase } from '../../application/use-cases/get-client-by-id.use-case';
@@ -29,8 +31,9 @@ import { ListClientsDto } from './dtos/list-clients.dto';
 @ApiTags('Clients')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
+@UseFilters(DomainExceptionFilter)
 @Roles(UserRole.SUPER_ADMIN)
-@Controller('v1/clients')
+@Controller('clients')
 export class ClientsController {
   constructor(
     private readonly onboardClientUseCase: OnboardClientUseCase,
