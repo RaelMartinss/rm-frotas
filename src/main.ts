@@ -106,11 +106,12 @@ async function bootstrap() {
       scheme: 'bearer',
       bearerFormat: 'JWT',
       name: 'JWT',
-      description: 'Insira o token JWT',
+      description: 'Insira o token JWT (apenas o token, sem o prefixo Bearer)',
       in: 'header',
     },
     'JWT-auth', // nome do esquema — precisa bater com o usado nos controllers
   )
+  .addBearerAuth() // Esquema padrão de fallback para controladores com @ApiBearerAuth() genérico
   .addTag('Auth', 'Registro e autenticação de usuários')
   .addTag('Profile', 'Dados do usuário autenticado')
   .addTag('Dashboard', 'Indicadores e resumos consolidados da frota')

@@ -29,7 +29,7 @@ import { UpdateClientDto } from './dtos/update-client.dto';
 import { ListClientsDto } from './dtos/list-clients.dto';
 
 @ApiTags('Clients')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @UseFilters(DomainExceptionFilter)
 @Roles(UserRole.SUPER_ADMIN)

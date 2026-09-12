@@ -25,7 +25,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: any) => {
+          const authHeader = req?.headers?.authorization;
+          if (authHeader && typeof authHeader === 'string') {
+            // Remove prefixo(s) 'Bearer ' repetidos ou espaços extras (ex: token colado com 'Bearer ...' no Swagger)
+            const token = authHeader.replace(/^(Bearer\s+)+/i, '').trim();
+            if (token) return token;
+          }
+          return null;
+        },
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ]),
       ignoreExpiration: false,
       secretOrKey: secret || 'default-secret-key',
     });
