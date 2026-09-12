@@ -26,6 +26,11 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Acesso negado: Perfil de usuário não identificado.');
     }
 
+    // SUPER_ADMIN possui privilégios de superusuário em todos os módulos
+    if (user.role === UserRole.SUPER_ADMIN) {
+      return true;
+    }
+
     const hasRole = requiredRoles.some((role) => role === user.role);
 
     if (!hasRole) {
