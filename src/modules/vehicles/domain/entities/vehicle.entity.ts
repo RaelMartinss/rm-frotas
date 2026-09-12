@@ -11,6 +11,7 @@ export enum VehicleStatus {
 export interface VehicleProps {
     id?: string;
     plate: LicensePlate;
+    renavam?: string | null;
     brand?: string | null;
     model: string;
     year: number;
@@ -26,6 +27,7 @@ export interface VehicleProps {
 interface VehicleInternalProps {
     id: string;
     plate: LicensePlate;
+    renavam?: string | null;
     brand?: string | null;
     model: string;
     year: number;
@@ -111,9 +113,15 @@ export class Vehicle {
         this.props.updatedAt = new Date();
     }
 
+    public updateRenavam(newRenavam?: string | null): void {
+        this.props.renavam = newRenavam;
+        this.touch();
+    }
+
     // -- Getters ---
     public getId(): string { return this.props.id; }
     public getPlate(): LicensePlate { return this.props.plate; }
+    public getRenavam(): string | null | undefined { return this.props.renavam; }
     public getBrand(): string | null | undefined { return this.props.brand; }
     public getModel(): string { return this.props.model; }
     public getYear(): number { return this.props.year; }

@@ -21,6 +21,7 @@ export class CreateVehicleUseCase {
     const vehicle = new Vehicle({
       id: randomUUID(),
       plate: licensePlate,
+      renavam: input.renavam,
       brand: input.brand,
       model: input.model,
       year: input.year,

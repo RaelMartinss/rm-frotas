@@ -99,6 +99,7 @@ export class PrismaVehiclesRepository implements IVehiclesRepository {
         {
           OR: [
             { plate: { contains: term, mode: 'insensitive' } },
+            { renavam: { contains: term, mode: 'insensitive' } },
             { model: { contains: term, mode: 'insensitive' } },
             { brand: { contains: term, mode: 'insensitive' } },
           ],

@@ -101,6 +101,7 @@ model User {
 model Vehicle {
   id             String        @id @default(uuid())
   plate          String        @unique
+  renavam        String?       @map("renavam")
   brand          String?
   model          String
   year           Int

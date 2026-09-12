@@ -7,6 +7,11 @@ export class CreateVehicleDto {
     @IsNotEmpty()
     plate: string;
 
+    @ApiPropertyOptional({ example: '00123456789', description: 'Código RENAVAM do veículo' })
+    @IsOptional()
+    @IsString()
+    renavam?: string;
+
     @ApiPropertyOptional({ example: 'Volvo', description: 'Marca do veículo' })
     @IsOptional()
     @IsString()

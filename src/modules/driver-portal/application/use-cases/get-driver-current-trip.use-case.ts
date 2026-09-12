@@ -174,6 +174,7 @@ export class GetDriverCurrentTripUseCase {
               brand: activeTrip.vehicle.brand,
               model: activeTrip.vehicle.model,
               plate: activeTrip.vehicle.plate,
+              renavam: activeTrip.vehicle.renavam ?? null,
               year: activeTrip.vehicle.year,
               currentKm: activeTrip.vehicle.currentKm,
               crlvExpiration: activeTrip.vehicle.crlvExpiration

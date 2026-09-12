@@ -1,5 +1,6 @@
 export interface CreateVehicleInput {
     plate: string;
+    renavam?: string;
     brand?: string;
     model: string;
     year: number;

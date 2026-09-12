@@ -118,6 +118,7 @@ export class VehiclesController {
     ) {
         const vehicle = await this.createVehicleUseCase.execute({
             plate: dto.plate,
+            renavam: dto.renavam,
             brand: dto.brand,
             model: dto.model,
             year: dto.year,

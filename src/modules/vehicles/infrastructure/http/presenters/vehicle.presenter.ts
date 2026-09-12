@@ -6,6 +6,7 @@ export class VehiclePresenter {
         return {
             id: vehicle.getId(),
             plate: vehicle.getPlate().getValue(),
+            renavam: vehicle.getRenavam() ?? null,
             brand: vehicle.getBrand(),
             model: vehicle.getModel(),
             year: vehicle.getYear(),

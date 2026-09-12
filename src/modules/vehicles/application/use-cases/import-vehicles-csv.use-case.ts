@@ -61,6 +61,7 @@ export class ImportVehiclesCsvUseCase {
       year: number;
       currentKm: number;
       crlvExpiration?: Date | null;
+      renavam?: string | null;
     }[] = [];
 
     const currentYear = new Date().getFullYear();
@@ -83,6 +84,7 @@ export class ImportVehiclesCsvUseCase {
       const rawYear = (headerMap.year !== undefined ? rowValues[headerMap.year] : '')?.trim() || '';
       const rawKm = (headerMap.currentKm !== undefined ? rowValues[headerMap.currentKm] : '')?.trim() || '';
       const rawCrlv = (headerMap.crlvExpiration !== undefined ? rowValues[headerMap.crlvExpiration] : '')?.trim() || '';
+      const rawRenavam = (headerMap.renavam !== undefined ? rowValues[headerMap.renavam] : '')?.trim() || '';
 
       // Validação da Placa
       if (!rawPlate) {
@@ -161,6 +163,7 @@ export class ImportVehiclesCsvUseCase {
       candidateVehicles.push({
         lineNumber,
         plateFormatted: formattedPlate,
+        renavam: rawRenavam || null,
         brand: rawBrand || null,
         model: rawModel,
         year: yearNum,
@@ -194,6 +197,7 @@ export class ImportVehiclesCsvUseCase {
       } else {
         const vehicle = new Vehicle({
           plate: new LicensePlate(cand.plateFormatted),
+          renavam: cand.renavam,
           brand: cand.brand,
           model: cand.model,
           year: cand.year,
@@ -298,6 +302,7 @@ export class ImportVehiclesCsvUseCase {
 
   private mapHeaders(headers: string[]): {
     plate?: number;
+    renavam?: number;
     model?: number;
     brand?: number;
     year?: number;
@@ -306,6 +311,7 @@ export class ImportVehiclesCsvUseCase {
   } {
     const map: {
       plate?: number;
+      renavam?: number;
       model?: number;
       brand?: number;
       year?: number;
@@ -318,6 +324,8 @@ export class ImportVehiclesCsvUseCase {
 
       if (['placa', 'plate', 'licenca', 'licenseplate'].includes(norm)) {
         map.plate = index;
+      } else if (['renavam', 'codigorenavam', 'numrenavam', 'numerorenavam'].includes(norm)) {
+        map.renavam = index;
       } else if (['modelo', 'model', 'veiculo', 'vehicle'].includes(norm)) {
         map.model = index;
       } else if (['marca', 'brand', 'fabricante', 'manufacturer'].includes(norm)) {
