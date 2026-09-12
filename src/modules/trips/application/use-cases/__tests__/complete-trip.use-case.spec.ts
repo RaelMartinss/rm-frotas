@@ -53,4 +53,52 @@ describe('CompleteTripUseCase', () => {
   it('deve lançar exceção caso a viagem não exista', async () => {
     await expect(sut.execute({ tripId: 'invalid-id' })).rejects.toThrow(TripNotFoundException);
   });
+
+  it('deve registrar odômetro final e atualizar km do veículo', async () => {
+    const vehicle = new Vehicle({
+      plate: new LicensePlate('ABC1D23'),
+      model: 'Volvo FH',
+      year: 2022,
+      currentKm: 10000,
+      status: VehicleStatus.IN_USE,
+      clientId: 'client-1',
+    });
+    await vehiclesRepository.save(vehicle);
+
+    const trip = new Trip({
+      driverId: 'driver-1',
+      vehicleId: vehicle.getId(),
+      clientId: 'client-1',
+      origin,
+      destination,
+    });
+    trip.start();
+    await tripsRepository.create(trip);
+
+    const { InMemoryOdometerReadingsRepository } = await import(
+      '../../../../odometer/infrastructure/repositories/in-memory-odometer-readings.repository'
+    );
+    const { RegisterOdometerReadingUseCase } = await import(
+      '../../../../odometer/application/use-cases/register-odometer-reading.use-case'
+    );
+    const odometerRepo = new InMemoryOdometerReadingsRepository();
+    const registerOdometerUseCase = new RegisterOdometerReadingUseCase(odometerRepo, vehiclesRepository);
+
+    const useCaseWithOdometer = new CompleteTripUseCase(tripsRepository, vehiclesRepository, registerOdometerUseCase);
+
+    const result = await useCaseWithOdometer.execute({
+      tripId: trip.getId(),
+      finalOdometer: 10450,
+      ownerId: 'driver-1',
+    });
+
+    expect(result.getStatus()).toBe(TripStatus.COMPLETED);
+    expect(result.getFinalOdometer()).toBe(10450);
+
+    const updatedVehicle = await vehiclesRepository.findById(vehicle.getId());
+    expect(updatedVehicle?.getCurrentKm()).toBe(10450);
+
+    const latestReading = await odometerRepo.findLatestByVehicle(vehicle.getId());
+    expect(latestReading?.getCurrentKm().getValue()).toBe(10450);
+  });
 });

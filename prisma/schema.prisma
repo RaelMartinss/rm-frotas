@@ -58,6 +58,7 @@ model Client {
   fuelRecords       FuelRecord[]
   driverSuspensions DriverSuspension[]
   incidents         Incident[]
+  odometerReadings  OdometerReading[]
 
   @@map("clients")
 }
@@ -87,6 +88,7 @@ model User {
   maintenances      Maintenance[]      @relation("MaintenanceOwner")
   fuelRecords       FuelRecord[]       @relation("FuelRecordOwner")
   driverSuspensions DriverSuspension[] @relation("DriverSuspensionOwner")
+  odometerReadings  OdometerReading[]  @relation("OdometerReadingOwner")
 
   // Relacionamento 1:1 opcional (caso um usuário do tipo DRIVER esteja vinculado a um motorista da frota)
   driverProfile Driver? @relation("DriverUserAccount")
@@ -120,9 +122,10 @@ model Vehicle {
   owner   User   @relation("VehicleOwner", fields: [ownerId], references: [id], onDelete: Cascade)
 
   trips        Trip[]
-  maintenances Maintenance[]
-  fuelRecords  FuelRecord[]
-  incidents    Incident[]
+  maintenances     Maintenance[]
+  fuelRecords      FuelRecord[]
+  incidents        Incident[]
+  odometerReadings OdometerReading[]
 
   @@index([clientId])
   @@index([clientId, status])
@@ -241,6 +244,7 @@ model Trip {
   startedAt            DateTime?  @map("started_at")
   completedAt          DateTime?  @map("completed_at")
   checklist            Json?      @map("checklist")
+  finalOdometer        Int?       @map("final_odometer")
   createdAt            DateTime   @default(now()) @map("created_at")
   updatedAt            DateTime   @updatedAt @map("updated_at")
 
@@ -429,5 +433,37 @@ model RefreshTokenSession {
   @@index([tokenHash])
   @@map("refresh_token_sessions")
 }
+
+enum OdometerSource {
+  FUEL
+  TRIP
+  MAINTENANCE
+  MANUAL
+}
+
+model OdometerReading {
+  id              String         @id @default(uuid())
+  vehicleId       String         @map("vehicle_id")
+  clientId        String         @map("client_id")
+  ownerId         String         @map("owner_id")
+  previousKm      Int            @map("previous_km")
+  currentKm       Int            @map("current_km")
+  source          OdometerSource
+  sourceId        String         @map("source_id")
+  recordedAt      DateTime       @map("recorded_at")
+  correctedFromId String?        @map("corrected_from_id")
+  reason          String?
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  client  Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  owner   User    @relation("OdometerReadingOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, recordedAt])
+  @@index([clientId, recordedAt])
+  @@index([ownerId])
+  @@map("odometer_readings")
+}
+
 
 

@@ -18,13 +18,14 @@ import { GetTripRouteUseCase } from './application/use-cases/get-trip-route.use-
 import { ITripsRepository } from './application/repositories/trips-repository.interface';
 import { IDriversRepository } from '../drivers/domain/repositories/drivers.repository';
 import { IVehiclesRepository } from '../vehicles/domain/repositories/vehicles.repository';
-
+import { OdometerModule } from '../odometer/odometer.module';
+import { RegisterOdometerReadingUseCase } from '../odometer/application/use-cases/register-odometer-reading.use-case';
 
 // Controllers
 import { TripsController } from './infrastructure/controllers/trips.controller';
 
 @Module({
-  imports: [PrismaModule, DriversModule, VehiclesModule, AuthModule],
+  imports: [PrismaModule, DriversModule, VehiclesModule, AuthModule, OdometerModule],
   controllers: [TripsController],
   providers: [
     PrismaTripsRepository,
@@ -82,10 +83,11 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
       useFactory: (
         tripsRepo: ITripsRepository,
         vehiclesRepo: IVehiclesRepository,
+        registerOdometerReadingUseCase: RegisterOdometerReadingUseCase,
       ) => {
-        return new CompleteTripUseCase(tripsRepo, vehiclesRepo);
+        return new CompleteTripUseCase(tripsRepo, vehiclesRepo, registerOdometerReadingUseCase);
       },
-      inject: ['ITripsRepository', IVehiclesRepository],
+      inject: ['ITripsRepository', IVehiclesRepository, RegisterOdometerReadingUseCase],
     },
     {
       provide: CancelTripUseCase,

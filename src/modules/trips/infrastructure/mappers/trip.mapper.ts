@@ -32,6 +32,7 @@ export class TripMapper {
         scheduledDate: raw.scheduledDate ?? undefined,
         startedAt: raw.startedAt,
         completedAt: raw.completedAt,
+        finalOdometer: raw.finalOdometer ?? undefined,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },
@@ -64,6 +65,7 @@ export class TripMapper {
       scheduledDate: trip.getScheduledDate() ?? null,
       startedAt: trip.getStartedAt() ?? null,
       completedAt: trip.getCompletedAt() ?? null,
+      finalOdometer: trip.getFinalOdometer() ?? null,
       createdAt: trip.getCreatedAt(),
       updatedAt: trip.getUpdatedAt(),
     };

@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, Optional } from '@nestjs/common';
 import { IMaintenancesRepository } from '../../domain/repositories/maintenances.repository';
 import { IVehiclesRepository } from '../../../vehicles/domain/repositories/vehicles.repository';
 import { Maintenance } from '../../domain/entities/maintenance.entity';
 import { MaintenanceItem } from '../../domain/value-objects/maintenance-item.vo';
 import { VehicleStatus } from '../../../vehicles/domain/entities/vehicle.entity';
+import { RegisterOdometerReadingUseCase } from '../../../odometer/application/use-cases/register-odometer-reading.use-case';
+import { OdometerSource } from '../../../odometer/domain/value-objects/odometer-source.vo';
 
 export interface FinishMaintenanceInput {
   ownerId: string;
@@ -18,7 +20,9 @@ export interface FinishMaintenanceInput {
 export class FinishMaintenanceUseCase {
   constructor(
     private readonly maintenanceRepository: IMaintenancesRepository,
-    private readonly vehiclesRepository: IVehiclesRepository
+    private readonly vehiclesRepository: IVehiclesRepository,
+    @Optional()
+    private readonly registerOdometerReadingUseCase?: RegisterOdometerReadingUseCase
   ) {}
 
   async execute(input: FinishMaintenanceInput): Promise<Maintenance> {
@@ -57,6 +61,19 @@ export class FinishMaintenanceUseCase {
     // Atualiza odômetro do veículo se informado valor superior
     if (input.odometerAtService > vehicle.getCurrentKm()) {
       vehicle.updateKm(input.odometerAtService);
+    }
+
+    // Registra Leitura no módulo centralizado de Odômetro
+    if (this.registerOdometerReadingUseCase) {
+      await this.registerOdometerReadingUseCase.execute({
+        vehicleId: maintenance.getVehicleId(),
+        clientId: vehicle.getClientId() ?? 'default-client',
+        ownerId: input.ownerId,
+        currentKm: input.odometerAtService,
+        source: OdometerSource.MAINTENANCE,
+        sourceId: maintenance.getId(),
+        recordedAt: input.finishedAt ?? new Date(),
+      });
     }
 
     // Libera o status do veículo para DISPONIVEL (AVAILABLE)

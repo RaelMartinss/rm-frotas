@@ -85,6 +85,14 @@ export class Vehicle {
         this.touch();
     }
 
+    public correctKm(newKm: number): void {
+        if (newKm < 0) {
+            throw new InvalidKilometrageException('A quilometragem não pode ser negativa.');
+        }
+        this.props.currentKm = newKm;
+        this.touch();
+    }
+
     public updateCrlvExpiration(newExpiration: Date | null): void {
         this.props.crlvExpiration = newExpiration;
         this.touch();

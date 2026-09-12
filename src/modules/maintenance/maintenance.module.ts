@@ -13,9 +13,10 @@ import { ListMaintenancesUseCase } from './application/use-cases/list-maintenanc
 import { GetMaintenanceStatsUseCase } from './application/use-cases/get-maintenance-stats.use-case';
 import { IMaintenancesRepository } from './domain/repositories/maintenances.repository';
 import { PrismaMaintenancesRepository } from './infrastructure/persistence/prisma/repositories/prisma-maintenances.repository';
+import { OdometerModule } from '../odometer/odometer.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, VehiclesModule],
+  imports: [PrismaModule, AuthModule, VehiclesModule, OdometerModule],
   controllers: [MaintenancesController],
   providers: [
     ScheduleMaintenanceUseCase,

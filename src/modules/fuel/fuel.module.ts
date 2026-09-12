@@ -3,6 +3,7 @@ import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { VehiclesModule } from '../vehicles/vehicles.module';
 import { DriversModule } from '../drivers/drivers.module';
+import { OdometerModule } from '../odometer/odometer.module';
 
 import { FuelRecordsController } from './infrastructure/http/controllers/fuel-records.controller';
 import { RegisterFuelRecordUseCase } from './application/use-cases/register-fuel-record.use-case';
@@ -17,7 +18,7 @@ import { IFuelRecordsRepository } from './domain/repositories/fuel-records.repos
 import { PrismaFuelRecordsRepository } from './infrastructure/persistence/prisma/repositories/prisma-fuel-records.repository';
 
 @Module({
-  imports: [PrismaModule, AuthModule, VehiclesModule, DriversModule],
+  imports: [PrismaModule, AuthModule, VehiclesModule, DriversModule, OdometerModule],
   controllers: [FuelRecordsController],
   providers: [
     RegisterFuelRecordUseCase,

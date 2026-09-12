@@ -10,6 +10,7 @@ import { HealthModule } from './health/health.module';
 import { ClientsModule } from './modules/clients/clients.module';
 import { DriverPortalModule } from './modules/driver-portal/driver-portal.module';
 import { NotificationsModule } from './shared/infrastructure/notifications/notifications.module';
+import { OdometerModule } from './modules/odometer/odometer.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { NotificationsModule } from './shared/infrastructure/notifications/notif
     DashboardModule,
     MaintenanceModule,
     FuelModule,
+    OdometerModule,
     HealthModule,
     DriverPortalModule,
   ],

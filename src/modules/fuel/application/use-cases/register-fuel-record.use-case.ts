@@ -1,10 +1,12 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException, Optional } from '@nestjs/common';
 import { IFuelRecordsRepository } from '../../domain/repositories/fuel-records.repository';
 import { IVehiclesRepository } from '../../../vehicles/domain/repositories/vehicles.repository';
 import type { IDriversRepository } from '../../../drivers/domain/repositories/drivers.repository';
 import { FuelRecord } from '../../domain/entities/fuel-record.entity';
 import { FuelType } from '../../domain/enums/fuel-type.enum';
 import { VehicleOdometerValidator } from '../../../../shared/domain/services/vehicle-odometer.validator';
+import { RegisterOdometerReadingUseCase } from '../../../odometer/application/use-cases/register-odometer-reading.use-case';
+import { OdometerSource } from '../../../odometer/domain/value-objects/odometer-source.vo';
 
 export interface RegisterFuelRecordInput {
   ownerId: string;
@@ -28,7 +30,9 @@ export class RegisterFuelRecordUseCase {
     private readonly fuelRecordsRepository: IFuelRecordsRepository,
     private readonly vehiclesRepository: IVehiclesRepository,
     @Inject('IDriversRepository')
-    private readonly driversRepository: IDriversRepository
+    private readonly driversRepository: IDriversRepository,
+    @Optional()
+    private readonly registerOdometerReadingUseCase?: RegisterOdometerReadingUseCase,
   ) {}
 
   async execute(input: RegisterFuelRecordInput): Promise<FuelRecord> {
@@ -72,14 +76,24 @@ export class RegisterFuelRecordUseCase {
       notes: input.notes,
     });
 
-    // 6. Atualizar a quilometragem do veículo se o odômetro informado for superior
-    if (input.odometerAtFueling > vehicle.getCurrentKm()) {
+    // 6. Persistir Registro
+    await this.fuelRecordsRepository.save(fuelRecord);
+
+    // 7. Registrar Leitura no módulo centralizado de Odômetro (ou atualizar diretamente se use-case não injetado)
+    if (this.registerOdometerReadingUseCase) {
+      await this.registerOdometerReadingUseCase.execute({
+        vehicleId: input.vehicleId,
+        clientId: vehicle.getClientId() ?? 'default-client',
+        ownerId: input.ownerId,
+        currentKm: input.odometerAtFueling,
+        source: OdometerSource.FUEL,
+        sourceId: fuelRecord.getId(),
+        recordedAt: input.fueledAt ?? new Date(),
+      });
+    } else if (input.odometerAtFueling > vehicle.getCurrentKm()) {
       vehicle.updateKm(input.odometerAtFueling);
       await this.vehiclesRepository.save(vehicle);
     }
-
-    // 7. Persistir Registro
-    await this.fuelRecordsRepository.save(fuelRecord);
 
     return fuelRecord;
   }

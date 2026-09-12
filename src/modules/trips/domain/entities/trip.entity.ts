@@ -13,6 +13,7 @@ export interface TripProps {
   scheduledDate?: Date | null;
   startedAt?: Date | null;
   completedAt?: Date | null;
+  finalOdometer?: number | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +28,7 @@ export interface CreateTripProps {
   scheduledDate?: Date | null;
   startedAt?: Date | null;
   completedAt?: Date | null;
+  finalOdometer?: number | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -55,6 +57,7 @@ export class Trip {
   public getScheduledDate(): Date | null | undefined { return this.props.scheduledDate; }
   public getStartedAt(): Date | null | undefined { return this.props.startedAt; }
   public getCompletedAt(): Date | null | undefined { return this.props.completedAt; }
+  public getFinalOdometer(): number | null | undefined { return this.props.finalOdometer; }
   public getCreatedAt(): Date { return this.props.createdAt; }
   public getUpdatedAt(): Date { return this.props.updatedAt; }
 
@@ -71,7 +74,7 @@ export class Trip {
     this.touch();
   }
 
-  public complete(): void {
+  public complete(finalOdometer?: number): void {
     if (this.props.status !== TripStatus.IN_PROGRESS) {
       throw new InvalidTripStatusTransitionException(
         this.props.status,
@@ -81,6 +84,9 @@ export class Trip {
 
     this.props.status = TripStatus.COMPLETED;
     this.props.completedAt = new Date();
+    if (finalOdometer !== undefined) {
+      this.props.finalOdometer = finalOdometer;
+    }
     this.touch();
   }
 

@@ -26,6 +26,8 @@ import {
   ClientAlreadyHasFleetManagerException,
   CrossClientAccessDeniedException,
 } from '../../../clients/domain/exceptions/client.exceptions';
+import { OdometerRegressionException } from '../../../odometer/domain/exceptions/odometer-regression.exception';
+import { InvalidKilometersException } from '../../../odometer/domain/exceptions/invalid-kilometers.exception';
 
 @Catch(
   InvalidCpfException,
@@ -46,6 +48,8 @@ import {
   ClientSuspendedOrCancelledException,
   ClientAlreadyHasFleetManagerException,
   CrossClientAccessDeniedException,
+  OdometerRegressionException,
+  InvalidKilometersException,
 )
 export class DomainExceptionFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -78,6 +82,9 @@ export class DomainExceptionFilter implements ExceptionFilter {
     ) {
       statusCode = HttpStatus.FORBIDDEN;
       errorName = 'Forbidden';
+    } else if (exception instanceof OdometerRegressionException) {
+      statusCode = HttpStatus.UNPROCESSABLE_ENTITY;
+      errorName = 'Unprocessable Entity';
     }
 
     response.status(statusCode).json({

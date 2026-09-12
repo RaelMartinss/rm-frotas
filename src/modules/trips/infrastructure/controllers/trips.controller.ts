@@ -24,7 +24,8 @@ import { VehicleNotAvailableException } from '../../application/exceptions/vehic
 import { TripNotFoundException } from '../../application/exceptions/trip-not-found.exception';
 import { InvalidLocationException } from '../../domain/exceptions/invalid-location.exception';
 import { InvalidTripStatusTransitionException } from '../../domain/exceptions/invalid-trip-status-transition.exception';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiPropertyOptional, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { IsInt, IsOptional, Min } from 'class-validator';
 import { CancelTripUseCase } from '../../application/use-cases/cancel-trip.use-case';
 import { GetTripAvailabilityUseCase } from '../../application/use-cases/get-trip-availability.use-case';
 import { GetTripRouteUseCase } from '../../application/use-cases/get-trip-route.use-case';
@@ -35,6 +36,14 @@ import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
 import { CurrentUser } from '../../../auth/infrastructure/decorators/current-user.decorator';
 import { UserRole } from '../../../auth/domain/entities/user.entity';
 import { FcmNotificationService } from '../../../../shared/infrastructure/notifications/fcm-notification.service';
+
+export class CompleteTripHttpDto {
+  @ApiPropertyOptional({ description: 'Quilometragem final do veículo ao término da viagem', example: 51200 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  finalOdometer?: number;
+}
 
 @ApiTags('Trips')
 @ApiBearerAuth('JWT-auth')
@@ -205,14 +214,23 @@ export class TripsController {
   @Patch(':id/complete')
   @Roles(UserRole.FLEET_MANAGER, UserRole.DRIVER)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Concluir uma viagem em mitigation' })
+  @ApiOperation({ summary: 'Concluir uma viagem' })
   @ApiParam({ name: 'id', description: 'UUID da viagem' })
   @ApiResponse({ status: 200, description: 'Viagem concluída com sucesso (status COMPLETED).' })
-  @ApiResponse({ status: 400, description: 'Transição de status inválida.' })
+  @ApiResponse({ status: 400, description: 'Transição de status inválida ou quilometragem incorreta.' })
   @ApiResponse({ status: 404, description: 'Viagem não encontrada.' })
-  async complete(@Param('id') id: string) {
+  @ApiResponse({ status: 422, description: 'Regressão de odômetro detectada.' })
+  async complete(
+    @Param('id') id: string,
+    @Body() dto: CompleteTripHttpDto,
+    @CurrentUser('userId') userId?: string,
+  ) {
     try {
-      const trip = await this.completeTripUseCase.execute({ tripId: id });
+      const trip = await this.completeTripUseCase.execute({
+        tripId: id,
+        finalOdometer: dto?.finalOdometer,
+        ownerId: userId,
+      });
 
       this.fcmNotificationService.sendPushToDriver(
         trip.getDriverId(),
@@ -224,6 +242,7 @@ export class TripsController {
       return {
         id: trip.getId(),
         status: trip.getStatus(),
+        finalOdometer: trip.getFinalOdometer(),
         completedAt: trip.getCompletedAt(),
         updatedAt: trip.getUpdatedAt(),
       };
