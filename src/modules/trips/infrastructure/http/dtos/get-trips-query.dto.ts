@@ -9,6 +9,11 @@ export class GetTripsQueryDto {
   @IsOptional()
   status?: TripStatus;
 
+  @ApiPropertyOptional({ description: 'Termo de busca por motorista, placa/modelo do veículo, origem ou destino' })
+  @IsString()
+  @IsOptional()
+  search?: string;
+
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()

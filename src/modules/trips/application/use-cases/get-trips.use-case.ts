@@ -5,6 +5,7 @@ import { TripStatus } from '../../domain/entities/trip-status.enum';
 
 export interface GetTripsInput {
   status?: TripStatus;
+  search?: string;
   driverId?: string;
   vehicleId?: string;
   ownerId?: string;
@@ -34,6 +35,7 @@ export class GetTripsUseCase {
 
     const { trips, total } = await this.tripsRepository.findManyPaginated({
       status: input.status,
+      search: input.search,
       driverId: input.driverId,
       vehicleId: input.vehicleId,
       ownerId: input.ownerId,

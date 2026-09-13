@@ -55,6 +55,7 @@ export class InMemoryTripsRepository implements ITripsRepository {
     status,
     driverId,
     vehicleId,
+    search,
     page,
     limit,
   }: FindManyPaginatedParams): Promise<FindManyPaginatedOutput> {
@@ -68,6 +69,19 @@ export class InMemoryTripsRepository implements ITripsRepository {
     }
     if (vehicleId) {
       filteredTrips = filteredTrips.filter((trip) => trip.getVehicleId() === vehicleId);
+    }
+    if (search && search.trim()) {
+      const term = search.trim().toLowerCase();
+      filteredTrips = filteredTrips.filter((trip) => {
+        return (
+          trip.getOrigin().getAddress().toLowerCase().includes(term) ||
+          trip.getOrigin().getCity().toLowerCase().includes(term) ||
+          trip.getDestination().getAddress().toLowerCase().includes(term) ||
+          trip.getDestination().getCity().toLowerCase().includes(term) ||
+          trip.getDriverId().toLowerCase().includes(term) ||
+          trip.getVehicleId().toLowerCase().includes(term)
+        );
+      });
     }
 
     const total = filteredTrips.length;

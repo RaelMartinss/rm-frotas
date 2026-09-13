@@ -8,6 +8,7 @@ export interface ITripsRepository {
   findActiveByVehicleId(vehicleId: string): Promise<Trip | null>;
   findManyPaginated(params: {
     status?: TripStatus;
+    search?: string;
     driverId?: string;
     vehicleId?: string;
     ownerId?: string;

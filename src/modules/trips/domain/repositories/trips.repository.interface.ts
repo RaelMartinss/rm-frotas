@@ -3,6 +3,7 @@ import { Trip } from '../entities/trip.entity';
 
 export interface FindManyPaginatedParams {
   status?: TripStatus;
+  search?: string;
   driverId?: string;
   vehicleId?: string;
   ownerId?: string;

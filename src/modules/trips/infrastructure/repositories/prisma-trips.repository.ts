@@ -74,6 +74,7 @@ export class PrismaTripsRepository implements ITripsRepository {
     vehicleId,
     ownerId,
     clientId,
+    search,
     page,
     limit,
   }: {
@@ -82,6 +83,7 @@ export class PrismaTripsRepository implements ITripsRepository {
     vehicleId?: string;
     ownerId?: string;
     clientId?: string;
+    search?: string;
     page: number;
     limit: number;
   }): Promise<{ trips: Trip[]; total: number }> {
@@ -98,6 +100,26 @@ export class PrismaTripsRepository implements ITripsRepository {
         { clientId: ownerId },
         { vehicle: { ownerId } },
         { driver: { ownerId } },
+      ];
+    }
+
+    if (search && search.trim()) {
+      const term = search.trim();
+      where.AND = [
+        ...(where.AND ?? []),
+        {
+          OR: [
+            { driver: { name: { contains: term, mode: 'insensitive' } } },
+            { driver: { cpf: { contains: term, mode: 'insensitive' } } },
+            { vehicle: { plate: { contains: term, mode: 'insensitive' } } },
+            { vehicle: { model: { contains: term, mode: 'insensitive' } } },
+            { vehicle: { brand: { contains: term, mode: 'insensitive' } } },
+            { originAddress: { contains: term, mode: 'insensitive' } },
+            { originCity: { contains: term, mode: 'insensitive' } },
+            { destinationAddress: { contains: term, mode: 'insensitive' } },
+            { destinationCity: { contains: term, mode: 'insensitive' } },
+          ],
+        },
       ];
     }
 
