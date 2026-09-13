@@ -28,6 +28,23 @@ import {
 } from '../../../clients/domain/exceptions/client.exceptions';
 import { OdometerRegressionException } from '../../../odometer/domain/exceptions/odometer-regression.exception';
 import { InvalidKilometersException } from '../../../odometer/domain/exceptions/invalid-kilometers.exception';
+import {
+  VehicleAlreadyInMaintenanceException,
+  VehicleInUseException,
+  VehicleNotInMaintenanceException,
+} from '../../../vehicles/domain/exceptions/vehicle-status.exception';
+import { VehicleNotFoundException } from '../../../vehicles/domain/exceptions/vehicle-not-found.exception';
+import { VehicleAlreadyExistsException } from '../../../vehicles/domain/exceptions/vehicle-already-exists.exception';
+import { InvalidLicensePlateException } from '../../../vehicles/domain/exceptions/invalid-license-plate.exception';
+import { InvalidKilometrageException } from '../../../vehicles/domain/exceptions/invalid-kilometrage.exception';
+import {
+  MaintenanceAlreadyFinishedException,
+  MaintenanceNotInProgressException,
+  MaintenanceNotScheduledException,
+  MaintenanceNotFoundException,
+  InvalidOdometerReadingException,
+  InvalidMaintenanceDateException,
+} from '../../../maintenance/domain/exceptions/maintenance.exceptions';
 
 @Catch(
   InvalidCpfException,
@@ -50,6 +67,19 @@ import { InvalidKilometersException } from '../../../odometer/domain/exceptions/
   CrossClientAccessDeniedException,
   OdometerRegressionException,
   InvalidKilometersException,
+  VehicleNotFoundException,
+  InvalidLicensePlateException,
+  VehicleAlreadyExistsException,
+  VehicleAlreadyInMaintenanceException,
+  VehicleInUseException,
+  InvalidKilometrageException,
+  VehicleNotInMaintenanceException,
+  MaintenanceAlreadyFinishedException,
+  MaintenanceNotInProgressException,
+  MaintenanceNotScheduledException,
+  MaintenanceNotFoundException,
+  InvalidOdometerReadingException,
+  InvalidMaintenanceDateException,
 )
 export class DomainExceptionFilter implements ExceptionFilter {
   catch(exception: Error, host: ArgumentsHost) {
@@ -62,7 +92,9 @@ export class DomainExceptionFilter implements ExceptionFilter {
     if (
       exception instanceof DriverNotFoundException ||
       exception instanceof DriverSuspensionNotFoundException ||
-      exception instanceof ClientNotFoundException
+      exception instanceof ClientNotFoundException ||
+      exception instanceof VehicleNotFoundException ||
+      exception instanceof MaintenanceNotFoundException
     ) {
       statusCode = HttpStatus.NOT_FOUND;
       errorName = 'Not Found';
@@ -72,7 +104,8 @@ export class DomainExceptionFilter implements ExceptionFilter {
       exception instanceof DriverAlreadyExistsException ||
       exception instanceof UserEmailAlreadyExistsException ||
       exception instanceof ClientDocumentAlreadyExistsException ||
-      exception instanceof ClientAlreadyHasFleetManagerException
+      exception instanceof ClientAlreadyHasFleetManagerException ||
+      exception instanceof VehicleAlreadyExistsException
     ) {
       statusCode = HttpStatus.CONFLICT;
       errorName = 'Conflict';
@@ -82,7 +115,16 @@ export class DomainExceptionFilter implements ExceptionFilter {
     ) {
       statusCode = HttpStatus.FORBIDDEN;
       errorName = 'Forbidden';
-    } else if (exception instanceof OdometerRegressionException) {
+    } else if (
+      exception instanceof OdometerRegressionException ||
+      exception instanceof VehicleInUseException ||
+      exception instanceof VehicleAlreadyInMaintenanceException ||
+      exception instanceof VehicleNotInMaintenanceException ||
+      exception instanceof MaintenanceAlreadyFinishedException ||
+      exception instanceof MaintenanceNotInProgressException ||
+      exception instanceof MaintenanceNotScheduledException ||
+      exception instanceof InvalidOdometerReadingException
+    ) {
       statusCode = HttpStatus.UNPROCESSABLE_ENTITY;
       errorName = 'Unprocessable Entity';
     }
