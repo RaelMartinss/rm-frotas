@@ -50,6 +50,7 @@ export class InMemoryMaintenancesRepository implements IMaintenancesRepository {
 
   async findManyPaginated({
     ownerId,
+    clientId,
     vehicleId,
     status,
     type,
@@ -58,7 +59,9 @@ export class InMemoryMaintenancesRepository implements IMaintenancesRepository {
     page,
     limit,
   }: FindManyMaintenancesPaginatedParams): Promise<FindManyMaintenancesPaginatedOutput> {
-    let filtered = this.items.filter((item) => item.getOwnerId() === ownerId);
+    let filtered = clientId
+      ? this.items.filter((item) => item.getClientId() === clientId)
+      : this.items.filter((item) => item.getOwnerId() === ownerId);
 
     if (vehicleId) {
       filtered = filtered.filter((item) => item.getVehicleId() === vehicleId);
@@ -102,8 +105,10 @@ export class InMemoryMaintenancesRepository implements IMaintenancesRepository {
     };
   }
 
-  async getStats(ownerId: string, from?: Date, to?: Date): Promise<MaintenanceStatsOutput> {
-    let filtered = this.items.filter((item) => item.getOwnerId() === ownerId);
+  async getStats(ownerId: string, from?: Date, to?: Date, clientId?: string): Promise<MaintenanceStatsOutput> {
+    let filtered = clientId
+      ? this.items.filter((item) => item.getClientId() === clientId)
+      : this.items.filter((item) => item.getOwnerId() === ownerId);
 
     if (from) {
       filtered = filtered.filter((item) => item.getCreatedAt() >= from);

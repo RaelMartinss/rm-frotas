@@ -6,6 +6,7 @@ import {
 
 export interface GetMaintenanceStatsInput {
   ownerId: string;
+  clientId?: string;
   from?: Date;
   to?: Date;
 }
@@ -15,6 +16,6 @@ export class GetMaintenanceStatsUseCase {
   constructor(private readonly maintenanceRepository: IMaintenancesRepository) {}
 
   async execute(input: GetMaintenanceStatsInput): Promise<MaintenanceStatsOutput> {
-    return this.maintenanceRepository.getStats(input.ownerId, input.from, input.to);
+    return this.maintenanceRepository.getStats(input.ownerId, input.from, input.to, input.clientId);
   }
 }

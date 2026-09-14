@@ -57,7 +57,7 @@ export class FuelRecordsController {
     private readonly getFuelCostStatsUseCase: GetFuelCostStatsUseCase
   ) {}
 
-  private async resolveUserContext(user: UserPayload): Promise<{ ownerId: string; driverId?: string }> {
+  private async resolveUserContext(user: UserPayload): Promise<{ ownerId: string; driverId?: string; clientId?: string }> {
     if (user.role === UserRole.DRIVER) {
       const driver = await this.prisma.driver.findFirst({
         where: { userId: user.userId },
@@ -72,11 +72,13 @@ export class FuelRecordsController {
       return {
         ownerId: driver.ownerId,
         driverId: driver.id,
+        clientId: user.clientId ?? undefined,
       };
     }
 
     return {
       ownerId: user.userId,
+      clientId: user.clientId ?? undefined,
     };
   }
 
@@ -172,6 +174,7 @@ export class FuelRecordsController {
 
     return this.getFuelCostStatsUseCase.execute({
       ownerId: context.ownerId,
+      clientId: context.clientId,
       vehicleId: query.vehicleId,
       driverId: query.driverId,
       startDate: query.startDate ? new Date(query.startDate) : undefined,
@@ -191,6 +194,7 @@ export class FuelRecordsController {
 
     const result = await this.listFuelRecordsUseCase.execute({
       ownerId: context.ownerId,
+      clientId: context.clientId,
       callerDriverId: context.driverId,
       vehicleId: query.vehicleId,
       driverId: query.driverId,

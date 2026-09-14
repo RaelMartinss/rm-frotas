@@ -46,7 +46,9 @@ export class InMemoryFuelRecordsRepository implements IFuelRecordsRepository {
   }
 
   async findManyPaginated(params: FindManyFuelRecordsParams): Promise<FindManyFuelRecordsOutput> {
-    let filtered = this.items.filter((item) => item.getOwnerId() === params.ownerId);
+    let filtered = params.clientId
+      ? this.items.filter((item) => item.getClientId() === params.clientId)
+      : this.items.filter((item) => item.getOwnerId() === params.ownerId);
 
     if (params.vehicleId) {
       filtered = filtered.filter((item) => item.getVehicleId() === params.vehicleId);
@@ -130,9 +132,11 @@ export class InMemoryFuelRecordsRepository implements IFuelRecordsRepository {
 
   async getAggregatedStats(
     ownerId: string,
-    params?: { vehicleId?: string; driverId?: string; startDate?: Date; endDate?: Date }
+    params?: { vehicleId?: string; driverId?: string; startDate?: Date; endDate?: Date; clientId?: string }
   ): Promise<FuelAggregatedStats> {
-    let records = this.items.filter((item) => item.getOwnerId() === ownerId);
+    let records = params?.clientId
+      ? this.items.filter((item) => item.getClientId() === params.clientId)
+      : this.items.filter((item) => item.getOwnerId() === ownerId);
 
     if (params?.vehicleId) {
       records = records.filter((item) => item.getVehicleId() === params.vehicleId);

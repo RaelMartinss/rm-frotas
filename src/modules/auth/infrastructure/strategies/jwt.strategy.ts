@@ -10,6 +10,10 @@ export interface UserPayload {
   role: string;
   clientId?: string | null;
   mustChangePassword?: boolean;
+  impersonating?: boolean;
+  impersonationSessionId?: string;
+  targetClientId?: string;
+  scope?: 'READ_ONLY' | 'READ_WRITE';
 }
 
 @Injectable()
@@ -47,8 +51,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       userId: payload.sub,
       email: payload.email,
       role: payload.role,
-      clientId: payload.clientId,
+      clientId: payload.impersonating ? payload.targetClientId : payload.clientId,
       mustChangePassword: payload.mustChangePassword,
+      impersonating: payload.impersonating ?? false,
+      impersonationSessionId: payload.impersonationSessionId,
+      targetClientId: payload.targetClientId,
+      scope: payload.scope,
     };
   }
 }

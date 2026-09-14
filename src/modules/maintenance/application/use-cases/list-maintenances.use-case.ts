@@ -9,6 +9,7 @@ import { MaintenanceType } from '../../domain/enums/maintenance-type.enum';
 
 export interface ListMaintenancesInput {
   ownerId: string;
+  clientId?: string;
   vehicleId?: string;
   status?: MaintenanceStatus;
   type?: MaintenanceType;
@@ -31,7 +32,9 @@ export class ListMaintenancesUseCase {
       if (!vehicle) {
         throw new NotFoundException('Veículo não encontrado.');
       }
-      if (vehicle.getOwnerId() && vehicle.getOwnerId() !== input.ownerId) {
+      const belongsToUser = vehicle.getOwnerId() === input.ownerId;
+      const belongsToClient = !!input.clientId && vehicle.getClientId() === input.clientId;
+      if (!belongsToUser && !belongsToClient && vehicle.getOwnerId()) {
         throw new UnauthorizedException('Você não tem permissão para visualizar manutenções deste veículo.');
       }
     }
@@ -41,6 +44,7 @@ export class ListMaintenancesUseCase {
 
     return this.maintenanceRepository.findManyPaginated({
       ownerId: input.ownerId,
+      clientId: input.clientId,
       vehicleId: input.vehicleId,
       status: input.status,
       type: input.type,

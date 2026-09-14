@@ -22,6 +22,7 @@ export interface FuelRecordWithRelations {
 
 export interface FindManyFuelRecordsParams {
   ownerId: string;
+  clientId?: string;
   vehicleId?: string;
   driverId?: string;
   fuelType?: FuelType;
@@ -60,6 +61,6 @@ export abstract class IFuelRecordsRepository {
   abstract delete(id: string): Promise<void>;
   abstract getAggregatedStats(
     ownerId: string,
-    params?: { vehicleId?: string; driverId?: string; startDate?: Date; endDate?: Date }
+    params?: { vehicleId?: string; driverId?: string; startDate?: Date; endDate?: Date; clientId?: string }
   ): Promise<FuelAggregatedStats>;
 }

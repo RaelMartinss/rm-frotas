@@ -4,6 +4,10 @@ export interface TokenPayload {
   role: string;
   clientId?: string | null;
   mustChangePassword?: boolean;
+  impersonating?: boolean;
+  impersonationSessionId?: string;
+  targetClientId?: string;
+  scope?: 'READ_ONLY' | 'READ_WRITE';
 }
 
 export interface GeneratedTokens {

@@ -59,6 +59,7 @@ model Client {
   driverSuspensions DriverSuspension[]
   incidents         Incident[]
   odometerReadings  OdometerReading[]
+  impersonationSessions ImpersonationSession[]
 
   @@map("clients")
 }
@@ -89,6 +90,8 @@ model User {
   fuelRecords       FuelRecord[]       @relation("FuelRecordOwner")
   driverSuspensions DriverSuspension[] @relation("DriverSuspensionOwner")
   odometerReadings  OdometerReading[]  @relation("OdometerReadingOwner")
+  impersonationSessions ImpersonationSession[] @relation("SuperAdminImpersonations")
+  auditLogs             AuditLog[]             @relation("ActorAuditLogs")
 
   // Relacionamento 1:1 opcional (caso um usuário do tipo DRIVER esteja vinculado a um motorista da frota)
   driverProfile Driver? @relation("DriverUserAccount")
@@ -475,6 +478,46 @@ model OdometerReading {
   @@index([ownerId])
   @@map("odometer_readings")
 }
+
+model ImpersonationSession {
+  id               String    @id @default(uuid())
+  superAdminUserId String    @map("super_admin_user_id")
+  targetClientId   String    @map("target_client_id")
+  startedAt        DateTime  @default(now()) @map("started_at")
+  expiresAt        DateTime  @map("expires_at")
+  endedAt          DateTime? @map("ended_at")
+  ipAddress        String?   @map("ip_address")
+  userAgent        String?   @map("user_agent")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  superAdminUser User       @relation("SuperAdminImpersonations", fields: [superAdminUserId], references: [id], onDelete: Cascade)
+  targetClient   Client     @relation(fields: [targetClientId], references: [id], onDelete: Cascade)
+  auditLogs      AuditLog[]
+
+  @@index([superAdminUserId, endedAt])
+  @@index([targetClientId])
+  @@map("impersonation_sessions")
+}
+
+model AuditLog {
+  id                     String    @id @default(uuid())
+  impersonationSessionId String?   @map("impersonation_session_id")
+  actorUserId            String    @map("actor_user_id")
+  action                 String
+  resourceType           String?   @map("resource_type")
+  resourceId             String?   @map("resource_id")
+  metadata               Json?
+  createdAt              DateTime  @default(now()) @map("created_at")
+
+  impersonationSession ImpersonationSession? @relation(fields: [impersonationSessionId], references: [id], onDelete: SetNull)
+  actorUser            User                  @relation("ActorAuditLogs", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([impersonationSessionId])
+  @@index([actorUserId, createdAt])
+  @@index([action])
+  @@map("audit_logs")
+}
+
 
 
 

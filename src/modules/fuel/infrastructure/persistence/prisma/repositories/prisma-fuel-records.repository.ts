@@ -69,7 +69,7 @@ export class PrismaFuelRecordsRepository implements IFuelRecordsRepository {
     const { ownerId, vehicleId, driverId, fuelType, fullTank, startDate, endDate, search, page, limit } = params;
 
     const where: any = {
-      ownerId,
+      ...(params.clientId ? { clientId: params.clientId } : { ownerId }),
       ...(vehicleId && { vehicleId }),
       ...(driverId && { driverId }),
       ...(fuelType && { fuelType: fuelType as any }),
@@ -161,10 +161,10 @@ export class PrismaFuelRecordsRepository implements IFuelRecordsRepository {
 
   async getAggregatedStats(
     ownerId: string,
-    params?: { vehicleId?: string; driverId?: string; startDate?: Date; endDate?: Date }
+    params?: { vehicleId?: string; driverId?: string; startDate?: Date; endDate?: Date; clientId?: string }
   ): Promise<FuelAggregatedStats> {
     const where: any = {
-      ownerId,
+      ...(params?.clientId ? { clientId: params.clientId } : { ownerId }),
       ...(params?.vehicleId && { vehicleId: params.vehicleId }),
       ...(params?.driverId && { driverId: params.driverId }),
     };

@@ -4,6 +4,7 @@ import { MaintenanceType } from '../enums/maintenance-type.enum';
 
 export interface FindManyMaintenancesPaginatedParams {
   ownerId: string;
+  clientId?: string;
   vehicleId?: string;
   status?: MaintenanceStatus;
   type?: MaintenanceType;
@@ -48,5 +49,5 @@ export abstract class IMaintenancesRepository {
   abstract findManyPaginated(
     params: FindManyMaintenancesPaginatedParams
   ): Promise<FindManyMaintenancesPaginatedOutput>;
-  abstract getStats(ownerId: string, from?: Date, to?: Date): Promise<MaintenanceStatsOutput>;
+  abstract getStats(ownerId: string, from?: Date, to?: Date, clientId?: string): Promise<MaintenanceStatsOutput>;
 }

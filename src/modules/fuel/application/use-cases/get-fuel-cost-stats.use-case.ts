@@ -6,6 +6,7 @@ import {
 
 export interface GetFuelCostStatsInput {
   ownerId: string;
+  clientId?: string;
   vehicleId?: string;
   driverId?: string;
   startDate?: Date;
@@ -22,6 +23,7 @@ export class GetFuelCostStatsUseCase {
       driverId: input.driverId,
       startDate: input.startDate,
       endDate: input.endDate,
+      clientId: input.clientId,
     });
   }
 }

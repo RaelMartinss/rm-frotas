@@ -11,6 +11,7 @@ import { ClientsModule } from './modules/clients/clients.module';
 import { DriverPortalModule } from './modules/driver-portal/driver-portal.module';
 import { NotificationsModule } from './shared/infrastructure/notifications/notifications.module';
 import { OdometerModule } from './modules/odometer/odometer.module';
+import { ImpersonationModule } from './modules/impersonation/impersonation.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { OdometerModule } from './modules/odometer/odometer.module';
     OdometerModule,
     HealthModule,
     DriverPortalModule,
+    ImpersonationModule,
   ],
   controllers: [],
   providers: [],

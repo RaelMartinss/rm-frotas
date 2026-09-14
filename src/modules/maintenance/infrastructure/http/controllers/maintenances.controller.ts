@@ -186,11 +186,13 @@ export class MaintenancesController {
   @Get('stats')
   async getStats(
     @CurrentUser('userId') ownerId: string,
+    @CurrentUser('clientId') clientId: string | null,
     @Query('from') from?: string,
     @Query('to') to?: string
   ) {
     return this.getMaintenanceStatsUseCase.execute({
       ownerId,
+      clientId: clientId ?? undefined,
       from: from ? new Date(from) : undefined,
       to: to ? new Date(to) : undefined,
     });
@@ -212,10 +214,12 @@ export class MaintenancesController {
   @Get()
   async list(
     @CurrentUser('userId') ownerId: string,
+    @CurrentUser('clientId') clientId: string | null,
     @Query() query: ListMaintenancesQueryDto
   ) {
     const result = await this.listMaintenancesUseCase.execute({
       ownerId,
+      clientId: clientId ?? undefined,
       vehicleId: query.vehicleId,
       status: query.status,
       type: query.type,

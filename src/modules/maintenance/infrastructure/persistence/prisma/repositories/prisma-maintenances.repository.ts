@@ -74,6 +74,7 @@ export class PrismaMaintenancesRepository implements IMaintenancesRepository {
 
   async findManyPaginated({
     ownerId,
+    clientId,
     vehicleId,
     status,
     type,
@@ -83,7 +84,7 @@ export class PrismaMaintenancesRepository implements IMaintenancesRepository {
     limit,
   }: FindManyMaintenancesPaginatedParams): Promise<FindManyMaintenancesPaginatedOutput> {
     const where: any = {
-      ownerId,
+      ...(clientId ? { clientId } : { ownerId }),
       ...(vehicleId && { vehicleId }),
       ...(status && { status: status as PrismaMaintenanceStatus }),
       ...(type && { type: type as PrismaMaintenanceType }),
@@ -117,9 +118,9 @@ export class PrismaMaintenancesRepository implements IMaintenancesRepository {
     };
   }
 
-  async getStats(ownerId: string, from?: Date, to?: Date): Promise<MaintenanceStatsOutput> {
+  async getStats(ownerId: string, from?: Date, to?: Date, clientId?: string): Promise<MaintenanceStatsOutput> {
     const where: any = {
-      ownerId,
+      ...(clientId ? { clientId } : { ownerId }),
     };
 
     if (from || to) {

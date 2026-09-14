@@ -7,6 +7,7 @@ import { FuelType } from '../../domain/enums/fuel-type.enum';
 
 export interface ListFuelRecordsInput {
   ownerId: string;
+  clientId?: string;
   callerDriverId?: string; // Se o usuário logado for MOTORISTA
   vehicleId?: string;
   driverId?: string;
@@ -32,6 +33,7 @@ export class ListFuelRecordsUseCase {
 
     return this.fuelRecordsRepository.findManyPaginated({
       ownerId: input.ownerId,
+      clientId: input.clientId,
       vehicleId: input.vehicleId,
       driverId: effectiveDriverId,
       fuelType: input.fuelType,
