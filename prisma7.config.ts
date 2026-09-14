@@ -3,12 +3,17 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// O pooler do Neon (-pooler) usa PgBouncer em Transaction mode, que não suporta advisory locks.
+// Remover '-pooler' conecta diretamente ao Postgres para o prisma migrate deploy.
+const rawUrl = process.env["DIRECT_URL"] || process.env["DATABASE_URL"] || "";
+const migrationUrl = rawUrl.replace("-pooler.", ".");
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: migrationUrl,
   },
 });
