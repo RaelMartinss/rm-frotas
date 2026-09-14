@@ -4,8 +4,10 @@ import {
   ArgumentsHost,
   HttpStatus,
   HttpException,
+  Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { RequestContextService } from '../../../../shared/observability/request-context.service';
 import { InvalidCpfException } from '../../domain/exceptions/invalid-cpf.exception';
 import { InvalidCnhException } from '../../domain/exceptions/invalid-cnh.exception';
 import { InvalidDriverStatusTransitionException } from '../../domain/exceptions/invalid-driver-status-transition.exception';
@@ -46,6 +48,47 @@ import {
   InvalidMaintenanceDateException,
 } from '../../../maintenance/domain/exceptions/maintenance.exceptions';
 
+const DOMAIN_EVENT_MAP: Record<string, string> = {
+  VehicleInUseException: 'vehicle.start_trip.already_in_use',
+  VehicleAlreadyInMaintenanceException: 'vehicle.start_maintenance.already_in_maintenance',
+  VehicleNotInMaintenanceException: 'vehicle.finish_maintenance.not_in_maintenance',
+  VehicleNotFoundException: 'vehicle.get.not_found',
+  VehicleAlreadyExistsException: 'vehicle.create.already_exists',
+  InvalidLicensePlateException: 'vehicle.validate.invalid_plate',
+  InvalidKilometrageException: 'vehicle.validate.invalid_km',
+
+  DriverNotFoundException: 'driver.get.not_found',
+  DriverAlreadySuspendedException: 'driver.suspend.already_suspended',
+  DriverHasActiveTripException: 'driver.assign.has_active_trip',
+  DriverAlreadyExistsException: 'driver.create.already_exists',
+  InvalidCpfException: 'driver.validate.invalid_cpf',
+  InvalidCnhException: 'driver.validate.invalid_cnh',
+  InvalidDriverStatusTransitionException: 'driver.status.invalid_transition',
+  DriverSuspensionNotFoundException: 'driver.suspension.not_found',
+  SuspensionAlreadyLiftedException: 'driver.suspension.already_lifted',
+  InvalidSuspensionDateRangeException: 'driver.suspend.invalid_date_range',
+  InvalidSuspensionReasonException: 'driver.suspend.invalid_reason',
+
+  ClientNotFoundException: 'client.get.not_found',
+  ClientDocumentAlreadyExistsException: 'client.create.document_exists',
+  ClientSuspendedOrCancelledException: 'client.access.suspended',
+  ClientAlreadyHasFleetManagerException: 'client.assign.already_has_manager',
+  CrossClientAccessDeniedException: 'client.access.forbidden',
+
+  UserEmailAlreadyExistsException: 'user.create.email_exists',
+  InvalidEmailException: 'user.validate.invalid_email',
+
+  OdometerRegressionException: 'odometer.register.regression',
+  InvalidKilometersException: 'odometer.validate.invalid_km',
+  InvalidOdometerReadingException: 'odometer.read.invalid',
+
+  MaintenanceAlreadyFinishedException: 'maintenance.finish.already_finished',
+  MaintenanceNotInProgressException: 'maintenance.progress.not_in_progress',
+  MaintenanceNotScheduledException: 'maintenance.schedule.not_scheduled',
+  MaintenanceNotFoundException: 'maintenance.get.not_found',
+  InvalidMaintenanceDateException: 'maintenance.validate.invalid_date',
+};
+
 @Catch(
   InvalidCpfException,
   InvalidCnhException,
@@ -82,9 +125,12 @@ import {
   InvalidMaintenanceDateException,
 )
 export class DomainExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger('DomainException');
+
   catch(exception: Error, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<any>();
 
     let statusCode = HttpStatus.BAD_REQUEST;
     let errorName = 'Bad Request';
@@ -129,10 +175,31 @@ export class DomainExceptionFilter implements ExceptionFilter {
       errorName = 'Unprocessable Entity';
     }
 
+    const exceptionName = exception.constructor.name;
+    const event =
+      DOMAIN_EVENT_MAP[exceptionName] ||
+      `domain.${exceptionName.replace(/Exception$/, '').toLowerCase()}.failed`;
+
+    const ctxStore = RequestContextService.getStore();
+    const requestId = ctxStore?.requestId || request?.requestId;
+
+    // Log estruturado com a convenção de eventos de domínio sem vazar o body
+    this.logger.warn({
+      event,
+      requestId,
+      userId: ctxStore?.userId,
+      clientId: ctxStore?.clientId,
+      reason: exception.message,
+      statusCode,
+      url: request?.url,
+      method: request?.method,
+    });
+
     response.status(statusCode).json({
       statusCode,
       message: exception.message,
       error: errorName,
+      requestId,
     });
   }
 }

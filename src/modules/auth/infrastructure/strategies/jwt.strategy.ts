@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { TokenPayload } from '../../application/cryptography/token-generator.interface';
+import { RequestContextService } from '../../../../shared/observability/request-context.service';
 
 export interface UserPayload {
   userId: string;
@@ -18,7 +19,10 @@ export interface UserPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(configService: ConfigService) {
+  constructor(
+    configService: ConfigService,
+    private readonly requestContextService?: RequestContextService,
+  ) {
     const secret = configService.get<string>('JWT_SECRET');
     const isProd = configService.get<string>('NODE_ENV') === 'production';
     const isCI = !!configService.get<string>('CI');
@@ -47,7 +51,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: TokenPayload): Promise<UserPayload> {
-    return {
+    const user: UserPayload = {
       userId: payload.sub,
       email: payload.email,
       role: payload.role,
@@ -58,5 +62,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       targetClientId: payload.targetClientId,
       scope: payload.scope,
     };
+
+    if (this.requestContextService) {
+      this.requestContextService.update({
+        userId: user.userId,
+        clientId: user.clientId ?? undefined,
+      });
+    }
+
+    return user;
   }
 }

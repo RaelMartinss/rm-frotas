@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { TripsModule } from './modules/trips/trips.module';
@@ -12,9 +12,12 @@ import { DriverPortalModule } from './modules/driver-portal/driver-portal.module
 import { NotificationsModule } from './shared/infrastructure/notifications/notifications.module';
 import { OdometerModule } from './modules/odometer/odometer.module';
 import { ImpersonationModule } from './modules/impersonation/impersonation.module';
+import { ObservabilityModule } from './shared/observability/observability.module';
+import { RequestIdMiddleware } from './shared/observability/request-id.middleware';
 
 @Module({
   imports: [
+    ObservabilityModule,
     NotificationsModule,
     ClientsModule,
     DriversModule,
@@ -32,6 +35,10 @@ import { ImpersonationModule } from './modules/impersonation/impersonation.modul
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}
 
 

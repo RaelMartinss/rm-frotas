@@ -3,6 +3,9 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { DomainExceptionFilter } from './modules/drivers/infrastructure/http/domain-exception.filter';
+import { SentryFilter } from './shared/observability/sentry.filter';
+import { Logger } from 'nestjs-pino';
+import * as Sentry from '@sentry/node';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -10,7 +13,18 @@ import { json, urlencoded } from 'express';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'development',
+      tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+    });
+  }
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(Logger));
 
   // Configura limite de tamanho de payload para suportar upload de fotos de comprovantes (Base64)
   app.use(json({ limit: '10mb' }));
@@ -136,7 +150,7 @@ async function bootstrap() {
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
-  app.useGlobalFilters(new DomainExceptionFilter());
+  app.useGlobalFilters(new SentryFilter(), new DomainExceptionFilter());
 
   await app.listen(process.env.PORT ?? 3000);
 }
