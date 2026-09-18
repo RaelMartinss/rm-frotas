@@ -10,6 +10,7 @@ import { OdometerSource } from '../../../odometer/domain/value-objects/odometer-
 
 export interface RegisterFuelRecordInput {
   ownerId: string;
+  clientId?: string;
   vehicleId: string;
   driverId: string;
   fuelType: FuelType;
@@ -48,6 +49,8 @@ export class RegisterFuelRecordUseCase {
       throw new NotFoundException('Motorista não encontrado.');
     }
 
+    const resolvedClientId = input.clientId || vehicle.getClientId() || driver.getClientId?.();
+
     // 3. Buscar último abastecimento do veículo para validação de consistência
     const lastRecord = await this.fuelRecordsRepository.findLastByVehicle(input.vehicleId);
 
@@ -61,6 +64,7 @@ export class RegisterFuelRecordUseCase {
 
     // 5. Instanciar Entidade de Domínio
     const fuelRecord = new FuelRecord({
+      clientId: resolvedClientId,
       ownerId: input.ownerId,
       vehicleId: input.vehicleId,
       driverId: input.driverId,

@@ -36,6 +36,10 @@ export class SentryFilter implements ExceptionFilter {
     // Enviar apenas exceções não tratadas / status >= 500 (erros de banco, crashes inesperados, etc.)
     const isServerError = status >= 500;
 
+    if (isServerError) {
+      console.error('🔥 [Unhandled Server Error]:', exception);
+    }
+
     if (isServerError && process.env.SENTRY_DSN) {
       Sentry.withScope((scope) => {
         if (requestId) {

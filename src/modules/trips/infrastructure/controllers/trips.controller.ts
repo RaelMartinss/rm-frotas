@@ -10,6 +10,7 @@ import {
   HttpStatus,
   NotFoundException,
   BadRequestException,
+  HttpException,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -29,6 +30,11 @@ import { IsInt, IsOptional, Min } from 'class-validator';
 import { CancelTripUseCase } from '../../application/use-cases/cancel-trip.use-case';
 import { GetTripAvailabilityUseCase } from '../../application/use-cases/get-trip-availability.use-case';
 import { GetTripRouteUseCase } from '../../application/use-cases/get-trip-route.use-case';
+import { AddTripSupplyUseCase } from '../../application/use-cases/add-trip-supply.use-case';
+import { GetTripSuppliesUseCase } from '../../application/use-cases/get-trip-supplies.use-case';
+import { AddTripSupplyHttpDto } from './dtos/add-trip-supply-http.dto';
+import { InvalidOdometerReadingException } from '../../../../shared/domain/services/vehicle-odometer.validator';
+import { InvalidFuelAmountException, InvalidFuelCostException } from '../../../fuel/domain/exceptions/fuel.exceptions';
 import { VehiclePresenter } from '../../../vehicles/infrastructure/http/presenters/vehicle.presenter';
 import { DriverPresenter } from '../../../drivers/infrastructure/controllers/presenters/driver.presenter';
 import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
@@ -58,6 +64,8 @@ export class TripsController {
     private readonly cancelTripUseCase: CancelTripUseCase,
     private readonly getTripAvailabilityUseCase: GetTripAvailabilityUseCase,
     private readonly getTripRouteUseCase: GetTripRouteUseCase,
+    private readonly addTripSupplyUseCase: AddTripSupplyUseCase,
+    private readonly getTripSuppliesUseCase: GetTripSuppliesUseCase,
     private readonly fcmNotificationService: FcmNotificationService,
   ) {}
 
@@ -301,5 +309,139 @@ export class TripsController {
       clientId: clientId ?? undefined,
       ownerId: userId,
     });
+  }
+
+  @Post(':id/supplies')
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN, UserRole.DRIVER)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Registrar abastecimento vinculado a uma viagem' })
+  @ApiParam({ name: 'id', description: 'UUID da viagem' })
+  @ApiResponse({ status: 201, description: 'Abastecimento registrado com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Dados de abastecimento inválidos ou inconsistência de odômetro.' })
+  @ApiResponse({ status: 404, description: 'Viagem não encontrada.' })
+  async addSupply(
+    @Param('id') tripId: string,
+    @Body() dto: AddTripSupplyHttpDto,
+    @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
+  ) {
+    try {
+      const actualTripId = tripId || dto.tripId;
+      const odometer = dto.odometerAtFueling ?? dto.odometer ?? 0;
+      const totalCost = dto.totalCost ?? dto.totalValue ?? (dto.pricePerUnit ? dto.pricePerUnit * dto.liters : 0);
+      const pricePerUnit = dto.pricePerUnit ?? (totalCost && dto.liters ? totalCost / dto.liters : undefined);
+      const dateStr = dto.fueledAt ?? dto.date;
+      const fueledAt = dateStr ? new Date(dateStr) : new Date();
+
+      const { fuelRecord } = await this.addTripSupplyUseCase.execute({
+        tripId: actualTripId!,
+        ownerId: userId,
+        clientId: clientId ?? undefined,
+        liters: dto.liters,
+        totalCost,
+        pricePerUnit,
+        fuelType: dto.fuelType,
+        odometerAtFueling: odometer,
+        gasStation: dto.gasStation,
+        fullTank: dto.fullTank,
+        receiptUrl: dto.receiptUrl,
+        fueledAt,
+        notes: dto.notes,
+      });
+
+      return {
+        id: fuelRecord.getId(),
+        tripId,
+        vehicleId: fuelRecord.getVehicleId(),
+        driverId: fuelRecord.getDriverId(),
+        fuelType: fuelRecord.getFuelType(),
+        liters: fuelRecord.getLiters(),
+        totalValue: fuelRecord.getTotalCost().amount,
+        totalCost: fuelRecord.getTotalCost().amount,
+        pricePerUnit: fuelRecord.getPricePerUnit().amount,
+        odometer: fuelRecord.getOdometerAtFueling(),
+        odometerAtFueling: fuelRecord.getOdometerAtFueling(),
+        gasStation: fuelRecord.getGasStation(),
+        fullTank: fuelRecord.isFullTank(),
+        receiptUrl: fuelRecord.getReceiptUrl(),
+        notes: fuelRecord.getNotes(),
+        date: fuelRecord.getFueledAt().toISOString(),
+        createdAt: fuelRecord.getCreatedAt(),
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      if (error instanceof TripNotFoundException) {
+        throw new NotFoundException(error.message);
+      }
+      if (
+        error instanceof InvalidOdometerReadingException ||
+        error instanceof InvalidFuelAmountException ||
+        error instanceof InvalidFuelCostException
+      ) {
+        throw new BadRequestException(error.message);
+      }
+      console.error('❌ [AddSupply Error]:', error);
+      throw error;
+    }
+  }
+
+  @Get(':id/supplies')
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN, UserRole.DRIVER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Listar abastecimentos vinculados ao veículo e período da viagem' })
+  @ApiParam({ name: 'id', description: 'UUID da viagem' })
+  @ApiResponse({ status: 200, description: 'Lista de abastecimentos da viagem retornada com sucesso.' })
+  @ApiResponse({ status: 404, description: 'Viagem não encontrada.' })
+  async getTripSupplies(
+    @Param('id') tripId: string,
+    @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
+  ) {
+    try {
+      const result = await this.getTripSuppliesUseCase.execute({
+        tripId,
+        ownerId: userId,
+        clientId: clientId ?? undefined,
+      });
+
+      return {
+        tripId: result.tripId,
+        vehicleId: result.vehicleId,
+        driverId: result.driverId,
+        total: result.total,
+        data: result.supplies.map((item) => {
+          const r = item.fuelRecord;
+          return {
+            id: r.getId(),
+            tripId: result.tripId,
+            vehicleId: r.getVehicleId(),
+            driverId: r.getDriverId(),
+            fuelType: r.getFuelType(),
+            liters: r.getLiters(),
+            pricePerUnit: r.getPricePerUnit().amount,
+            totalCost: r.getTotalCost().amount,
+            totalValue: r.getTotalCost().amount,
+            odometerAtFueling: r.getOdometerAtFueling(),
+            odometer: r.getOdometerAtFueling(),
+            gasStation: r.getGasStation(),
+            fullTank: r.isFullTank(),
+            receiptUrl: r.getReceiptUrl(),
+            fueledAt: r.getFueledAt().toISOString(),
+            date: r.getFueledAt().toISOString().substring(0, 10),
+            notes: r.getNotes(),
+            createdAt: r.getCreatedAt().toISOString(),
+            vehicle: item.vehicle,
+            driver: item.driver,
+          };
+        }),
+      };
+    } catch (error) {
+      if (error instanceof TripNotFoundException) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    }
   }
 }

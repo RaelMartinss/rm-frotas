@@ -20,12 +20,17 @@ import { IDriversRepository } from '../drivers/domain/repositories/drivers.repos
 import { IVehiclesRepository } from '../vehicles/domain/repositories/vehicles.repository';
 import { OdometerModule } from '../odometer/odometer.module';
 import { RegisterOdometerReadingUseCase } from '../odometer/application/use-cases/register-odometer-reading.use-case';
+import { FuelModule } from '../fuel/fuel.module';
+import { RegisterFuelRecordUseCase } from '../fuel/application/use-cases/register-fuel-record.use-case';
+import { ListFuelRecordsUseCase } from '../fuel/application/use-cases/list-fuel-records.use-case';
+import { AddTripSupplyUseCase } from './application/use-cases/add-trip-supply.use-case';
+import { GetTripSuppliesUseCase } from './application/use-cases/get-trip-supplies.use-case';
 
 // Controllers
 import { TripsController } from './infrastructure/controllers/trips.controller';
 
 @Module({
-  imports: [PrismaModule, DriversModule, VehiclesModule, AuthModule, OdometerModule],
+  imports: [PrismaModule, DriversModule, VehiclesModule, AuthModule, OdometerModule, FuelModule],
   controllers: [TripsController],
   providers: [
     PrismaTripsRepository,
@@ -99,6 +104,26 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
       },
       inject: ['ITripsRepository', IVehiclesRepository],
     },
+    {
+      provide: AddTripSupplyUseCase,
+      useFactory: (
+        tripsRepo: ITripsRepository,
+        registerFuelRecordUseCase: RegisterFuelRecordUseCase,
+      ) => {
+        return new AddTripSupplyUseCase(tripsRepo, registerFuelRecordUseCase);
+      },
+      inject: ['ITripsRepository', RegisterFuelRecordUseCase],
+    },
+    {
+      provide: GetTripSuppliesUseCase,
+      useFactory: (
+        tripsRepo: ITripsRepository,
+        listFuelRecordsUseCase: ListFuelRecordsUseCase,
+      ) => {
+        return new GetTripSuppliesUseCase(tripsRepo, listFuelRecordsUseCase);
+      },
+      inject: ['ITripsRepository', ListFuelRecordsUseCase],
+    },
   ],
   exports: [
     CreateTripUseCase,
@@ -108,6 +133,8 @@ import { TripsController } from './infrastructure/controllers/trips.controller';
     StartTripUseCase,
     CompleteTripUseCase,
     CancelTripUseCase,
+    AddTripSupplyUseCase,
+    GetTripSuppliesUseCase,
     'ITripsRepository',
   ],
 })

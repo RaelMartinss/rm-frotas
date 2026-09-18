@@ -127,6 +127,7 @@ export class FuelRecordsController {
 
     const record = await this.registerFuelRecordUseCase.execute({
       ownerId: context.ownerId,
+      clientId: context.clientId,
       vehicleId: dto.vehicleId,
       driverId,
       fuelType: dto.fuelType,
