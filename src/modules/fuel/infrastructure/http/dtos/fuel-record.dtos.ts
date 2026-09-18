@@ -216,3 +216,30 @@ export class GetCostStatsQueryDto {
   @IsOptional()
   endDate?: string;
 }
+
+export class GetEfficiencyReportQueryDto {
+  @ApiPropertyOptional({ description: 'Data inicial para o período (ISO)' })
+  @IsOptional()
+  startDate?: string;
+
+  @ApiPropertyOptional({ description: 'Data final para o período (ISO)' })
+  @IsOptional()
+  endDate?: string;
+
+  @ApiPropertyOptional({ description: 'Filtrar por veículo específico (UUID)' })
+  @IsUUID('4')
+  @IsOptional()
+  vehicleId?: string;
+
+  @ApiPropertyOptional({ description: 'Filtrar por tipo de combustível', enum: FuelType })
+  @IsEnum(FuelType)
+  @IsOptional()
+  fuelType?: FuelType;
+
+  @ApiPropertyOptional({ description: 'Comparar com período anterior equivalente' })
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  @IsOptional()
+  comparePreviousPeriod?: boolean;
+}
+

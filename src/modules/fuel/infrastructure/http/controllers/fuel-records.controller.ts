@@ -30,6 +30,7 @@ import { GetFuelRecordByIdUseCase } from '../../../application/use-cases/get-fue
 import { ListFuelRecordsUseCase } from '../../../application/use-cases/list-fuel-records.use-case';
 import { GetFuelConsumptionReportUseCase } from '../../../application/use-cases/get-fuel-consumption-report.use-case';
 import { GetFuelCostStatsUseCase } from '../../../application/use-cases/get-fuel-cost-stats.use-case';
+import { FuelEfficiencyReportService } from '../../../application/services/fuel-efficiency-report.service';
 
 import {
   CreateFuelRecordDto,
@@ -37,6 +38,7 @@ import {
   ListFuelRecordsQueryDto,
   GetConsumptionReportQueryDto,
   GetCostStatsQueryDto,
+  GetEfficiencyReportQueryDto,
 } from '../dtos/fuel-record.dtos';
 import { FuelRecord } from '../../../domain/entities/fuel-record.entity';
 import { FuelRecordWithRelations } from '../../../domain/repositories/fuel-records.repository';
@@ -54,7 +56,8 @@ export class FuelRecordsController {
     private readonly getFuelRecordByIdUseCase: GetFuelRecordByIdUseCase,
     private readonly listFuelRecordsUseCase: ListFuelRecordsUseCase,
     private readonly getFuelConsumptionReportUseCase: GetFuelConsumptionReportUseCase,
-    private readonly getFuelCostStatsUseCase: GetFuelCostStatsUseCase
+    private readonly getFuelCostStatsUseCase: GetFuelCostStatsUseCase,
+    private readonly fuelEfficiencyReportService: FuelEfficiencyReportService
   ) {}
 
   private async resolveUserContext(user: UserPayload): Promise<{ ownerId: string; driverId?: string; clientId?: string }> {
@@ -180,6 +183,27 @@ export class FuelRecordsController {
       driverId: query.driverId,
       startDate: query.startDate ? new Date(query.startDate) : undefined,
       endDate: query.endDate ? new Date(query.endDate) : undefined,
+    });
+  }
+
+  @Get('reports/efficiency')
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Obter relatório operacional de eficiência de combustível (Km/L)' })
+  async getEfficiencyReport(
+    @CurrentUser() user: UserPayload,
+    @Query() query: GetEfficiencyReportQueryDto
+  ) {
+    const context = await this.resolveUserContext(user);
+
+    return this.fuelEfficiencyReportService.getEfficiencyReport({
+      ownerId: context.ownerId,
+      clientId: context.clientId,
+      startDate: query.startDate ? new Date(query.startDate) : undefined,
+      endDate: query.endDate ? new Date(query.endDate) : undefined,
+      vehicleId: query.vehicleId,
+      fuelType: query.fuelType,
+      comparePreviousPeriod: query.comparePreviousPeriod,
     });
   }
 

@@ -13,6 +13,7 @@ import { GetFuelRecordByIdUseCase } from './application/use-cases/get-fuel-recor
 import { ListFuelRecordsUseCase } from './application/use-cases/list-fuel-records.use-case';
 import { GetFuelConsumptionReportUseCase } from './application/use-cases/get-fuel-consumption-report.use-case';
 import { GetFuelCostStatsUseCase } from './application/use-cases/get-fuel-cost-stats.use-case';
+import { FuelEfficiencyReportService } from './application/services/fuel-efficiency-report.service';
 
 import { IFuelRecordsRepository } from './domain/repositories/fuel-records.repository';
 import { PrismaFuelRecordsRepository } from './infrastructure/persistence/prisma/repositories/prisma-fuel-records.repository';
@@ -28,6 +29,7 @@ import { PrismaFuelRecordsRepository } from './infrastructure/persistence/prisma
     ListFuelRecordsUseCase,
     GetFuelConsumptionReportUseCase,
     GetFuelCostStatsUseCase,
+    FuelEfficiencyReportService,
     {
       provide: IFuelRecordsRepository,
       useClass: PrismaFuelRecordsRepository,
@@ -42,6 +44,7 @@ import { PrismaFuelRecordsRepository } from './infrastructure/persistence/prisma
     ListFuelRecordsUseCase,
     GetFuelConsumptionReportUseCase,
     GetFuelCostStatsUseCase,
+    FuelEfficiencyReportService,
   ],
 })
 export class FuelModule {}
