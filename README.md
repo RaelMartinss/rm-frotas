@@ -14,7 +14,6 @@ API robusta e escalável para gestão de frotas veiculares, motoristas, viagens 
 
 [Visão Geral](#-visão-geral) •
 [Arquitetura](#-arquitetura--ddd) •
-[Segurança](#-segurança--resiliência) •
 [Módulos & Endpoints](#-módulos-e-endpoints) •
 [Execução Local & Docker](#-execução-local--docker) •
 [Testes & CI/CD](#-testes--cicd)
@@ -61,19 +60,6 @@ src/modules/<módulo>/
 
 ---
 
-## 🛡 Segurança & Resiliência
-
-- **Proteção contra Brute Force (Rate Limiting)**:
-  - Global: 60 requisições/minuto por IP.
-  - Endpoints sensíveis (`/v1/auth/login`, `/v1/me/password`): 5 tentativas/minuto por IP.
-- **Headers HTTP com Helmet**: Proteção contra XSS, sniffing de MIME-type e clickjacking.
-- **CORS Estrito**: Whitelist configurada via `CORS_ORIGIN`, suporte a subdomínios Vercel (`*.vercel.app`) e credentials ativadas para autenticação segura via cookies/headers.
-- **Fail-Fast JWT Validation**: O sistema aborta a inicialização em ambiente de produção caso uma chave JWT fraca ou padrão seja detectada.
-- **Tratamento de Exceções Global**: `DomainExceptionFilter` mapeia erros de negócio para respostas HTTP semânticas (400, 404, 409, 422) sem expor detalhes internos de stack trace.
-- **Health Checks & Observabilidade**: Endpoint `/v1/health` integrado com `@nestjs/terminus` para probes de liveness e readiness (banco de dados).
-
----
-
 ## 📦 Módulos e Endpoints
 
 Documentação interativa Swagger disponível em `/api` quando a aplicação estiver em execução.
@@ -115,7 +101,7 @@ docker compose logs -f api
 
 1. **Clone o repositório e instale as dependências:**
    ```bash
-   git clone https://github.com/seu-usuario/rm-frotas.git
+   git clone https://github.com/RaelMartinss/rm-frotas.git
    cd rm-frotas
    npm install
    ```
@@ -175,10 +161,4 @@ npm run lint
 Toda alteração disparada via Pull Request ou Push na branch `main`/`master` executa automaticamente a pipeline de CI:
 - **Lint & Formatação**: Verificação estática via Oxlint.
 - **Testes Unitários & E2E**: Execução completa das suítes de teste com relatórios de status.
-- **Docker Build Validation**: Verificação de compilação da imagem Docker de produção.
-
----
-
-## 📄 Licença
-
-Distribuído sob a licença **MIT**. Veja `LICENSE` para mais informações.
+- **Docker Build Validation**: Verificação de compilação da imagem Docker de produção.
