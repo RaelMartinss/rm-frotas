@@ -3,6 +3,8 @@ export interface CreateTripInput {
   vehicleId: string;
   clientId?: string;
   scheduledDate?: Date | string | null;
+  estimatedArrivalDate?: Date | string | null;
+  notes?: string | null;
   origin: {
     address: string;
     city: string;

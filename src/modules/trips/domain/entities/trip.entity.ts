@@ -11,6 +11,8 @@ export interface TripProps {
   destination: Location;
   status: TripStatus;
   scheduledDate?: Date | null;
+  estimatedArrivalDate?: Date | null;
+  notes?: string | null;
   startedAt?: Date | null;
   completedAt?: Date | null;
   finalOdometer?: number | null;
@@ -26,6 +28,8 @@ export interface CreateTripProps {
   destination: Location;
   status?: TripStatus;
   scheduledDate?: Date | null;
+  estimatedArrivalDate?: Date | null;
+  notes?: string | null;
   startedAt?: Date | null;
   completedAt?: Date | null;
   finalOdometer?: number | null;
@@ -55,6 +59,8 @@ export class Trip {
   public getDestination(): Location { return this.props.destination; }
   public getStatus(): TripStatus { return this.props.status; }
   public getScheduledDate(): Date | null | undefined { return this.props.scheduledDate; }
+  public getEstimatedArrivalDate(): Date | null | undefined { return this.props.estimatedArrivalDate; }
+  public getNotes(): string | null | undefined { return this.props.notes; }
   public getStartedAt(): Date | null | undefined { return this.props.startedAt; }
   public getCompletedAt(): Date | null | undefined { return this.props.completedAt; }
   public getFinalOdometer(): number | null | undefined { return this.props.finalOdometer; }

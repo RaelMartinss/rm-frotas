@@ -55,6 +55,8 @@ export class CreateTripUseCase {
       origin,
       destination,
       scheduledDate: input.scheduledDate ? new Date(input.scheduledDate) : null,
+      estimatedArrivalDate: input.estimatedArrivalDate ? new Date(input.estimatedArrivalDate) : null,
+      notes: input.notes ?? null,
     });
 
     await this.tripRepository.create(trip);

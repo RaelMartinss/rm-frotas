@@ -81,4 +81,20 @@ export class CreateTripHttpDto {
   @IsOptional()
   @IsDateString()
   scheduledDate?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-09-10T18:30:00.000Z',
+    description: 'Data e hora prevista para chegada',
+  })
+  @IsOptional()
+  @IsDateString()
+  estimatedArrivalDate?: string;
+
+  @ApiPropertyOptional({
+    example: 'Entrega de materiais',
+    description: 'Observações sobre a viagem',
+  })
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }
