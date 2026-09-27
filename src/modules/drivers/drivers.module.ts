@@ -20,6 +20,7 @@ import { GetActiveSuspensionByDriverUseCase } from './application/use-cases/get-
 import { ListSuspensionsByDriverUseCase } from './application/use-cases/list-suspensions-by-driver.use-case';
 import { ListActiveSuspensionsUseCase } from './application/use-cases/list-active-suspensions.use-case';
 import { UpdateDriverCnhUseCase } from './application/use-cases/update-driver-cnh.use-case';
+import { UpdateDriverUseCase } from './application/use-cases/update-driver.use-case';
 import { ListDriversUseCase } from './application/use-cases/list-drivers.use-case';
 import { FindDriverByIdUseCase } from './application/use-cases/find-driver-by-id.use-case';
 
@@ -49,6 +50,7 @@ import { DriversController } from './infrastructure/controllers/drivers.controll
     ListSuspensionsByDriverUseCase,
     ListActiveSuspensionsUseCase,
     UpdateDriverCnhUseCase,
+    UpdateDriverUseCase,
     ListDriversUseCase,
     FindDriverByIdUseCase,
   ],
@@ -66,6 +68,7 @@ import { DriversController } from './infrastructure/controllers/drivers.controll
     ListSuspensionsByDriverUseCase,
     ListActiveSuspensionsUseCase,
     UpdateDriverCnhUseCase,
+    UpdateDriverUseCase,
     ListDriversUseCase,
     FindDriverByIdUseCase,
   ],

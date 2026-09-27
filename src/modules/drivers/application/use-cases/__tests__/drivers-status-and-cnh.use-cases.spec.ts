@@ -4,6 +4,7 @@ import { DeactivateDriverUseCase } from '../deactivate-driver.use-case';
 import { SuspendDriverUseCase } from '../suspend-driver.use-case';
 import { LiftDriverSuspensionUseCase } from '../lift-driver-suspension.use-case';
 import { UpdateDriverCnhUseCase } from '../update-driver-cnh.use-case';
+import { UpdateDriverUseCase } from '../update-driver.use-case';
 import { Driver } from '../../../domain/entities/driver.entity';
 import { DriverStatus } from '../../../domain/entities/driver-status.enum';
 import { SuspensionReasonCategory } from '../../../domain/entities/driver-suspension.entity';
@@ -13,6 +14,7 @@ import { DriverNotFoundException } from '../../../domain/exceptions/driver-not-f
 import { InvalidDriverStatusTransitionException } from '../../../domain/exceptions/invalid-driver-status-transition.exception';
 import { InMemoryDriversRepository } from '../../../infrastructure/repositories/in-memory-drivers.repository';
 import { InMemoryDriverSuspensionsRepository } from '../../../infrastructure/repositories/in-memory-driver-suspensions.repository';
+import { InMemoryUsersRepository } from '../../../../auth/repositories/in-memory-users.repository';
 import { DriverAvailabilityChecker } from '../../../domain/services/driver-availability-checker.service';
 
 describe('Drivers Status & CNH Use Cases', () => {
@@ -23,6 +25,7 @@ describe('Drivers Status & CNH Use Cases', () => {
   let suspendUseCase: SuspendDriverUseCase;
   let liftUseCase: LiftDriverSuspensionUseCase;
   let updateCnhUseCase: UpdateDriverCnhUseCase;
+  let updateDriverUseCase: UpdateDriverUseCase;
   let existingDriver: Driver;
 
   beforeEach(async () => {
@@ -44,6 +47,8 @@ describe('Drivers Status & CNH Use Cases', () => {
       suspensionsRepository,
     );
     updateCnhUseCase = new UpdateDriverCnhUseCase(repository);
+    const usersRepository = new InMemoryUsersRepository();
+    updateDriverUseCase = new UpdateDriverUseCase(repository, usersRepository);
 
     existingDriver = new Driver({
       name: 'Rael Martins',
@@ -131,6 +136,25 @@ describe('Drivers Status & CNH Use Cases', () => {
       expect(result.getCnh().getNumber()).toBe('98765432100');
       expect(result.getCnh().getCategory()).toBe('D');
       expect(result.getCnh().getExpirationDate()).toEqual(newExpiration);
+    });
+  });
+
+  describe('UpdateDriverUseCase', () => {
+    it('deve atualizar os dados cadastrais e CNH do motorista com sucesso', async () => {
+      const updated = await updateDriverUseCase.execute({
+        driverId: existingDriver.getId(),
+        name: 'Rael Martins Atualizado',
+        phone: '11999998888',
+        cnhNumber: '99887766554',
+        cnhCategory: 'B',
+        cnhExpirationDate: new Date('2032-12-31'),
+        status: DriverStatus.INACTIVE,
+      });
+
+      expect(updated.getName()).toBe('Rael Martins Atualizado');
+      expect(updated.getPhone()).toBe('11999998888');
+      expect(updated.getCnh().getNumber()).toBe('99887766554');
+      expect(updated.getStatus()).toBe(DriverStatus.INACTIVE);
     });
   });
 });

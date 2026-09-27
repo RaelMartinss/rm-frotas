@@ -99,6 +99,10 @@ export class Driver {
     this.props.userId = userId;
     this.touch();
   }
+  public setName(name: string): void {
+    this.props.name = name;
+    this.touch();
+  }
   public getEmail(): string | undefined {
     return this.props.email;
   }

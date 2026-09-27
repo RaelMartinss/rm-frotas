@@ -21,9 +21,11 @@ import { GetActiveSuspensionByDriverUseCase } from '../../application/use-cases/
 import { ListSuspensionsByDriverUseCase } from '../../application/use-cases/list-suspensions-by-driver.use-case';
 import { ListActiveSuspensionsUseCase } from '../../application/use-cases/list-active-suspensions.use-case';
 import { UpdateDriverCnhUseCase } from '../../application/use-cases/update-driver-cnh.use-case';
+import { UpdateDriverUseCase } from '../../application/use-cases/update-driver.use-case';
 import { ListDriversUseCase } from '../../application/use-cases/list-drivers.use-case';
 import { FindDriverByIdUseCase } from '../../application/use-cases/find-driver-by-id.use-case';
 import { CreateDriverHttpDto } from './dtos/create-driver-http.dto';
+import { UpdateDriverHttpDto } from './dtos/update-driver-http.dto';
 import { UpdateDriverCnhHttpDto } from './dtos/update-driver-cnh-http.dto';
 import { GetDriversQueryDto } from './dtos/get-drivers-query.dto';
 import { SuspendDriverHttpDto } from './dtos/suspend-driver-http.dto';
@@ -44,6 +46,7 @@ import { AuthGuard } from '@nestjs/passport';
 export class DriversController {
   constructor(
     private readonly createDriverUseCase: CreateDriverUseCase,
+    private readonly updateDriverUseCase: UpdateDriverUseCase,
     private readonly resetDriverPasswordUseCase: ResetDriverPasswordUseCase,
     private readonly activateDriverUseCase: ActivateDriverUseCase,
     private readonly deactivateDriverUseCase: DeactivateDriverUseCase,
@@ -279,6 +282,34 @@ export class DriversController {
   @ApiResponse({ status: 404, description: 'Motorista não encontrado.' })
   async deactivate(@Param('id') id: string) {
     const driver = await this.deactivateDriverUseCase.execute(id);
+    return DriverPresenter.toHTTP(driver);
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.FLEET_MANAGER, UserRole.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Atualizar dados cadastrais e CNH do motorista' })
+  @ApiParam({ name: 'id', description: 'UUID do motorista' })
+  @ApiResponse({ status: 200, description: 'Motorista atualizado com sucesso.' })
+  @ApiResponse({ status: 404, description: 'Motorista não encontrado.' })
+  @ApiResponse({ status: 409, description: 'E-mail ou CNH já em uso por outro motorista.' })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateDriverHttpDto,
+  ) {
+    const driver = await this.updateDriverUseCase.execute({
+      driverId: id,
+      name: dto.name,
+      email: dto.email,
+      phone: dto.phone,
+      cnhNumber: dto.cnhNumber,
+      cnhCategory: dto.cnhCategory,
+      cnhExpirationDate: dto.cnhExpirationDate
+        ? new Date(dto.cnhExpirationDate)
+        : undefined,
+      status: dto.status,
+    });
+
     return DriverPresenter.toHTTP(driver);
   }
 
