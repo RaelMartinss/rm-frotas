@@ -41,6 +41,7 @@ export interface DriverCurrentTripOutput {
   } | null;
   recentTripsCount: number;
   pendingReceiptsCount: number;
+  monthFuelingsCount: number;
 }
 
 @Injectable()
@@ -123,6 +124,7 @@ export class GetDriverCurrentTripUseCase {
         trip: null,
         recentTripsCount: 0,
         pendingReceiptsCount: 0,
+        monthFuelingsCount: 0,
       };
     }
 
@@ -142,8 +144,10 @@ export class GetDriverCurrentTripUseCase {
       ],
     });
 
-    // 3. Contagens de viagens concluídas e abastecimentos com comprovante pendente
-    const [recentTripsCount, pendingReceiptsCount] = await Promise.all([
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // 3. Contagens de viagens concluídas, pendências e abastecimentos do mês
+    const [recentTripsCount, pendingReceiptsCount, monthFuelingsCount] = await Promise.all([
       this.prisma.trip.count({
         where: {
           driverId: driver.id,
@@ -154,6 +158,12 @@ export class GetDriverCurrentTripUseCase {
         where: {
           driverId: driver.id,
           OR: [{ receiptUrl: null }, { receiptUrl: '' }],
+        },
+      }),
+      this.prisma.fuelRecord.count({
+        where: {
+          driverId: driver.id,
+          fueledAt: { gte: startOfMonth },
         },
       }),
     ]);
@@ -189,6 +199,7 @@ export class GetDriverCurrentTripUseCase {
         : null,
       recentTripsCount,
       pendingReceiptsCount,
+      monthFuelingsCount,
     };
   }
 }
