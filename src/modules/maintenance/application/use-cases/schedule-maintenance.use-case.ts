@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, BadRequestException, Inject, Optional } from '@nestjs/common';
 import { IMaintenancesRepository } from '../../domain/repositories/maintenances.repository';
 import { IVehiclesRepository } from '../../../vehicles/domain/repositories/vehicles.repository';
+import type { ITripsRepository } from '../../../trips/application/repositories/trips-repository.interface';
+import { TripStatus } from '../../../trips/domain/entities/trip-status.enum';
 import { Maintenance } from '../../domain/entities/maintenance.entity';
 import { MaintenanceType } from '../../domain/enums/maintenance-type.enum';
 import { MaintenanceStatus } from '../../domain/enums/maintenance-status.enum';
@@ -21,7 +23,10 @@ export interface ScheduleMaintenanceInput {
 export class ScheduleMaintenanceUseCase {
   constructor(
     private readonly maintenanceRepository: IMaintenancesRepository,
-    private readonly vehiclesRepository: IVehiclesRepository
+    private readonly vehiclesRepository: IVehiclesRepository,
+    @Optional()
+    @Inject('ITripsRepository')
+    private readonly tripsRepository?: ITripsRepository,
   ) {}
 
   async execute(input: ScheduleMaintenanceInput): Promise<Maintenance> {
@@ -32,6 +37,29 @@ export class ScheduleMaintenanceUseCase {
 
     if (vehicle.getOwnerId() && vehicle.getOwnerId() !== input.ownerId) {
       throw new UnauthorizedException('Você não tem permissão para gerenciar este veículo.');
+    }
+
+    if (this.tripsRepository) {
+      const activeTrip = await this.tripsRepository.findActiveByVehicleId(input.vehicleId);
+      if (activeTrip && activeTrip.getStatus() === TripStatus.IN_PROGRESS) {
+        const arrival = activeTrip.getEstimatedArrivalDate() || activeTrip.getScheduledDate();
+        if (!input.scheduledDate) {
+          throw new BadRequestException(
+            'O veículo está atualmente em viagem. Informe uma data de agendamento posterior à previsão de chegada.'
+          );
+        }
+
+        const scheduledTime = new Date(input.scheduledDate).getTime();
+        if (arrival && scheduledTime <= new Date(arrival).getTime()) {
+          const arrivalFormatted = new Intl.DateTimeFormat('pt-BR', {
+            dateStyle: 'short',
+            timeStyle: 'short',
+          }).format(new Date(arrival));
+          throw new BadRequestException(
+            `O veículo está em viagem com previsão de chegada em ${arrivalFormatted}. O agendamento da manutenção só pode ser realizado para data/hora posterior à chegada.`
+          );
+        }
+      }
     }
 
     const items = input.items?.map(

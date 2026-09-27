@@ -226,4 +226,56 @@ describe('Maintenance Application Use Cases', () => {
       })
     ).rejects.toThrow();
   });
+
+  it('should only allow scheduling maintenance after estimated arrival date if vehicle is in a trip', async () => {
+    const mockTripsRepo = {
+      findActiveByVehicleId: async (vehicleId: string) => {
+        if (vehicleId === sampleVehicle.getId()) {
+          return {
+            getStatus: () => 'IN_PROGRESS',
+            getEstimatedArrivalDate: () => new Date('2026-10-01T15:00:00Z'),
+            getScheduledDate: () => new Date('2026-09-30T10:00:00Z'),
+          } as any;
+        }
+        return null;
+      },
+    } as any;
+
+    const useCaseWithTrips = new ScheduleMaintenanceUseCase(
+      maintenanceRepo,
+      vehiclesRepo,
+      mockTripsRepo,
+    );
+
+    // 1. Sem data informada deve falhar
+    await expect(
+      useCaseWithTrips.execute({
+        ownerId: OWNER_ID,
+        vehicleId: sampleVehicle.getId(),
+        description: 'Revisão pós viagem',
+      })
+    ).rejects.toThrow('O veículo está atualmente em viagem');
+
+    // 2. Com data anterior ou igual à previsão de chegada deve falhar
+    await expect(
+      useCaseWithTrips.execute({
+        ownerId: OWNER_ID,
+        vehicleId: sampleVehicle.getId(),
+        description: 'Revisão no mesmo horário da chegada',
+        scheduledDate: new Date('2026-10-01T15:00:00Z'),
+      })
+    ).rejects.toThrow('O agendamento da manutenção só pode ser realizado para data/hora posterior à chegada');
+
+    // 3. Com data posterior à chegada deve permitir
+    const scheduled = await useCaseWithTrips.execute({
+      ownerId: OWNER_ID,
+      vehicleId: sampleVehicle.getId(),
+      description: 'Revisão dia seguinte',
+      scheduledDate: new Date('2026-10-02T09:00:00Z'),
+    });
+
+    expect(scheduled).toBeDefined();
+    expect(scheduled.getStatus()).toBe(MaintenanceStatus.AGENDADA);
+  });
 });
+
