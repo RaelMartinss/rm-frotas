@@ -33,6 +33,7 @@ export class DriverMapper {
         userId: raw.userId ?? undefined,
         email: raw.email ?? raw.user?.email ?? undefined,
         phone: raw.phone ?? raw.user?.phone ?? undefined,
+        photoUrl: raw.photoUrl ?? null,
         inTrip: Boolean(
           raw.trips &&
           raw.trips.length > 0 &&
@@ -73,6 +74,7 @@ export class DriverMapper {
       userId: driver.getUserId() ?? null,
       email: driver.getEmail() ?? null,
       phone: driver.getPhone() ?? null,
+      photoUrl: driver.getPhotoUrl() ?? null,
       createdAt: driver.getCreatedAt(),
       updatedAt: driver.getUpdatedAt(),
     };

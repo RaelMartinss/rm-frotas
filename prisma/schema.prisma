@@ -152,6 +152,7 @@ model Driver {
   email             String?      @map("email")
   phone             String?      @map("phone")
   pushToken         String?      @map("push_token")
+  photoUrl          String?      @map("photo_url")
   createdAt         DateTime     @default(now()) @map("created_at")
   updatedAt         DateTime     @updatedAt @map("updated_at")
 

@@ -9,6 +9,7 @@ export interface UpdateDriverInput {
   name?: string;
   email?: string;
   phone?: string;
+  photoUrl?: string | null;
   cnhNumber?: string;
   cnhCategory?: CnhCategory;
   cnhExpirationDate?: Date | string;
@@ -39,6 +40,10 @@ export class UpdateDriverUseCase {
 
     if (input.phone !== undefined) {
       driver.setPhone(input.phone ? input.phone.trim() : undefined);
+    }
+
+    if (input.photoUrl !== undefined) {
+      driver.setPhotoUrl(input.photoUrl);
     }
 
     if (input.cnhNumber || input.cnhCategory || input.cnhExpirationDate) {

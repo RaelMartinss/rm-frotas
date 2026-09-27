@@ -308,6 +308,7 @@ export class DriversController {
         ? new Date(dto.cnhExpirationDate)
         : undefined,
       status: dto.status,
+      photoUrl: dto.photoUrl,
     });
 
     return DriverPresenter.toHTTP(driver);

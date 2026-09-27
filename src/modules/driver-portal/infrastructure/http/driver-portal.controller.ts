@@ -523,4 +523,47 @@ export class DriverPortalController {
 
     return { success: true, message: 'Push token registrado com sucesso.' };
   }
+
+  @Patch('profile/photo')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Atualizar foto do perfil do motorista' })
+  async updateProfilePhoto(
+    @CurrentUser('userId') userId: string,
+    @Body() body: { photoUrl: string | null },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Usuário não encontrado.');
+    }
+
+    const driver = await this.prisma.driver.findFirst({
+      where: {
+        OR: [
+          { userId },
+          {
+            clientId: user.clientId ?? undefined,
+            name: { equals: user.name, mode: 'insensitive' },
+          },
+        ],
+      },
+    });
+
+    if (!driver) {
+      throw new NotFoundException('Perfil de motorista não encontrado.');
+    }
+
+    const updated = await this.prisma.driver.update({
+      where: { id: driver.id },
+      data: { photoUrl: body.photoUrl ?? null },
+    });
+
+    return {
+      success: true,
+      photoUrl: updated.photoUrl,
+      message: 'Foto atualizada com sucesso.',
+    };
+  }
 }

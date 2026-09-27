@@ -36,4 +36,9 @@ export class UpdateDriverHttpDto {
   @IsOptional()
   @IsEnum(DriverStatus)
   status?: DriverStatus;
+
+  @ApiPropertyOptional({ example: 'data:image/jpeg;base64,...' })
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
 }

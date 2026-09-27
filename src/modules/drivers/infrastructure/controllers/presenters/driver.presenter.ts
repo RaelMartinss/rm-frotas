@@ -15,6 +15,7 @@ export class DriverPresenter {
         isExpired: driver.getCnh().isExpired(),
       },
       status: driver.isInTrip() ? 'EM_VIAGEM' : driver.getStatus(),
+      photoUrl: driver.getPhotoUrl() ?? null,
       createdAt: driver.getCreatedAt().toISOString(),
       updatedAt: driver.getUpdatedAt().toISOString(),
     };

@@ -14,6 +14,7 @@ export interface DriverCurrentTripOutput {
     isCnhExpired: boolean;
     canStartTrip: boolean;
     status: string;
+    photoUrl?: string | null;
   } | null;
   trip: {
     id: string;
@@ -112,6 +113,7 @@ export class GetDriverCurrentTripUseCase {
           isCnhExpired,
           canStartTrip,
           status: driver.status,
+          photoUrl: driver.photoUrl ?? null,
         }
       : null;
 

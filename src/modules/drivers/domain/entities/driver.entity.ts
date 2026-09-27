@@ -17,6 +17,7 @@ export interface DriverProps {
   userId?: string;
   email?: string;
   phone?: string;
+  photoUrl?: string | null;
   inTrip?: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -33,6 +34,7 @@ export interface CreateDriverProps {
   userId?: string;
   email?: string;
   phone?: string;
+  photoUrl?: string | null;
   inTrip?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -56,6 +58,7 @@ export class Driver {
       userId: props.userId,
       email: props.email,
       phone: props.phone,
+      photoUrl: props.photoUrl ?? null,
       inTrip: props.inTrip ?? false,
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
@@ -115,6 +118,13 @@ export class Driver {
   }
   public setPhone(phone?: string): void {
     this.props.phone = phone;
+    this.touch();
+  }
+  public getPhotoUrl(): string | null {
+    return this.props.photoUrl ?? null;
+  }
+  public setPhotoUrl(photoUrl?: string | null): void {
+    this.props.photoUrl = photoUrl ?? null;
     this.touch();
   }
 
