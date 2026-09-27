@@ -12,7 +12,10 @@ export class DriverMapper {
    * Converte o registro do banco (Prisma) em uma Entidade de Domínio (Driver).
    */
   static toDomain(
-    raw: PrismaDriver & { user?: { email?: string | null; phone?: string | null } | null },
+    raw: PrismaDriver & {
+      user?: { email?: string | null; phone?: string | null } | null;
+      trips?: { id: string }[];
+    },
   ): Driver {
     return new Driver(
       {
@@ -30,6 +33,11 @@ export class DriverMapper {
         userId: raw.userId ?? undefined,
         email: raw.email ?? raw.user?.email ?? undefined,
         phone: raw.phone ?? raw.user?.phone ?? undefined,
+        inTrip: Boolean(
+          raw.trips &&
+          raw.trips.length > 0 &&
+          raw.status === PrismaDriverStatus.ACTIVE,
+        ),
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },

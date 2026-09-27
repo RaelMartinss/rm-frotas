@@ -14,7 +14,7 @@ export class DriverPresenter {
         expirationDate: driver.getCnh().getExpirationDate().toISOString(),
         isExpired: driver.getCnh().isExpired(),
       },
-      status: driver.getStatus(),
+      status: driver.isInTrip() ? 'EM_VIAGEM' : driver.getStatus(),
       createdAt: driver.getCreatedAt().toISOString(),
       updatedAt: driver.getUpdatedAt().toISOString(),
     };

@@ -51,7 +51,13 @@ export class InMemoryDriversRepository implements IDriversRepository {
     }
 
     if (status) {
-      filtered = filtered.filter((d) => d.getStatus() === status);
+      if (status === 'IN_TRIP' || status === 'EM_VIAGEM') {
+        filtered = filtered.filter((d) => d.isInTrip());
+      } else if (status === 'ACTIVE') {
+        filtered = filtered.filter((d) => d.getStatus() === 'ACTIVE' && !d.isInTrip());
+      } else {
+        filtered = filtered.filter((d) => d.getStatus() === status);
+      }
     }
 
     if (search && search.trim()) {

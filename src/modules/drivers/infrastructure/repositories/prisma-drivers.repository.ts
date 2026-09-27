@@ -26,7 +26,13 @@ export class PrismaDriversRepository implements IDriversRepository {
   async findById(id: string): Promise<Driver | null> {
     const raw = await this.prisma.driver.findUnique({
       where: { id },
-      include: { user: true },
+      include: {
+        user: true,
+        trips: {
+          where: { status: 'IN_PROGRESS' },
+          select: { id: true },
+        },
+      },
     });
 
     if (!raw) return null;
@@ -37,7 +43,13 @@ export class PrismaDriversRepository implements IDriversRepository {
   async findByUserId(userId: string): Promise<Driver | null> {
     const raw = await this.prisma.driver.findUnique({
       where: { userId },
-      include: { user: true },
+      include: {
+        user: true,
+        trips: {
+          where: { status: 'IN_PROGRESS' },
+          select: { id: true },
+        },
+      },
     });
 
     if (!raw) return null;
@@ -48,7 +60,13 @@ export class PrismaDriversRepository implements IDriversRepository {
   async findByCpf(cpf: Cpf): Promise<Driver | null> {
     const raw = await this.prisma.driver.findUnique({
       where: { cpf: cpf.getValue() },
-      include: { user: true },
+      include: {
+        user: true,
+        trips: {
+          where: { status: 'IN_PROGRESS' },
+          select: { id: true },
+        },
+      },
     });
 
     if (!raw) return null;
@@ -59,7 +77,13 @@ export class PrismaDriversRepository implements IDriversRepository {
   async findAll(ownerId?: string): Promise<Driver[]> {
     const drivers = await this.prisma.driver.findMany({
       where: ownerId ? { OR: [{ ownerId }, { clientId: ownerId }] } : undefined,
-      include: { user: true },
+      include: {
+        user: true,
+        trips: {
+          where: { status: 'IN_PROGRESS' },
+          select: { id: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -77,9 +101,27 @@ export class PrismaDriversRepository implements IDriversRepository {
     page,
     limit,
   }: FindManyDriversPaginatedParams): Promise<FindManyDriversPaginatedOutput> {
-    const where: any = {
-      ...(status && { status }),
-    };
+    const where: any = {};
+
+    if (status) {
+      if (status === 'IN_TRIP' || status === 'EM_VIAGEM') {
+        where.status = 'ACTIVE';
+        where.trips = {
+          some: {
+            status: 'IN_PROGRESS',
+          },
+        };
+      } else if (status === 'ACTIVE') {
+        where.status = 'ACTIVE';
+        where.trips = {
+          none: {
+            status: 'IN_PROGRESS',
+          },
+        };
+      } else {
+        where.status = status;
+      }
+    }
 
     if (clientId) {
       where.clientId = clientId;
@@ -110,7 +152,13 @@ export class PrismaDriversRepository implements IDriversRepository {
         where,
         skip,
         take: limit,
-        include: { user: true },
+        include: {
+          user: true,
+          trips: {
+            where: { status: 'IN_PROGRESS' },
+            select: { id: true },
+          },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.driver.count({ where }),

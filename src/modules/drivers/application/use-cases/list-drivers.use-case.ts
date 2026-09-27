@@ -5,7 +5,7 @@ import { Driver, DriverStatus } from '../../domain/entities/driver.entity';
 export interface ListDriversInput {
   ownerId?: string;
   clientId?: string;
-  status?: DriverStatus;
+  status?: DriverStatus | string;
   search?: string;
   page?: number;
   limit?: number;

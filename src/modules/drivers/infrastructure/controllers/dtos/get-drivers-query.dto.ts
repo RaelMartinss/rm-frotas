@@ -1,7 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DriverStatus } from '../../../domain/entities/driver-status.enum';
+
+export enum DriverFilterStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  IN_TRIP = 'IN_TRIP',
+  EM_VIAGEM = 'EM_VIAGEM',
+}
 
 export class GetDriversQueryDto {
   @ApiPropertyOptional({ default: 1, description: 'Número da página' })
@@ -24,8 +31,8 @@ export class GetDriversQueryDto {
   @IsOptional()
   search?: string;
 
-  @ApiPropertyOptional({ enum: DriverStatus, description: 'Filtrar por status' })
-  @IsEnum(DriverStatus)
+  @ApiPropertyOptional({ enum: DriverFilterStatus, description: 'Filtrar por status' })
+  @IsEnum(DriverFilterStatus)
   @IsOptional()
-  status?: DriverStatus;
+  status?: DriverFilterStatus;
 }

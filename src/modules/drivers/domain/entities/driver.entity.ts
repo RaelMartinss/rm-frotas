@@ -17,6 +17,7 @@ export interface DriverProps {
   userId?: string;
   email?: string;
   phone?: string;
+  inTrip?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +33,7 @@ export interface CreateDriverProps {
   userId?: string;
   email?: string;
   phone?: string;
+  inTrip?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -54,6 +56,7 @@ export class Driver {
       userId: props.userId,
       email: props.email,
       phone: props.phone,
+      inTrip: props.inTrip ?? false,
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
     };
@@ -73,6 +76,9 @@ export class Driver {
   }
   public getStatus(): DriverStatus {
     return this.props.status;
+  }
+  public isInTrip(): boolean {
+    return !!this.props.inTrip;
   }
   public getCreatedAt(): Date {
     return this.props.createdAt;
