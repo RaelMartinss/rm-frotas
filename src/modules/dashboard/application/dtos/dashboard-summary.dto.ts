@@ -26,6 +26,7 @@ export interface OngoingTripDto {
   route: string;
   startTime: string;
   status: 'EM_ANDAMENTO' | 'PROGRAMADA';
+  driverPhotoUrl?: string | null;
 }
 
 export interface RecentAlertDto {

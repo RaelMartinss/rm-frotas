@@ -144,6 +144,7 @@ export class GetDashboardSummaryUseCase {
         route: `${t.originCity || ''} (${t.originState || ''}) → ${t.destinationCity || ''} (${t.destinationState || ''})`,
         startTime,
         status: t.status === 'IN_PROGRESS' ? 'EM_ANDAMENTO' : 'PROGRAMADA',
+        driverPhotoUrl: t.driver?.photoUrl ?? null,
       };
     });
 
