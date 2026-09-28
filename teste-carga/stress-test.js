@@ -3,7 +3,7 @@
 //
 // Instalação (Fedora): sudo dnf install k6
 // Uso:
-//   API_URL=https://rm-frotas-api.onrender.com \
+//   API_URL=https://rm-frotas.duckdns.org \
 //   TEST_EMAIL=seu-email@exemplo.com \
 //   TEST_PASSWORD=suaSenha \
 //   k6 run stress-test.js

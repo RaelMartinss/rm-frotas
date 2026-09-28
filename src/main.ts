@@ -30,7 +30,7 @@ async function bootstrap() {
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ extended: true, limit: '10mb' }));
 
-  // Confia no proxy reverso (Render, Cloudflare, NGINX) para obter o IP real do cliente via X-Forwarded-For
+  // Confia no proxy reverso (Caddy, Cloudflare, NGINX) para obter o IP real do cliente via X-Forwarded-For
   app.set('trust proxy', 1);
 
   // Headers de segurança HTTP (desativa CSP para permitir documentação Swagger)
