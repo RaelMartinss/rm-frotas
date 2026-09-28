@@ -97,7 +97,7 @@ jobs:
           OCI_USER: ${{ secrets.OCI_USER }}
         run: |
           ssh "$OCI_USER@$OCI_HOST" 'mkdir -p ~/rm-frotas'
-          scp /tmp/app.tar.gz docker-compose.yml Caddyfile "$OCI_USER@$OCI_HOST:~/rm-frotas/"
+          scp /tmp/app.tar.gz docker-compose.yml Caddyfile deploy.sh "$OCI_USER@$OCI_HOST:~/rm-frotas/"
 
       - name: Native ARM64 Build, Push to GHCR & Deploy
         env:
@@ -107,30 +107,4 @@ jobs:
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          ssh "$OCI_USER@$OCI_HOST" bash -s <<EOF
-          set -euo pipefail
-          cd ~/rm-frotas
-
-          # 1. Extrai o código-fonte atualizado
-          tar -xzf app.tar.gz
-          rm -f app.tar.gz
-
-          # 2. Login no GHCR para publicar a imagem oficial
-          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-
-          # 3. Build nativo no processador ARM64 da Oracle (Ampere A1)
-          docker build \
-            -t ghcr.io/raelmartinss/rm-frotas:$IMAGE_TAG \
-            -t ghcr.io/raelmartinss/rm-frotas:latest .
-
-          # 4. Publica a imagem ARM64 compilada no GHCR
-          docker push ghcr.io/raelmartinss/rm-frotas:$IMAGE_TAG
-          docker push ghcr.io/raelmartinss/rm-frotas:latest
-
-          # 5. Sobe os containers em produção
-          export IMAGE_TAG="$IMAGE_TAG"
-          docker compose up -d --wait --wait-timeout 120
-
-          docker logout ghcr.io
-          docker image prune -af --filter "until=168h"
-EOF
+          ssh "$OCI_USER@$OCI_HOST" "IMAGE_TAG='$IMAGE_TAG' GHCR_USER='$GHCR_USER' GHCR_TOKEN='$GHCR_TOKEN' bash ~/rm-frotas/deploy.sh"
