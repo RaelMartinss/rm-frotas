@@ -7,6 +7,7 @@ cd "$(dirname "$0")"
 if [ -f app.tar.gz ]; then
   tar -xzf app.tar.gz
   rm -f app.tar.gz
+  chmod +x scripts/*.sh 2>/dev/null || true
 fi
 
 # 2. Login no GHCR para publicar a imagem oficial
