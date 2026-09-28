@@ -1,0 +1,23 @@
+rm-frotas.duckdns.org {
+    # Encaminha todo o tráfego HTTPS seguro para a API NestJS
+    reverse_proxy api:3000
+
+    # Headers de segurança
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        -Server
+    }
+
+    # Compressão automática
+    encode gzip zstd
+
+    # Logs de acesso do proxy
+    log {
+        output file /data/caddy_access.log {
+            roll_size 10MB
+            roll_keep 3
+        }
+    }
+}
