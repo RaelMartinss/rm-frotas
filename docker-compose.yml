@@ -46,6 +46,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-rmfrotas_db_prod_2026}
       POSTGRES_DB: rm_frotas
+    ports:
+      - "127.0.0.1:5432:5432"
     volumes:
       - rm-frotas-db-data:/var/lib/postgresql/data
     healthcheck:
