@@ -181,15 +181,20 @@ export class IdempotencyInterceptor implements NestInterceptor {
   private cleanOldKeysOpportunistically(): void {
     if (Math.random() < 0.05) {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      this.prisma.idempotencyKey
-        .deleteMany({
+      try {
+        const result = this.prisma.idempotencyKey?.deleteMany({
           where: {
             createdAt: { lt: thirtyDaysAgo },
           },
-        })
-        .catch((err) => {
-          this.logger.debug(`Erro na limpeza oportunista de chaves antigas: ${err.message}`);
         });
+        if (result && typeof result.catch === 'function') {
+          result.catch((err: any) => {
+            this.logger.debug(`Erro na limpeza oportunista de chaves antigas: ${err?.message}`);
+          });
+        }
+      } catch {
+        // Ignora falhas de limpeza assíncrona oportunista
+      }
     }
   }
 }

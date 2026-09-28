@@ -23,7 +23,7 @@ describe('IdempotencyInterceptor', () => {
         findUnique: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
-        deleteMany: vi.fn(),
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
     };
 
