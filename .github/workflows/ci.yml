@@ -62,56 +62,17 @@ jobs:
       - name: Run all tests
         run: npm run test:all
 
-  publish-image:
-    name: Build and Push ARM64 Image
+  deploy:
+    name: Build ARM64 & Deploy on Oracle VM
     runs-on: ubuntu-latest
     needs: [lint, test]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: true
     permissions:
       contents: read
       packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/arm64
-          push: true
-          provenance: false
-          tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ github.sha }}
-          labels: |
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  deploy:
-    name: Deploy to Oracle VM
-    runs-on: ubuntu-latest
-    needs: publish-image
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
-    permissions:
-      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -126,22 +87,19 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "$OCI_HOST" >> ~/.ssh/known_hosts
 
-      - name: Prepare application directory
+      - name: Package source code
+        run: |
+          tar --exclude='.git' --exclude='node_modules' --exclude='dist' -czf app.tar.gz .
+
+      - name: Upload source and configs to Oracle VM
         env:
           OCI_HOST: ${{ secrets.OCI_HOST }}
           OCI_USER: ${{ secrets.OCI_USER }}
         run: |
           ssh "$OCI_USER@$OCI_HOST" 'mkdir -p ~/rm-frotas'
+          scp app.tar.gz docker-compose.yml Caddyfile "$OCI_USER@$OCI_HOST:~/rm-frotas/"
 
-      - name: Upload production Compose and Caddyfile
-        env:
-          OCI_HOST: ${{ secrets.OCI_HOST }}
-          OCI_USER: ${{ secrets.OCI_USER }}
-        run: |
-          scp docker-compose.yml "$OCI_USER@$OCI_HOST:~/rm-frotas/docker-compose.yml"
-          scp Caddyfile "$OCI_USER@$OCI_HOST:~/rm-frotas/Caddyfile"
-
-      - name: Deploy image
+      - name: Native ARM64 Build, Push to GHCR & Deploy
         env:
           OCI_HOST: ${{ secrets.OCI_HOST }}
           OCI_USER: ${{ secrets.OCI_USER }}
@@ -152,10 +110,27 @@ jobs:
           ssh "$OCI_USER@$OCI_HOST" bash -s <<EOF
           set -euo pipefail
           cd ~/rm-frotas
+
+          # 1. Extrai o código-fonte atualizado
+          tar -xzf app.tar.gz
+          rm -f app.tar.gz
+
+          # 2. Login no GHCR para publicar a imagem oficial
           echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
-          export IMAGE_TAG="$IMAGE_TAG"
-          docker compose pull api
+
+          # 3. Build nativo no processador ARM64 da Oracle (Ampere A1)
+          docker build \
+            -t ghcr.io/raelmartinss/rm-frotas:\$IMAGE_TAG \
+            -t ghcr.io/raelmartinss/rm-frotas:latest .
+
+          # 4. Publica a imagem ARM64 compilada no GHCR
+          docker push ghcr.io/raelmartinss/rm-frotas:\$IMAGE_TAG
+          docker push ghcr.io/raelmartinss/rm-frotas:latest
+
+          # 5. Sobe os containers em produção
+          export IMAGE_TAG="\$IMAGE_TAG"
           docker compose up -d --wait --wait-timeout 120
+
           docker logout ghcr.io
           docker image prune -af --filter "until=168h"
           EOF
