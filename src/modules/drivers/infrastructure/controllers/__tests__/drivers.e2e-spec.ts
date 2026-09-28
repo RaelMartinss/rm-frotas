@@ -173,6 +173,7 @@ describe('DriversController (E2E)', () => {
         name: 'Rael Martins',
         email: 'rael.driver@e2e.com',
         phone: null,
+        photoUrl: null,
         cpf: '529.982.247-25',
         cnh: {
           number: '12345678901',
