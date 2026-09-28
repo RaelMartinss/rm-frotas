@@ -53,22 +53,26 @@ async function main() {
   console.log(`👑 Super Admin: ${superAdmin.email} (${superAdmin.id}) | Senha: ${superAdminPassword}`);
 
   // 3. Cria ou garante o FLEET_MANAGER associado ao cliente padrão
+  const fleetManagerPassword = process.env.FLEET_MANAGER_PASSWORD || 'Admin@123';
+  const hashedFleetManagerPassword = await bcrypt.hash(fleetManagerPassword, 10);
+
   const fleetManager = await prisma.user.upsert({
     where: { email: 'rael@example.com' },
     update: {
       role: UserRole.FLEET_MANAGER,
       clientId: defaultClient.id,
+      password: hashedFleetManagerPassword,
     },
     create: {
       name: 'Rael Martins',
       email: 'rael@example.com',
-      password: '$2b$10$YourHashedPasswordHereOrRegister',
+      password: hashedFleetManagerPassword,
       role: UserRole.FLEET_MANAGER,
       clientId: defaultClient.id,
       mustChangePassword: false,
     },
   });
-  console.log(`👤 Fleet Manager: ${fleetManager.email} (${fleetManager.id})`);
+  console.log(`👤 Fleet Manager: ${fleetManager.email} (${fleetManager.id}) | Senha: ${fleetManagerPassword}`);
 
   // 4. Seed de Veículos para o cliente padrão
   const vehiclesData = [
