@@ -138,8 +138,8 @@ jobs:
           OCI_HOST: ${{ secrets.OCI_HOST }}
           OCI_USER: ${{ secrets.OCI_USER }}
         run: |
-          scp ci-oracle/docker-compose.prod.yml "$OCI_USER@$OCI_HOST:~/rm-frotas/docker-compose.yml"
-          scp ci-oracle/Caddyfile "$OCI_USER@$OCI_HOST:~/rm-frotas/Caddyfile"
+          scp docker-compose.yml "$OCI_USER@$OCI_HOST:~/rm-frotas/docker-compose.yml"
+          scp Caddyfile "$OCI_USER@$OCI_HOST:~/rm-frotas/Caddyfile"
 
       - name: Deploy image
         env:
