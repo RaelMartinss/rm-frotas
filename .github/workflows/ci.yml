@@ -89,7 +89,7 @@ jobs:
 
       - name: Package source code
         run: |
-          tar --exclude='.git' --exclude='node_modules' --exclude='dist' -czf app.tar.gz .
+          tar --exclude='.git' --exclude='node_modules' --exclude='dist' --warning=no-file-changed -czf /tmp/app.tar.gz .
 
       - name: Upload source and configs to Oracle VM
         env:
@@ -97,7 +97,7 @@ jobs:
           OCI_USER: ${{ secrets.OCI_USER }}
         run: |
           ssh "$OCI_USER@$OCI_HOST" 'mkdir -p ~/rm-frotas'
-          scp app.tar.gz docker-compose.yml Caddyfile "$OCI_USER@$OCI_HOST:~/rm-frotas/"
+          scp /tmp/app.tar.gz docker-compose.yml Caddyfile "$OCI_USER@$OCI_HOST:~/rm-frotas/"
 
       - name: Native ARM64 Build, Push to GHCR & Deploy
         env:
@@ -120,17 +120,17 @@ jobs:
 
           # 3. Build nativo no processador ARM64 da Oracle (Ampere A1)
           docker build \
-            -t ghcr.io/raelmartinss/rm-frotas:\$IMAGE_TAG \
+            -t ghcr.io/raelmartinss/rm-frotas:$IMAGE_TAG \
             -t ghcr.io/raelmartinss/rm-frotas:latest .
 
           # 4. Publica a imagem ARM64 compilada no GHCR
-          docker push ghcr.io/raelmartinss/rm-frotas:\$IMAGE_TAG
+          docker push ghcr.io/raelmartinss/rm-frotas:$IMAGE_TAG
           docker push ghcr.io/raelmartinss/rm-frotas:latest
 
           # 5. Sobe os containers em produção
-          export IMAGE_TAG="\$IMAGE_TAG"
+          export IMAGE_TAG="$IMAGE_TAG"
           docker compose up -d --wait --wait-timeout 120
 
           docker logout ghcr.io
           docker image prune -af --filter "until=168h"
-          EOF
+EOF
