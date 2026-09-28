@@ -25,5 +25,19 @@ docker push ghcr.io/raelmartinss/rm-frotas:latest
 export IMAGE_TAG="$IMAGE_TAG"
 docker compose up -d --wait --wait-timeout 120
 
+# 6. Healthcheck pós-deploy (verificação no domínio público externo)
+echo "Aguardando confirmação do endpoint público..."
+for i in {1..12}; do
+  if curl -sf --max-time 5 https://rm-frotas.duckdns.org/v1/health | grep -q '"status":"ok"'; then
+    echo "Healthcheck OK! API rodando e saudável em produção."
+    break
+  fi
+  if [ "$i" -eq 12 ]; then
+    echo "FALHA: Healthcheck pós-deploy não respondeu com OK em 60 segundos!" >&2
+    exit 1
+  fi
+  sleep 5
+done
+
 docker logout ghcr.io
 docker image prune -af --filter "until=168h"

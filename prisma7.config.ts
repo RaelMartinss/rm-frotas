@@ -15,5 +15,6 @@ export default defineConfig({
   },
   datasource: {
     url: migrationUrl,
+    shadowDatabaseUrl: process.env["SHADOW_DATABASE_URL"] || (migrationUrl.includes("localhost") || migrationUrl.includes("127.0.0.1") ? "postgresql://postgres:postgres@localhost:5432/rm_frotas_shadow?schema=public" : undefined),
   },
 });

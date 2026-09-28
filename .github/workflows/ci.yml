@@ -57,8 +57,8 @@ jobs:
         run: npm ci
       - name: Generate Prisma Client
         run: npx prisma generate
-      - name: Apply Prisma schema to test database
-        run: npx prisma db push
+      - name: Apply Prisma migrations to test database
+        run: npx prisma migrate deploy
       - name: Run all tests
         run: npm run test:all
 
@@ -108,3 +108,18 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ssh "$OCI_USER@$OCI_HOST" "IMAGE_TAG='$IMAGE_TAG' GHCR_USER='$GHCR_USER' GHCR_TOKEN='$GHCR_TOKEN' bash ~/rm-frotas/deploy.sh"
+
+      - name: Verify Public Healthcheck (Post-Deploy)
+        run: |
+          echo "Verificando endpoint público após deploy..."
+          for i in {1..10}; do
+            if curl -sSf --max-time 10 https://rm-frotas.duckdns.org/v1/health | grep '"status":"ok"'; then
+              echo "Deploy validado com sucesso via internet pública!"
+              exit 0
+            fi
+            echo "Aguardando API responder publicamente... tentativa $i/10"
+            sleep 6
+          done
+          echo "Falha ao validar healthcheck público pós-deploy" >&2
+          exit 1
+
