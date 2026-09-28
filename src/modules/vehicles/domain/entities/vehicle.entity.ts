@@ -16,6 +16,7 @@ export interface VehicleProps {
     model: string;
     year: number;
     currentKm: number;
+    lastEventAt?: Date | null;
     crlvExpiration?: Date | null;
     status?: VehicleStatus;
     clientId?: string;
@@ -32,6 +33,7 @@ interface VehicleInternalProps {
     model: string;
     year: number;
     currentKm: number;
+    lastEventAt?: Date | null;
     crlvExpiration?: Date | null;
     status: VehicleStatus;
     clientId?: string;
@@ -50,6 +52,7 @@ export class Vehicle {
         this.props = {
             ...props,
             id: props.id ?? randomUUID(), // 2. Se não passar ID, gera um UUID v4 nativo do Node
+            lastEventAt: props.lastEventAt ?? null,
             status: props.status ?? VehicleStatus.AVAILABLE,
             clientId: props.clientId,
             ownerId: props.ownerId,
@@ -77,12 +80,34 @@ export class Vehicle {
         this.touch();
     }
 
-    public updateKm(newKm: number): void {
+    public updateKm(newKm: number, eventDate?: Date): void {
         if (newKm < this.props.currentKm) {
             throw new InvalidKilometrageException();
         }
         this.props.currentKm = newKm;
+        if (eventDate) {
+            this.props.lastEventAt = eventDate;
+        }
         this.touch();
+    }
+
+    public registerOdometerEvent(newKm: number, eventDate: Date): { updated: boolean } {
+        if (newKm < 0) {
+            throw new InvalidKilometrageException('A quilometragem não pode ser negativa.');
+        }
+
+        const isLatest = !this.props.lastEventAt || eventDate.getTime() >= this.props.lastEventAt.getTime();
+
+        if (isLatest) {
+            if (newKm >= this.props.currentKm) {
+                this.props.currentKm = newKm;
+            }
+            this.props.lastEventAt = eventDate;
+            this.touch();
+            return { updated: true };
+        }
+
+        return { updated: false };
     }
 
     public correctKm(newKm: number): void {
@@ -134,6 +159,7 @@ export class Vehicle {
     public getModel(): string { return this.props.model; }
     public getYear(): number { return this.props.year; }
     public getCurrentKm(): number { return this.props.currentKm; }
+    public getLastEventAt(): Date | null | undefined { return this.props.lastEventAt; }
     public getCrlvExpiration(): Date | null | undefined { return this.props.crlvExpiration; }
     public getStatus(): VehicleStatus { return this.props.status; }
     public getCreatedAt(): Date { return this.props.createdAt; }

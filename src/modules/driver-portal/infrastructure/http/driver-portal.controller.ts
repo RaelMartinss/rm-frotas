@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -16,6 +17,12 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../../auth/infrastructure/decorators/current-user.decorator';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
+import { IdempotencyInterceptor, Idempotent } from '../../../../shared/infrastructure/idempotency';
+import { validateOccurredAt } from '../../../../shared/domain/validators/occurred-at.validator';
+import {
+  VehicleOdometerValidator,
+  InvalidOdometerReadingException,
+} from '../../../../shared/domain/services/vehicle-odometer.validator';
 import { GetDriverCurrentTripUseCase } from '../../application/use-cases/get-driver-current-trip.use-case';
 import { GetDriverHistoryUseCase } from '../../application/use-cases/get-driver-history.use-case';
 import { GetDriverFuelHistoryUseCase } from '../../application/use-cases/get-driver-fuel-history.use-case';
@@ -36,6 +43,7 @@ import { RecordTripLocationUseCase } from '../../application/use-cases/record-tr
 @ApiBearerAuth('JWT-auth')
 @Controller('driver-portal')
 @UseGuards(AuthGuard('jwt'))
+@UseInterceptors(IdempotencyInterceptor)
 export class DriverPortalController {
   constructor(
     private readonly prisma: PrismaService,
@@ -181,6 +189,7 @@ export class DriverPortalController {
   }
 
   @Post('fuel-record')
+  @Idempotent()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Registrar abastecimento rápido pelo celular' })
   async createFuelRecord(
@@ -217,7 +226,54 @@ export class DriverPortalController {
 
     const targetClientId = clientId || vehicle.clientId;
     const totalCost = Number((body.liters * body.pricePerLiter).toFixed(2));
-    const recordDate = body.date ? new Date(body.date) : new Date();
+    const recordDate = validateOccurredAt(body.occurredAt || body.date);
+
+    // Avaliação de odômetro e concorrência / eventos fora de ordem
+    const isDelayed = !!vehicle.lastEventAt && recordDate.getTime() < vehicle.lastEventAt.getTime();
+    let prevNeighborOdometer: number | null = null;
+    let nextNeighborOdometer: number | null = null;
+
+    if (isDelayed) {
+      const [prevNeighbor, nextNeighbor] = await Promise.all([
+        this.prisma.fuelRecord.findFirst({
+          where: {
+            vehicleId: body.vehicleId,
+            fueledAt: { lt: recordDate },
+          },
+          orderBy: { fueledAt: 'desc' },
+          select: { odometerAtFueling: true },
+        }),
+        this.prisma.fuelRecord.findFirst({
+          where: {
+            vehicleId: body.vehicleId,
+            fueledAt: { gt: recordDate },
+          },
+          orderBy: { fueledAt: 'asc' },
+          select: { odometerAtFueling: true },
+        }),
+      ]);
+
+      prevNeighborOdometer = prevNeighbor?.odometerAtFueling ?? null;
+      nextNeighborOdometer = nextNeighbor?.odometerAtFueling ?? null;
+    }
+
+    let odoEval;
+    try {
+      odoEval = VehicleOdometerValidator.evaluateEvent({
+        newOdometer: body.currentKm,
+        occurredAt: recordDate,
+        lastEventAt: vehicle.lastEventAt,
+        currentVehicleKm: vehicle.currentKm,
+        prevNeighborOdometer,
+        nextNeighborOdometer,
+        contextName: 'Abastecimento',
+      });
+    } catch (err: any) {
+      if (err instanceof InvalidOdometerReadingException) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
+    }
 
     const [fuelRecord] = await this.prisma.$transaction([
       this.prisma.fuelRecord.create({
@@ -236,15 +292,17 @@ export class DriverPortalController {
           notes: body.notes || null,
           receiptUrl: body.receiptUrl || null,
           fueledAt: recordDate,
+          odometerInconsistent: odoEval.odometerInconsistent,
         },
       }),
-      // Atualiza o odômetro do veículo se for maior
-      ...(body.currentKm > vehicle.currentKm
+      // Atualiza o odômetro e lastEventAt do veículo apenas se não for evento atrasado
+      ...(!isDelayed
         ? [
             this.prisma.vehicle.update({
               where: { id: body.vehicleId },
               data: {
-                currentKm: body.currentKm,
+                ...(odoEval.shouldUpdateVehicleKm ? { currentKm: body.currentKm } : {}),
+                lastEventAt: recordDate,
                 updatedAt: new Date(),
               },
             }),
@@ -256,6 +314,7 @@ export class DriverPortalController {
       message: 'Abastecimento registrado com sucesso!',
       id: fuelRecord.id,
       totalCost: fuelRecord.totalCost,
+      odometerInconsistent: fuelRecord.odometerInconsistent,
     };
   }
 

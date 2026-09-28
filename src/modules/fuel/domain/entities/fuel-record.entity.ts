@@ -20,6 +20,7 @@ export interface FuelRecordProps {
   fullTank: boolean;
   receiptUrl?: string | null;
   fueledAt: Date;
+  odometerInconsistent?: boolean;
   notes?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -39,6 +40,7 @@ export interface CreateFuelRecordProps {
   fullTank?: boolean;
   receiptUrl?: string | null;
   fueledAt?: Date;
+  odometerInconsistent?: boolean;
   notes?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
@@ -98,6 +100,7 @@ export class FuelRecord {
       fullTank: props.fullTank ?? true,
       receiptUrl: props.receiptUrl ?? null,
       fueledAt: props.fueledAt ?? new Date(),
+      odometerInconsistent: props.odometerInconsistent ?? false,
       notes: props.notes ?? null,
       createdAt: props.createdAt ?? new Date(),
       updatedAt: props.updatedAt ?? new Date(),
@@ -160,6 +163,8 @@ export class FuelRecord {
   public isFullTank(): boolean { return this.props.fullTank; }
   public getReceiptUrl(): string | null | undefined { return this.props.receiptUrl; }
   public getFueledAt(): Date { return this.props.fueledAt; }
+  public isOdometerInconsistent(): boolean { return this.props.odometerInconsistent ?? false; }
+  public markOdometerInconsistent(inconsistent = true): void { this.props.odometerInconsistent = inconsistent; }
   public getNotes(): string | null | undefined { return this.props.notes; }
   public getCreatedAt(): Date { return this.props.createdAt; }
   public getUpdatedAt(): Date { return this.props.updatedAt; }

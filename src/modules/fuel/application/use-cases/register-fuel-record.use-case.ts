@@ -22,6 +22,7 @@ export interface RegisterFuelRecordInput {
   fullTank?: boolean;
   receiptUrl?: string | null;
   fueledAt?: Date;
+  occurredAt?: Date;
   notes?: string | null;
 }
 
@@ -50,15 +51,18 @@ export class RegisterFuelRecordUseCase {
     }
 
     const resolvedClientId = input.clientId || vehicle.getClientId() || driver.getClientId?.();
+    const eventDate = input.occurredAt ?? input.fueledAt ?? new Date();
 
     // 3. Buscar último abastecimento do veículo para validação de consistência
     const lastRecord = await this.fuelRecordsRepository.findLastByVehicle(input.vehicleId);
 
     // 4. Validar Odômetro com o validador de domínio compartilhado
-    VehicleOdometerValidator.validate({
+    const odoEval = VehicleOdometerValidator.evaluateEvent({
       newOdometer: input.odometerAtFueling,
+      occurredAt: eventDate,
+      lastEventAt: vehicle.getLastEventAt(),
       currentVehicleKm: vehicle.getCurrentKm(),
-      lastRecordOdometer: lastRecord ? lastRecord.getOdometerAtFueling() : null,
+      prevNeighborOdometer: lastRecord ? lastRecord.getOdometerAtFueling() : null,
       contextName: 'Abastecimento',
     });
 
@@ -76,7 +80,8 @@ export class RegisterFuelRecordUseCase {
       gasStation: input.gasStation,
       fullTank: input.fullTank,
       receiptUrl: input.receiptUrl,
-      fueledAt: input.fueledAt,
+      fueledAt: eventDate,
+      odometerInconsistent: odoEval.odometerInconsistent,
       notes: input.notes,
     });
 
@@ -92,11 +97,13 @@ export class RegisterFuelRecordUseCase {
         currentKm: input.odometerAtFueling,
         source: OdometerSource.FUEL,
         sourceId: fuelRecord.getId(),
-        recordedAt: input.fueledAt ?? new Date(),
+        recordedAt: eventDate,
       });
-    } else if (input.odometerAtFueling > vehicle.getCurrentKm()) {
-      vehicle.updateKm(input.odometerAtFueling);
-      await this.vehiclesRepository.save(vehicle);
+    } else {
+      const updateResult = vehicle.registerOdometerEvent(input.odometerAtFueling, eventDate);
+      if (updateResult.updated) {
+        await this.vehiclesRepository.save(vehicle);
+      }
     }
 
     return fuelRecord;

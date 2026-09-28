@@ -59,4 +59,90 @@ describe('VehicleOdometerValidator (Shared Domain Service)', () => {
       });
     }).toThrow(InvalidOdometerReadingException);
   });
+
+  describe('evaluateEvent (Offline & Concurrency Handling)', () => {
+    it('deve atualizar o km do veículo quando o evento for em tempo real (mais recente) e km maior', () => {
+      const now = new Date('2026-09-28T10:00:00Z');
+      const lastEventAt = new Date('2026-09-28T08:00:00Z');
+
+      const result = VehicleOdometerValidator.evaluateEvent({
+        newOdometer: 100500,
+        occurredAt: now,
+        lastEventAt,
+        currentVehicleKm: 100000,
+      });
+
+      expect(result.isDelayed).toBe(false);
+      expect(result.shouldUpdateVehicleKm).toBe(true);
+      expect(result.odometerInconsistent).toBe(false);
+    });
+
+    it('deve lançar exceção quando o evento mais recente tiver km inferior ao km atual do veículo', () => {
+      const now = new Date('2026-09-28T10:00:00Z');
+      const lastEventAt = new Date('2026-09-28T08:00:00Z');
+
+      expect(() => {
+        VehicleOdometerValidator.evaluateEvent({
+          newOdometer: 99000,
+          occurredAt: now,
+          lastEventAt,
+          currentVehicleKm: 100000,
+        });
+      }).toThrow(InvalidOdometerReadingException);
+    });
+
+    it('NÃO deve atualizar o km do veículo quando for um evento atrasado (occurredAt < lastEventAt)', () => {
+      const delayedDate = new Date('2026-09-28T07:00:00Z');
+      const lastEventAt = new Date('2026-09-28T10:00:00Z');
+
+      const result = VehicleOdometerValidator.evaluateEvent({
+        newOdometer: 95000,
+        occurredAt: delayedDate,
+        lastEventAt,
+        currentVehicleKm: 100000,
+        prevNeighborOdometer: 90000,
+        nextNeighborOdometer: 100000,
+      });
+
+      expect(result.isDelayed).toBe(true);
+      expect(result.shouldUpdateVehicleKm).toBe(false);
+      expect(result.odometerInconsistent).toBe(false);
+    });
+
+    it('deve aceitar evento atrasado com flag odometerInconsistent = true quando o km for menor que o vizinho anterior', () => {
+      const delayedDate = new Date('2026-09-28T07:00:00Z');
+      const lastEventAt = new Date('2026-09-28T10:00:00Z');
+
+      const result = VehicleOdometerValidator.evaluateEvent({
+        newOdometer: 85000, // Menor que o vizinho anterior (90000)
+        occurredAt: delayedDate,
+        lastEventAt,
+        currentVehicleKm: 100000,
+        prevNeighborOdometer: 90000,
+        nextNeighborOdometer: 100000,
+      });
+
+      expect(result.isDelayed).toBe(true);
+      expect(result.shouldUpdateVehicleKm).toBe(false);
+      expect(result.odometerInconsistent).toBe(true);
+    });
+
+    it('deve aceitar evento atrasado com flag odometerInconsistent = true quando o km for maior que o vizinho posterior', () => {
+      const delayedDate = new Date('2026-09-28T07:00:00Z');
+      const lastEventAt = new Date('2026-09-28T10:00:00Z');
+
+      const result = VehicleOdometerValidator.evaluateEvent({
+        newOdometer: 105000, // Maior que o vizinho posterior (100000)
+        occurredAt: delayedDate,
+        lastEventAt,
+        currentVehicleKm: 100000,
+        prevNeighborOdometer: 90000,
+        nextNeighborOdometer: 100000,
+      });
+
+      expect(result.isDelayed).toBe(true);
+      expect(result.shouldUpdateVehicleKm).toBe(false);
+      expect(result.odometerInconsistent).toBe(true);
+    });
+  });
 });

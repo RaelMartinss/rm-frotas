@@ -35,8 +35,9 @@ export class RegisterOdometerReadingUseCase {
 
     await this.odometerReadingsRepository.save(reading);
 
-    if (reading.getCurrentKm().getValue() > vehicle.getCurrentKm()) {
-      vehicle.updateKm(reading.getCurrentKm().getValue());
+    const eventDate = dto.recordedAt ?? new Date();
+    const updateResult = vehicle.registerOdometerEvent(reading.getCurrentKm().getValue(), eventDate);
+    if (updateResult.updated) {
       await this.vehiclesRepository.save(vehicle);
     }
 

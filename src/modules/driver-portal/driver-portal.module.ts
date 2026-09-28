@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaModule } from '../../shared/infrastructure/prisma/prisma.module';
+import { IdempotencyModule } from '../../shared/infrastructure/idempotency/idempotency.module';
 import { DriverPortalController } from './infrastructure/http/driver-portal.controller';
 import { IncidentsController } from './infrastructure/http/incidents.controller';
 import { GetDriverCurrentTripUseCase } from './application/use-cases/get-driver-current-trip.use-case';
@@ -13,6 +14,7 @@ import { UpdateDriverFuelReceiptUseCase } from './application/use-cases/update-d
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     PrismaModule,
+    IdempotencyModule,
   ],
   controllers: [DriverPortalController, IncidentsController],
   providers: [

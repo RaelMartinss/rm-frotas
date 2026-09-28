@@ -69,9 +69,15 @@ export class CreateFuelRecordDto {
   @IsOptional()
   receiptUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Data/hora em que o abastecimento ocorreu', example: '2026-09-07T14:30:00Z' })
+  @ApiPropertyOptional({ description: 'Data/hora em que o abastecimento ocorreu (legado)', example: '2026-09-07T14:30:00Z' })
   @IsOptional()
+  @IsString()
   fueledAt?: string;
+
+  @ApiPropertyOptional({ description: 'Data/hora exata em que o abastecimento ocorreu no veículo (ISO 8601 UTC)', example: '2026-09-07T14:30:00Z' })
+  @IsOptional()
+  @IsString()
+  occurredAt?: string;
 
   @ApiPropertyOptional({ description: 'Observações adicionais', example: 'Abastecido com aditivo' })
   @IsString({ message: 'Observação deve ser um texto.' })

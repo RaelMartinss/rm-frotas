@@ -17,6 +17,7 @@ export interface DriverFuelHistoryItem {
   notes: string | null;
   fueledAt: string;
   isPendingReceipt: boolean;
+  odometerInconsistent?: boolean;
 }
 
 @Injectable()
@@ -83,6 +84,7 @@ export class GetDriverFuelHistoryUseCase {
         notes: r.notes,
         fueledAt: r.fueledAt.toISOString(),
         isPendingReceipt: !hasReceipt,
+        odometerInconsistent: r.odometerInconsistent,
       };
     });
   }

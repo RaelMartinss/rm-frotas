@@ -66,10 +66,15 @@ export class CreateDriverFuelDto {
   @IsString()
   receiptUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Data do abastecimento (ISO)' })
+  @ApiPropertyOptional({ description: 'Data do abastecimento (legado/ISO)' })
   @IsOptional()
   @IsString()
   date?: string;
+
+  @ApiPropertyOptional({ description: 'Data/hora exata em que o abastecimento ocorreu no veículo (ISO 8601 UTC)' })
+  @IsOptional()
+  @IsString()
+  occurredAt?: string;
 }
 
 export class ReportIncidentDto {
