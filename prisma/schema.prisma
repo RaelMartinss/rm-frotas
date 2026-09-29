@@ -331,6 +331,7 @@ model Maintenance {
   @@index([clientId, status])
   @@index([vehicleId, status])
   @@index([ownerId, status])
+  @@index([clientId, vehicleId, finishedAt])
   @@map("maintenances")
 }
 
@@ -386,6 +387,7 @@ model FuelRecord {
   @@index([ownerId, createdAt])
   @@index([vehicleId, fueledAt])
   @@index([driverId, fueledAt])
+  @@index([clientId, vehicleId, fueledAt])
   @@map("fuel_records")
 }
 
@@ -482,6 +484,7 @@ model OdometerReading {
   @@index([vehicleId, recordedAt])
   @@index([clientId, recordedAt])
   @@index([ownerId])
+  @@index([clientId, vehicleId, recordedAt])
   @@map("odometer_readings")
 }
 

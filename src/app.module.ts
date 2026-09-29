@@ -15,6 +15,8 @@ import { ImpersonationModule } from './modules/impersonation/impersonation.modul
 import { ObservabilityModule } from './shared/observability/observability.module';
 import { RequestIdMiddleware } from './shared/observability/request-id.middleware';
 
+import { ReportsModule } from './modules/reports/reports.module';
+
 @Module({
   imports: [
     ObservabilityModule,
@@ -31,6 +33,7 @@ import { RequestIdMiddleware } from './shared/observability/request-id.middlewar
     HealthModule,
     DriverPortalModule,
     ImpersonationModule,
+    ReportsModule,
   ],
   controllers: [],
   providers: [],
