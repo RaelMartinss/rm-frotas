@@ -14,7 +14,11 @@ import {
 export class GetDashboardSummaryUseCase {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(userId?: string, clientId?: string | null): Promise<DashboardSummaryResponseDto> {
+  async execute(
+    userId?: string,
+    clientId?: string | null,
+    period: 'SEMANA' | 'MES' | '6_MESES' = 'SEMANA',
+  ): Promise<DashboardSummaryResponseDto> {
     const tenantFilter = clientId
       ? { clientId }
       : userId
@@ -148,41 +152,77 @@ export class GetDashboardSummaryUseCase {
       };
     });
 
-    // 4. Atividade Operacional Semanal de Viagens (Segunda a Domingo)
-    const dayOfWeek = now.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
-    const diffToMonday = (dayOfWeek + 6) % 7; // dias desde Segunda-feira
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - diffToMonday);
-    monday.setHours(0, 0, 0, 0);
+    // 4. Atividade Operacional de Viagens (por Período: SEMANA, MES, 6_MESES)
+    let activityDaysMeta: { label: string; formattedDate: string; start: Date; end: Date }[] = [];
 
-    const weekDaysMeta = [
-      { label: 'Seg', offset: 0 },
-      { label: 'Ter', offset: 1 },
-      { label: 'Qua', offset: 2 },
-      { label: 'Qui', offset: 3 },
-      { label: 'Sex', offset: 4 },
-      { label: 'Sáb', offset: 5 },
-      { label: 'Dom', offset: 6 },
-    ].map(({ label, offset }) => {
-      const dStart = new Date(monday);
-      dStart.setDate(monday.getDate() + offset);
-      dStart.setHours(0, 0, 0, 0);
+    if (period === 'MES') {
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
 
-      const dEnd = new Date(dStart);
-      dEnd.setHours(23, 59, 59, 999);
+      const weekRanges = [
+        { label: 'Sem 1', startDay: 1, endDay: 7 },
+        { label: 'Sem 2', startDay: 8, endDay: 14 },
+        { label: 'Sem 3', startDay: 15, endDay: 21 },
+        { label: 'Sem 4', startDay: 22, endDay: lastDayOfMonth },
+      ];
 
-      const formattedDate = `${String(dStart.getDate()).padStart(2, '0')}/${String(dStart.getMonth() + 1).padStart(2, '0')}`;
+      activityDaysMeta = weekRanges.map(({ label, startDay, endDay }) => {
+        const dStart = new Date(year, month, startDay, 0, 0, 0, 0);
+        const dEnd = new Date(year, month, endDay, 23, 59, 59, 999);
+        const formattedDate = `${String(startDay).padStart(2, '0')} a ${String(endDay).padStart(2, '0')}/${String(month + 1).padStart(2, '0')}`;
+        return { label, formattedDate, start: dStart, end: dEnd };
+      });
+    } else if (period === '6_MESES') {
+      const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      for (let i = 5; i >= 0; i--) {
+        const dMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const y = dMonth.getFullYear();
+        const m = dMonth.getMonth();
+        const lastDay = new Date(y, m + 1, 0).getDate();
 
-      return {
-        label,
-        formattedDate,
-        start: dStart,
-        end: dEnd,
-      };
-    });
+        const dStart = new Date(y, m, 1, 0, 0, 0, 0);
+        const dEnd = new Date(y, m, lastDay, 23, 59, 59, 999);
+        const formattedDate = `${monthNames[m]}/${String(y).slice(-2)}`;
+        activityDaysMeta.push({ label: monthNames[m], formattedDate, start: dStart, end: dEnd });
+      }
+    } else {
+      // Padrão: SEMANA (Segunda a Domingo)
+      const dayOfWeek = now.getDay();
+      const diffToMonday = (dayOfWeek + 6) % 7;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - diffToMonday);
+      monday.setHours(0, 0, 0, 0);
 
-    const startOfWeek = weekDaysMeta[0].start;
-    const endOfWeek = weekDaysMeta[6].end;
+      activityDaysMeta = [
+        { label: 'Seg', offset: 0 },
+        { label: 'Ter', offset: 1 },
+        { label: 'Qua', offset: 2 },
+        { label: 'Qui', offset: 3 },
+        { label: 'Sex', offset: 4 },
+        { label: 'Sáb', offset: 5 },
+        { label: 'Dom', offset: 6 },
+      ].map(({ label, offset }) => {
+        const dStart = new Date(monday);
+        dStart.setDate(monday.getDate() + offset);
+        dStart.setHours(0, 0, 0, 0);
+
+        const dEnd = new Date(dStart);
+        dEnd.setHours(23, 59, 59, 999);
+
+        const formattedDate = `${String(dStart.getDate()).padStart(2, '0')}/${String(dStart.getMonth() + 1).padStart(2, '0')}`;
+
+        return {
+          label,
+          formattedDate,
+          start: dStart,
+          end: dEnd,
+        };
+      });
+    }
+
+    const startOfPeriod = activityDaysMeta[0].start;
+    const endOfPeriod = activityDaysMeta[activityDaysMeta.length - 1].end;
 
     const tripConditions: any[] = [];
     if (clientId) {
@@ -196,7 +236,7 @@ export class GetDashboardSummaryUseCase {
       });
     }
 
-    const weekTrips = await this.prisma.trip.findMany({
+    const periodTrips = await this.prisma.trip.findMany({
       where: {
         AND: [
           ...tripConditions,
@@ -204,20 +244,20 @@ export class GetDashboardSummaryUseCase {
             OR: [
               {
                 completedAt: {
-                  gte: startOfWeek,
-                  lte: endOfWeek,
+                  gte: startOfPeriod,
+                  lte: endOfPeriod,
                 },
               },
               {
                 startedAt: {
-                  gte: startOfWeek,
-                  lte: endOfWeek,
+                  gte: startOfPeriod,
+                  lte: endOfPeriod,
                 },
               },
               {
                 createdAt: {
-                  gte: startOfWeek,
-                  lte: endOfWeek,
+                  gte: startOfPeriod,
+                  lte: endOfPeriod,
                 },
               },
             ],
@@ -226,14 +266,14 @@ export class GetDashboardSummaryUseCase {
       },
     });
 
-    const weeklyDays: WeeklyActivityDayDto[] = weekDaysMeta.map((dayMeta) => {
-      const completedCount = weekTrips.filter((t) => {
+    const weeklyDays: WeeklyActivityDayDto[] = activityDaysMeta.map((dayMeta) => {
+      const completedCount = periodTrips.filter((t) => {
         if (t.status !== 'COMPLETED') return false;
         const dateToCheck = t.completedAt ? new Date(t.completedAt) : new Date(t.updatedAt);
         return dateToCheck >= dayMeta.start && dateToCheck <= dayMeta.end;
       }).length;
 
-      const ongoingCount = weekTrips.filter((t) => {
+      const ongoingCount = periodTrips.filter((t) => {
         if (t.status !== 'IN_PROGRESS' && t.status !== 'PLANNED') return false;
         const dateToCheck = t.startedAt ? new Date(t.startedAt) : new Date(t.createdAt);
         return dateToCheck >= dayMeta.start && dateToCheck <= dayMeta.end;
@@ -250,7 +290,8 @@ export class GetDashboardSummaryUseCase {
     const totalCompleted = weeklyDays.reduce((acc, d) => acc + d.completedTrips, 0);
     const totalOngoing = weeklyDays.reduce((acc, d) => acc + d.ongoingTrips, 0);
     const totalWeekly = totalCompleted + totalOngoing;
-    const dailyAverage = totalWeekly > 0 ? Math.round((totalWeekly / 7) * 10) / 10 : 0;
+    const divisor = period === 'MES' ? 4 : period === '6_MESES' ? 6 : 7;
+    const dailyAverage = totalWeekly > 0 ? Math.round((totalWeekly / divisor) * 10) / 10 : 0;
 
     const weeklyActivity: WeeklyActivitySummaryDto = {
       days: weeklyDays,
