@@ -25,6 +25,8 @@ export interface DriverCurrentTripOutput {
     destinationAddress: string;
     destinationCity: string;
     destinationState: string;
+    scheduledDate?: string | null;
+    estimatedArrivalDate?: string | null;
     startedAt: string | null;
     createdAt: string;
     vehicle: {
@@ -180,6 +182,8 @@ export class GetDriverCurrentTripUseCase {
             destinationAddress: activeTrip.destinationAddress,
             destinationCity: activeTrip.destinationCity,
             destinationState: activeTrip.destinationState,
+            scheduledDate: activeTrip.scheduledDate ? activeTrip.scheduledDate.toISOString() : null,
+            estimatedArrivalDate: activeTrip.estimatedArrivalDate ? activeTrip.estimatedArrivalDate.toISOString() : null,
             startedAt: activeTrip.startedAt ? activeTrip.startedAt.toISOString() : null,
             createdAt: activeTrip.createdAt.toISOString(),
             vehicle: {
