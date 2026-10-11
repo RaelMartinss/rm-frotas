@@ -99,6 +99,7 @@ model User {
   // Sessões ativas de refresh tokens persistidas para renovação deslizante e revogação remota
   refreshTokenSessions RefreshTokenSession[]
   idempotencyKeys      IdempotencyKey[]
+  devices              UserDevice[]
 
   @@index([clientId])
   @@map("users")
@@ -454,6 +455,34 @@ model RefreshTokenSession {
   @@index([userId])
   @@index([tokenHash])
   @@map("refresh_token_sessions")
+}
+
+enum DevicePlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
+model UserDevice {
+  id           String         @id @default(uuid())
+  userId       String         @map("user_id")
+  deviceId     String         @map("device_id")
+  buildNumber  Int            @map("build_number")
+  appVersion   String         @map("app_version")
+  platform     DevicePlatform
+  deviceModel  String?        @map("device_model")
+  osVersion    String?        @map("os_version")
+  lastActiveAt DateTime       @default(now()) @map("last_active_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@index([buildNumber])
+  @@index([lastActiveAt])
+  @@map("user_devices")
 }
 
 enum OdometerSource {

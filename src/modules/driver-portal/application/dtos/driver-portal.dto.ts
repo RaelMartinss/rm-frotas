@@ -160,3 +160,35 @@ export class GetDriverFuelHistoryQueryDto {
   @IsOptional()
   pendingReceiptOnly?: string;
 }
+
+export class SyncUserDeviceDto {
+  @ApiProperty({ description: 'Identificador único persistente do dispositivo (UUID)' })
+  @IsString()
+  @IsNotEmpty({ message: 'O deviceId é obrigatório.' })
+  deviceId: string;
+
+  @ApiProperty({ description: 'Número incremental de build (ex: 20)' })
+  @IsNumber()
+  @Min(1, { message: 'O buildNumber deve ser maior que zero.' })
+  buildNumber: number;
+
+  @ApiProperty({ description: 'Versão legível do app (ex: 1.0.20)' })
+  @IsString()
+  @IsNotEmpty({ message: 'A appVersion é obrigatória.' })
+  appVersion: string;
+
+  @ApiProperty({ enum: ['ANDROID', 'IOS', 'WEB'], description: 'Plataforma do dispositivo' })
+  @IsString()
+  @IsNotEmpty({ message: 'A plataforma é obrigatória.' })
+  platform: 'ANDROID' | 'IOS' | 'WEB';
+
+  @ApiPropertyOptional({ description: 'Modelo do dispositivo (ex: Samsung Galaxy A54)' })
+  @IsOptional()
+  @IsString()
+  deviceModel?: string;
+
+  @ApiPropertyOptional({ description: 'Versão do sistema operacional (ex: Android 14)' })
+  @IsOptional()
+  @IsString()
+  osVersion?: string;
+}

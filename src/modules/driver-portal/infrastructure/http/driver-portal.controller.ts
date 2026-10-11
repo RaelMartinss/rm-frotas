@@ -35,6 +35,7 @@ import {
   UpdateDriverFuelReceiptDto,
   GetDriverFuelHistoryQueryDto,
   SaveTripChecklistDto,
+  SyncUserDeviceDto,
 } from '../../application/dtos/driver-portal.dto';
 import { RecordLocationBatchDto } from '../../application/dtos/record-location.dto';
 import { RecordTripLocationUseCase } from '../../application/use-cases/record-trip-location.use-case';
@@ -623,6 +624,77 @@ export class DriverPortalController {
       success: true,
       photoUrl: updated.photoUrl,
       message: 'Foto atualizada com sucesso.',
+    };
+  }
+
+  @Post('device/sync')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Sincronizar telemetria e versão do app do dispositivo do usuário' })
+  @ApiResponse({ status: 200, description: 'Dados do dispositivo atualizados ou mantidos em cache.' })
+  async syncDevice(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: SyncUserDeviceDto,
+  ) {
+    const existing = await this.prisma.userDevice.findUnique({
+      where: {
+        userId_deviceId: {
+          userId,
+          deviceId: dto.deviceId,
+        },
+      },
+    });
+
+    const now = new Date();
+    const THROTTLE_MINUTES = 5;
+
+    // Se já existe e a versão/build não mudou e foi atualizado há menos de 5 min, poupa write no banco
+    if (existing) {
+      const minutesSinceLastActive = (now.getTime() - existing.lastActiveAt.getTime()) / (1000 * 60);
+      const versionChanged = existing.buildNumber !== dto.buildNumber || existing.appVersion !== dto.appVersion;
+
+      if (!versionChanged && minutesSinceLastActive < THROTTLE_MINUTES) {
+        return {
+          success: true,
+          throttled: true,
+          message: 'Dispositivo já sincronizado recentemente.',
+        };
+      }
+    }
+
+    const device = await this.prisma.userDevice.upsert({
+      where: {
+        userId_deviceId: {
+          userId,
+          deviceId: dto.deviceId,
+        },
+      },
+      update: {
+        buildNumber: dto.buildNumber,
+        appVersion: dto.appVersion,
+        platform: dto.platform,
+        deviceModel: dto.deviceModel ?? null,
+        osVersion: dto.osVersion ?? null,
+        lastActiveAt: now,
+      },
+      create: {
+        userId,
+        deviceId: dto.deviceId,
+        buildNumber: dto.buildNumber,
+        appVersion: dto.appVersion,
+        platform: dto.platform,
+        deviceModel: dto.deviceModel ?? null,
+        osVersion: dto.osVersion ?? null,
+        lastActiveAt: now,
+      },
+    });
+
+    return {
+      success: true,
+      throttled: false,
+      deviceId: device.deviceId,
+      buildNumber: device.buildNumber,
+      appVersion: device.appVersion,
+      lastActiveAt: device.lastActiveAt,
     };
   }
 }
