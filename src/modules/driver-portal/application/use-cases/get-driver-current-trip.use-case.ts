@@ -40,6 +40,18 @@ export interface DriverCurrentTripOutput {
       crlvExpiration: string | null;
       status: string;
     };
+    waypoints?: Array<{
+      id: string;
+      order: number;
+      type: string;
+      title: string;
+      address?: string | null;
+      city?: string | null;
+      state?: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
+      notes?: string | null;
+    }>;
   } | null;
   recentTripsCount: number;
   pendingReceiptsCount: number;
@@ -138,6 +150,9 @@ export class GetDriverCurrentTripUseCase {
       },
       include: {
         vehicle: true,
+        waypoints: {
+          orderBy: { order: 'asc' },
+        },
       },
       orderBy: [
         // Prioriza IN_PROGRESS sobre PLANNED
@@ -199,6 +214,18 @@ export class GetDriverCurrentTripUseCase {
                 : null,
               status: activeTrip.vehicle.status,
             },
+            waypoints: (activeTrip.waypoints || []).map((w) => ({
+              id: w.id,
+              order: w.order,
+              type: w.type,
+              title: w.title,
+              address: w.address,
+              city: w.city,
+              state: w.state,
+              latitude: w.latitude,
+              longitude: w.longitude,
+              notes: w.notes,
+            })),
           }
         : null,
       recentTripsCount,
