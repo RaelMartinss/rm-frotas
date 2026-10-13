@@ -97,4 +97,60 @@ export class CreateTripHttpDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({
+    type: () => [TripWaypointHttpDto],
+    description: 'Pontos de parada e itinerário planejado da viagem',
+  })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => TripWaypointHttpDto)
+  waypoints?: TripWaypointHttpDto[];
+}
+
+export class TripWaypointHttpDto {
+  @ApiPropertyOptional({ example: 1, description: 'Ordem sequencial da parada' })
+  @IsOptional()
+  @IsNumber()
+  order?: number;
+
+  @ApiProperty({ example: 'FUEL', enum: ['FUEL', 'REST', 'STOP'], description: 'Tipo do ponto de parada' })
+  @IsString()
+  @IsNotEmpty()
+  type: 'FUEL' | 'REST' | 'STOP';
+
+  @ApiProperty({ example: 'Posto Graal - Abastecimento', description: 'Título / Identificação do local' })
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @ApiPropertyOptional({ example: 'Rodovia Régis Bittencourt, Km 299', description: 'Endereço / Logradouro' })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional({ example: 'Paragominas', description: 'Cidade' })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional({ example: 'PA', description: 'Estado (UF)' })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiPropertyOptional({ example: -2.9986, description: 'Latitude' })
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @ApiPropertyOptional({ example: -47.3536, description: 'Longitude' })
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
+
+  @ApiPropertyOptional({ example: 'Abastecer 150 litros de Diesel S10', description: 'Instruções para o motorista' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

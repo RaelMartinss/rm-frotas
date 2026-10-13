@@ -6,7 +6,7 @@ import { FindManyPaginatedOutput, FindManyPaginatedParams } from '../../domain/r
 export class InMemoryTripsRepository implements ITripsRepository {
   public items: Trip[] = [];
 
-  async create(trip: Trip): Promise<void> {
+  async create(trip: Trip, waypoints?: any[]): Promise<void> {
     this.items.push(trip);
   }
 

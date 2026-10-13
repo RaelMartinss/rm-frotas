@@ -59,7 +59,7 @@ export class CreateTripUseCase {
       notes: input.notes ?? null,
     });
 
-    await this.tripRepository.create(trip);
+    await this.tripRepository.create(trip, input.waypoints);
 
     return trip;
   }

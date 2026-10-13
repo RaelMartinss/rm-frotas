@@ -34,6 +34,11 @@ export class GetTripRouteUseCase {
             recordedAt: 'asc',
           },
         },
+        waypoints: {
+          orderBy: {
+            order: 'asc',
+          },
+        },
       },
     });
 
@@ -67,6 +72,18 @@ export class GetTripRouteUseCase {
       startedAt: trip.startedAt,
       completedAt: trip.completedAt,
       createdAt: trip.createdAt,
+      waypoints: (trip.waypoints || []).map((w) => ({
+        id: w.id,
+        order: w.order,
+        type: w.type,
+        title: w.title,
+        address: w.address,
+        city: w.city,
+        state: w.state,
+        latitude: w.latitude,
+        longitude: w.longitude,
+        notes: w.notes,
+      })),
       pings: trip.locationPings.map((p) => ({
         id: p.id,
         latitude: p.latitude,

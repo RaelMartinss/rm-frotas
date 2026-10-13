@@ -1,3 +1,15 @@
+export interface TripWaypointInput {
+  order?: number;
+  type: 'FUEL' | 'REST' | 'STOP';
+  title: string;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  notes?: string | null;
+}
+
 export interface CreateTripInput {
   driverId: string;
   vehicleId: string;
@@ -19,4 +31,5 @@ export interface CreateTripInput {
     latitude?: number;
     longitude?: number;
   };
+  waypoints?: TripWaypointInput[];
 }

@@ -9,9 +9,30 @@ import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.s
 export class PrismaTripsRepository implements ITripsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(trip: Trip): Promise<void> {
+  async create(trip: Trip, waypoints?: any[]): Promise<void> {
     const data = TripMapper.toPrisma(trip);
-    await this.prisma.trip.create({ data });
+    if (waypoints && waypoints.length > 0) {
+      await this.prisma.trip.create({
+        data: {
+          ...data,
+          waypoints: {
+            create: waypoints.map((w, index) => ({
+              order: w.order ?? index + 1,
+              type: w.type || 'STOP',
+              title: w.title,
+              address: w.address ?? null,
+              city: w.city ?? null,
+              state: w.state ?? null,
+              latitude: w.latitude ?? null,
+              longitude: w.longitude ?? null,
+              notes: w.notes ?? null,
+            })),
+          },
+        },
+      });
+    } else {
+      await this.prisma.trip.create({ data });
+    }
   }
 
   async findById(id: string): Promise<Trip | null> {

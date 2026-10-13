@@ -263,11 +263,39 @@ model Trip {
 
   locationPings TripLocationPing[]
   incidents     Incident[]
+  waypoints     TripWaypoint[]
 
   @@index([clientId, status])
   @@index([vehicleId, status])
   @@index([driverId, status])
   @@map("trips")
+}
+
+enum WaypointType {
+  FUEL
+  REST
+  STOP
+}
+
+model TripWaypoint {
+  id          String       @id @default(uuid())
+  tripId      String       @map("trip_id")
+  order       Int          @default(1)
+  type        WaypointType @default(STOP)
+  title       String
+  address     String?
+  city        String?
+  state       String?
+  latitude    Float?
+  longitude   Float?
+  notes       String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId, order])
+  @@map("trip_waypoints")
 }
 
 enum MovementState {
