@@ -39,8 +39,8 @@ describe('DriverPortalController - Fuel Recording & Odometer Evaluation', () => 
   });
 
   it('deve registrar abastecimento em tempo real e atualizar o odômetro e lastEventAt do veículo', async () => {
-    const vehicleDate = new Date('2026-09-28T08:00:00Z');
-    const now = new Date('2026-09-28T10:00:00Z');
+    const vehicleDate = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    const now = new Date(Date.now() - 60 * 1000);
 
     prismaMock.vehicle.findUnique.mockResolvedValue({
       id: 'vehicle-1',
@@ -98,14 +98,14 @@ describe('DriverPortalController - Fuel Recording & Odometer Evaluation', () => 
   });
 
   it('deve rejeitar abastecimento mais recente com km inferior ao km atual do veículo', async () => {
-    const now = new Date('2026-09-28T10:00:00Z');
+    const now = new Date(Date.now() - 60 * 1000);
 
     prismaMock.vehicle.findUnique.mockResolvedValue({
       id: 'vehicle-1',
       clientId: 'client-1',
       ownerId: 'owner-1',
       currentKm: 100000,
-      lastEventAt: new Date('2026-09-28T08:00:00Z'),
+      lastEventAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
     });
 
     prismaMock.driver.findFirst.mockResolvedValue({
@@ -126,8 +126,8 @@ describe('DriverPortalController - Fuel Recording & Odometer Evaluation', () => 
   });
 
   it('deve aceitar evento atrasado sem sobrescrever o km atual do veículo (km consistente entre vizinhos)', async () => {
-    const delayedDate = new Date('2026-09-28T07:00:00Z');
-    const lastEventAt = new Date('2026-09-28T10:00:00Z');
+    const delayedDate = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    const lastEventAt = new Date(Date.now() - 60 * 1000);
 
     prismaMock.vehicle.findUnique.mockResolvedValue({
       id: 'vehicle-1',
@@ -168,8 +168,8 @@ describe('DriverPortalController - Fuel Recording & Odometer Evaluation', () => 
   });
 
   it('deve aceitar evento atrasado e marcar odometerInconsistent = true quando violar os vizinhos', async () => {
-    const delayedDate = new Date('2026-09-28T07:00:00Z');
-    const lastEventAt = new Date('2026-09-28T10:00:00Z');
+    const delayedDate = new Date(Date.now() - 3 * 60 * 60 * 1000);
+    const lastEventAt = new Date(Date.now() - 60 * 1000);
 
     prismaMock.vehicle.findUnique.mockResolvedValue({
       id: 'vehicle-1',
