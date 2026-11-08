@@ -1,4 +1,4 @@
-rm-frotas.duckdns.org {
+api.rmfrotas.com.br {
     # Encaminha todo o tráfego HTTPS seguro para a API NestJS
     reverse_proxy api:3000
 

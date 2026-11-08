@@ -44,6 +44,9 @@ async function bootstrap() {
   app.use(cookieParser());
 
   const allowedOrigins = [
+    'https://rmfrotas.com.br',
+    'https://www.rmfrotas.com.br',
+    'https://portal.rmfrotas.com.br',
     'http://localhost:4200',
     'http://127.0.0.1:4200',
     'https://localhost',
@@ -60,6 +63,7 @@ async function bootstrap() {
       if (
         !origin ||
         allowedOrigins.includes(origin) ||
+        origin.endsWith('.rmfrotas.com.br') ||
         origin.endsWith('.vercel.app') ||
         origin.startsWith('https://localhost') ||
         origin.startsWith('http://localhost') ||

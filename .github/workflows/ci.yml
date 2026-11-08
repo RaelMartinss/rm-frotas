@@ -113,7 +113,7 @@ jobs:
         run: |
           echo "Verificando endpoint público após deploy..."
           for i in {1..10}; do
-            if curl -sSf --max-time 10 https://rm-frotas.duckdns.org/v1/health | grep '"status":"ok"'; then
+            if curl -sSf --max-time 10 https://api.rmfrotas.com.br/v1/health | grep '"status":"ok"'; then
               echo "Deploy validado com sucesso via internet pública!"
               exit 0
             fi

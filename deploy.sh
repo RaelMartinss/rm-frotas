@@ -29,7 +29,7 @@ docker compose up -d --wait --wait-timeout 120
 # 6. Healthcheck pós-deploy (verificação no domínio público externo)
 echo "Aguardando confirmação do endpoint público..."
 for i in {1..12}; do
-  if curl -sf --max-time 5 https://rm-frotas.duckdns.org/v1/health | grep -q '"status":"ok"'; then
+  if curl -sf --max-time 5 https://api.rmfrotas.com.br/v1/health | grep -q '"status":"ok"'; then
     echo "Healthcheck OK! API rodando e saudável em produção."
     break
   fi
