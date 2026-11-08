@@ -26,15 +26,17 @@ docker push ghcr.io/raelmartinss/rm-frotas:latest
 export IMAGE_TAG="$IMAGE_TAG"
 docker compose up -d --wait --wait-timeout 120
 
-# 6. Healthcheck pós-deploy (verificação no domínio público externo)
-echo "Aguardando confirmação do endpoint público..."
+# 6. Healthcheck pós-deploy local (via Caddy na própria VM)
+echo "Aguardando confirmação do endpoint local..."
 for i in {1..12}; do
-  if curl -sf --max-time 5 https://api.rmfrotas.com.br/v1/health | grep -q '"status":"ok"'; then
+  if curl -sf --max-time 5 \
+    -H "Host: api.rmfrotas.com.br" \
+    http://127.0.0.1/v1/health | grep -q '"status":"ok"'; then
     echo "Healthcheck OK! API rodando e saudável em produção."
     break
   fi
   if [ "$i" -eq 12 ]; then
-    echo "FALHA: Healthcheck pós-deploy não respondeu com OK em 60 segundos!" >&2
+    echo "FALHA: Healthcheck local pós-deploy não respondeu com OK em 60 segundos!" >&2
     exit 1
   fi
   sleep 5
