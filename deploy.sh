@@ -22,9 +22,10 @@ docker build \
 docker push ghcr.io/raelmartinss/rm-frotas:"$IMAGE_TAG"
 docker push ghcr.io/raelmartinss/rm-frotas:latest
 
-# 5. Sobe os containers em produção
+# 5. Sobe os containers em produção e força recriação do Caddy para recarregar o Caddyfile atualizado
 export IMAGE_TAG="$IMAGE_TAG"
 docker compose up -d --wait --wait-timeout 120
+docker compose up -d --force-recreate caddy
 
 # 6. Healthcheck pós-deploy (verificação no domínio público externo)
 echo "Aguardando confirmação do endpoint público..."
