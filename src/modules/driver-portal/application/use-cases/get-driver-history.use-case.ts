@@ -44,6 +44,7 @@ export class GetDriverHistoryUseCase {
       origin: `${t.originCity} (${t.originState})`,
       destination: `${t.destinationCity} (${t.destinationState})`,
       vehicle: `${t.vehicle.brand ? t.vehicle.brand + ' ' : ''}${t.vehicle.model} (${t.vehicle.plate})`,
+      scheduledDate: t.scheduledDate ? t.scheduledDate.toISOString() : null,
       startedAt: t.startedAt ? t.startedAt.toISOString() : null,
       completedAt: t.completedAt ? t.completedAt.toISOString() : null,
       createdAt: t.createdAt.toISOString(),
