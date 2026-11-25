@@ -385,6 +385,7 @@ enum FuelType {
   DIESEL_S10
   GNV
   ELETRICO
+  ARLA_32
 }
 
 model FuelRecord {

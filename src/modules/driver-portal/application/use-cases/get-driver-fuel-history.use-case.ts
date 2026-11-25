@@ -24,25 +24,39 @@ export interface DriverFuelHistoryItem {
 export class GetDriverFuelHistoryUseCase {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(userId: string, pendingReceiptOnly = false): Promise<DriverFuelHistoryItem[]> {
+  async execute(
+    userId: string,
+    pendingReceiptOnly = false,
+    clientId?: string | null,
+  ): Promise<DriverFuelHistoryItem[]> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { driverProfile: true },
     });
 
-    let driverId = user?.driverProfile?.id;
+    if (!user) return [];
+
+    let driverId = user.driverProfile?.id;
+    const effectiveClientId = clientId ?? user.clientId ?? undefined;
 
     if (!driverId) {
       const driver = await this.prisma.driver.findFirst({
         where: {
+          ...(effectiveClientId ? { clientId: effectiveClientId } : {}),
           OR: [
             { userId },
-            { name: { contains: user?.name, mode: 'insensitive' } },
+            ...(user.email ? [{ email: { equals: user.email, mode: 'insensitive' as const } }] : []),
+            { userId: null, name: { equals: user.name, mode: 'insensitive' as const } },
           ],
         },
       });
 
       if (!driver) return [];
+      if (!driver.userId && this.prisma.driver?.update) {
+        await this.prisma.driver
+          .update({ where: { id: driver.id }, data: { userId } })
+          .catch(() => {});
+      }
       driverId = driver.id;
     }
 

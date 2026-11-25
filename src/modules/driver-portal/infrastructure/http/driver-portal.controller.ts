@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -55,6 +56,69 @@ export class DriverPortalController {
     private readonly recordTripLocationUseCase: RecordTripLocationUseCase,
   ) {}
 
+  private async resolveAuthenticatedDriver(userId: string, clientId?: string | null) {
+    let driver = await this.prisma.driver.findFirst({
+      where: {
+        userId,
+        ...(clientId ? { clientId } : {}),
+      },
+    });
+
+    if (!driver && (this.prisma as any).user?.findUnique) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { driverProfile: true },
+      });
+
+      if (user?.driverProfile) {
+        driver = user.driverProfile;
+      } else if (user) {
+        const effectiveClientId = clientId ?? user.clientId ?? undefined;
+        driver = await this.prisma.driver.findFirst({
+          where: {
+            ...(effectiveClientId ? { clientId: effectiveClientId } : {}),
+            OR: [
+              { userId },
+              ...(user.email ? [{ email: { equals: user.email, mode: 'insensitive' as const } }] : []),
+              { userId: null, name: { equals: user.name, mode: 'insensitive' as const } },
+            ],
+          },
+        });
+
+        if (driver && !driver.userId && this.prisma.driver?.update) {
+          await this.prisma.driver
+            .update({ where: { id: driver.id }, data: { userId } })
+            .catch(() => {});
+          driver = { ...driver, userId };
+        }
+      }
+    }
+
+    return driver;
+  }
+
+  private async assertTripAccess(
+    trip: { id: string; clientId: string; driverId: string; driver?: { userId?: string | null } | null },
+    userId: string,
+    clientId?: string | null,
+    role?: string,
+  ) {
+    if (clientId && trip.clientId && trip.clientId !== clientId) {
+      throw new ForbiddenException('Você não tem permissão para acessar viagens de outra empresa.');
+    }
+
+    // Se o usuário for motorista (ou se a viagem tiver motorista vinculado a outro userId), exige titularidade
+    if (role === 'DRIVER' || !role) {
+      const authDriver = await this.resolveAuthenticatedDriver(userId, clientId ?? trip.clientId);
+      if (authDriver && trip.driverId !== authDriver.id) {
+        throw new ForbiddenException('Esta viagem está atribuída a outro motorista.');
+      }
+      if (!authDriver && trip.driver?.userId && trip.driver.userId !== userId) {
+        throw new ForbiddenException('Esta viagem está atribuída a outro motorista.');
+      }
+    }
+  }
+
   @Get('current-trip')
   @ApiOperation({ summary: 'Obter viagem ativa e dados do motorista autenticado' })
   @ApiResponse({ status: 200, description: 'Dados da viagem atual do motorista.' })
@@ -70,6 +134,8 @@ export class DriverPortalController {
   @ApiOperation({ summary: 'Iniciar viagem pelo celular (1 toque)' })
   async startTrip(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
+    @CurrentUser('role') role: string,
     @Body() body: StartDriverTripDto,
   ) {
     const trip = await this.prisma.trip.findUnique({
@@ -81,8 +147,48 @@ export class DriverPortalController {
       throw new NotFoundException('Viagem não encontrada.');
     }
 
+    await this.assertTripAccess(trip, userId, clientId, role);
+
     if (trip.status === 'COMPLETED' || trip.status === 'CANCELLED') {
       throw new BadRequestException('Esta viagem já foi finalizada ou cancelada.');
+    }
+
+    // Idempotência: se esta própria viagem já está em andamento, retorna estado atual
+    if (trip.status === 'IN_PROGRESS') {
+      return {
+        message: 'Viagem já está em andamento.',
+        tripId: trip.id,
+        status: trip.status,
+        startedAt: trip.startedAt,
+      };
+    }
+
+    if (trip.driver.status !== 'ACTIVE') {
+      throw new BadRequestException(
+        'Não é possível iniciar a viagem: o cadastro do motorista está suspenso ou inativo.',
+      );
+    }
+
+    if (trip.vehicle.status === 'IN_MAINTENANCE') {
+      throw new BadRequestException(
+        'Não é possível iniciar a viagem: o veículo designado está em manutenção.',
+      );
+    }
+
+    if (this.prisma.trip?.findFirst) {
+      const conflictingTrip = await this.prisma.trip.findFirst({
+        where: {
+          id: { not: trip.id },
+          status: 'IN_PROGRESS',
+          OR: [{ driverId: trip.driverId }, { vehicleId: trip.vehicleId }],
+        },
+      });
+
+      if (conflictingTrip) {
+        throw new BadRequestException(
+          'Já existe outra viagem em andamento para este motorista ou veículo.',
+        );
+      }
     }
 
     const now = new Date();
@@ -106,7 +212,16 @@ export class DriverPortalController {
       throw new BadRequestException(msg);
     }
 
-    // Atualiza viagem e veículo
+    const departureKm =
+      body.initialKm !== undefined ? body.initialKm : trip.vehicle.currentKm;
+
+    if (departureKm < trip.vehicle.currentKm) {
+      throw new BadRequestException(
+        `O odômetro inicial (${departureKm} km) não pode ser inferior ao odômetro atual do veículo (${trip.vehicle.currentKm} km).`,
+      );
+    }
+
+    // Atualiza viagem, veículo e registra leitura de odômetro caso tenha avançado
     const [updatedTrip] = await this.prisma.$transaction([
       this.prisma.trip.update({
         where: { id: body.tripId },
@@ -120,9 +235,28 @@ export class DriverPortalController {
         where: { id: trip.vehicleId },
         data: {
           status: 'IN_USE',
+          ...(departureKm > trip.vehicle.currentKm
+            ? { currentKm: departureKm, lastEventAt: now }
+            : {}),
           updatedAt: now,
         },
       }),
+      ...(departureKm > trip.vehicle.currentKm && (this.prisma as any).odometerReading?.create
+        ? [
+            this.prisma.odometerReading.create({
+              data: {
+                vehicleId: trip.vehicleId,
+                clientId: trip.clientId,
+                ownerId: trip.vehicle.ownerId,
+                previousKm: trip.vehicle.currentKm,
+                currentKm: departureKm,
+                source: 'TRIP',
+                sourceId: trip.id,
+                recordedAt: now,
+              },
+            }),
+          ]
+        : []),
     ]);
 
     return {
@@ -138,19 +272,29 @@ export class DriverPortalController {
   @ApiOperation({ summary: 'Finalizar viagem pelo celular e atualizar KM' })
   async completeTrip(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
+    @CurrentUser('role') role: string,
     @Body() body: CompleteDriverTripDto,
   ) {
     const trip = await this.prisma.trip.findUnique({
       where: { id: body.tripId },
-      include: { vehicle: true },
+      include: { driver: true, vehicle: true },
     });
 
     if (!trip) {
       throw new NotFoundException('Viagem não encontrada.');
     }
 
+    await this.assertTripAccess(trip, userId, clientId, role);
+
     if (trip.status === 'COMPLETED') {
       throw new BadRequestException('Esta viagem já está finalizada.');
+    }
+
+    if (trip.status !== 'IN_PROGRESS') {
+      throw new BadRequestException(
+        'Apenas viagens em andamento podem ser concluídas. Inicie a viagem antes de finalizar.',
+      );
     }
 
     const now = new Date();
@@ -168,6 +312,7 @@ export class DriverPortalController {
         data: {
           status: 'COMPLETED',
           completedAt: now,
+          finalOdometer: newKm,
           updatedAt: now,
         },
       }),
@@ -176,9 +321,26 @@ export class DriverPortalController {
         data: {
           status: 'AVAILABLE',
           currentKm: newKm,
+          lastEventAt: now,
           updatedAt: now,
         },
       }),
+      ...((this.prisma as any).odometerReading?.create
+        ? [
+            this.prisma.odometerReading.create({
+              data: {
+                vehicleId: trip.vehicleId,
+                clientId: trip.clientId,
+                ownerId: trip.vehicle.ownerId,
+                previousKm: trip.vehicle.currentKm,
+                currentKm: newKm,
+                source: 'TRIP',
+                sourceId: trip.id,
+                recordedAt: now,
+              },
+            }),
+          ]
+        : []),
     ]);
 
     return {
@@ -186,6 +348,7 @@ export class DriverPortalController {
       tripId: updatedTrip.id,
       status: updatedTrip.status,
       completedAt: updatedTrip.completedAt,
+      finalOdometer: updatedTrip.finalOdometer,
     };
   }
 
@@ -206,26 +369,20 @@ export class DriverPortalController {
       throw new NotFoundException('Veículo não encontrado.');
     }
 
-    // Busca driver associado ao user
-    let driver = await this.prisma.driver.findFirst({
-      where: {
-        OR: [{ userId }, { name: { contains: userId } }],
-      },
-    });
-
-    if (!driver) {
-      driver = await this.prisma.driver.findFirst({
-        where: {
-          clientId: clientId || vehicle.clientId,
-        },
-      });
-    }
-
-    if (!driver) {
-      throw new BadRequestException('Nenhum motorista vinculado encontrado para registrar o abastecimento.');
+    if (clientId && vehicle.clientId && vehicle.clientId !== clientId) {
+      throw new ForbiddenException(
+        'Você não tem permissão para registrar abastecimento em veículo de outra empresa.',
+      );
     }
 
     const targetClientId = clientId || vehicle.clientId;
+    const driver = await this.resolveAuthenticatedDriver(userId, targetClientId);
+
+    if (!driver) {
+      throw new BadRequestException(
+        'Nenhum perfil de motorista vinculado à sua conta foi encontrado para registrar o abastecimento.',
+      );
+    }
     const totalCost = Number((body.liters * body.pricePerLiter).toFixed(2));
     const recordDate = validateOccurredAt(body.occurredAt || body.date);
 
@@ -289,7 +446,7 @@ export class DriverPortalController {
           totalCost,
           odometerAtFueling: body.currentKm,
           gasStation: body.gasStation || null,
-          fullTank: body.fullTank !== undefined ? body.fullTank : true,
+          fullTank: body.fullTank !== undefined ? body.fullTank : body.fuelType !== 'ARLA_32',
           notes: body.notes || null,
           receiptUrl: body.receiptUrl || null,
           fueledAt: recordDate,
@@ -307,6 +464,22 @@ export class DriverPortalController {
                 updatedAt: new Date(),
               },
             }),
+            ...(odoEval.shouldUpdateVehicleKm && (this.prisma as any).odometerReading?.create
+              ? [
+                  this.prisma.odometerReading.create({
+                    data: {
+                      vehicleId: body.vehicleId,
+                      clientId: targetClientId,
+                      ownerId: vehicle.ownerId,
+                      previousKm: vehicle.currentKm,
+                      currentKm: body.currentKm,
+                      source: 'FUEL',
+                      sourceId: body.vehicleId,
+                      recordedAt: recordDate,
+                    },
+                  }),
+                ]
+              : []),
           ]
         : []),
     ]);
@@ -328,9 +501,7 @@ export class DriverPortalController {
     @Body() body: ReportIncidentDto,
   ) {
     // 1. Identifica o motorista vinculado ao usuário ou à viagem
-    let driver = await this.prisma.driver.findFirst({
-      where: { userId },
-    });
+    let driver = await this.resolveAuthenticatedDriver(userId, clientId);
 
     let trip = null;
     if (body.tripId) {
@@ -338,6 +509,9 @@ export class DriverPortalController {
         where: { id: body.tripId },
         include: { driver: true, vehicle: true },
       });
+      if (trip && clientId && trip.clientId && trip.clientId !== clientId) {
+        throw new ForbiddenException('Você não tem permissão para reportar ocorrência em viagem de outra empresa.');
+      }
       if (!driver && trip?.driver) {
         driver = trip.driver;
       }
@@ -351,6 +525,9 @@ export class DriverPortalController {
       vehicle = await this.prisma.vehicle.findUnique({
         where: { id: vehicleId },
       });
+      if (vehicle && clientId && vehicle.clientId && vehicle.clientId !== clientId) {
+        throw new ForbiddenException('Você não tem permissão para reportar ocorrência em veículo de outra empresa.');
+      }
       if (!effectiveClientId && vehicle?.clientId) {
         effectiveClientId = vehicle.clientId;
       }
@@ -370,11 +547,12 @@ export class DriverPortalController {
       ? (body.category.toUpperCase() as any)
       : 'OUTRO';
 
-    // Gera protocolo amigável e único (#00XXXX)
+    // Gera protocolo único anti-colisão (#XXXXXX-YY)
     const count = await this.prisma.incident.count({
       where: { clientId: effectiveClientId || undefined },
     });
-    const protocol = '#' + String(count + 1).padStart(6, '0');
+    const suffix = String(Math.floor(10 + Math.random() * 90));
+    const protocol = `#${String(count + 1).padStart(4, '0')}-${suffix}`;
 
     const desc =
       body.description?.trim() ||
@@ -416,13 +594,14 @@ export class DriverPortalController {
       },
     });
 
-    // 3. Se for mecânica/pneu/elétrica e tiver veículo, abre manutenção corretiva preventiva
-    if (vehicleId && effectiveClientId) {
+    // 3. Apenas se for falha mecânica, pneu ou elétrica e tiver veículo, abre manutenção corretiva
+    const maintenanceCategories = ['PNEU', 'MECANICA', 'ELETRICA'];
+    if (vehicleId && effectiveClientId && maintenanceCategories.includes(category)) {
       await this.prisma.maintenance.create({
         data: {
           vehicleId,
           clientId: effectiveClientId,
-          ownerId: userId,
+          ownerId: vehicle?.ownerId || userId,
           type: 'CORRETIVA',
           status: 'AGENDADA',
           description: `[ALERTA SOS ${protocol} - ${category}] ${desc}`,
@@ -451,15 +630,20 @@ export class DriverPortalController {
   @ApiOperation({ summary: 'Salvar checklist veicular de pré-viagem' })
   async saveChecklist(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
+    @CurrentUser('role') role: string,
     @Body() body: SaveTripChecklistDto,
   ) {
     const trip = await this.prisma.trip.findUnique({
       where: { id: body.tripId },
+      include: { driver: true },
     });
 
     if (!trip) {
       throw new NotFoundException('Viagem não encontrada.');
     }
+
+    await this.assertTripAccess(trip, userId, clientId, role);
 
     const updatedTrip = await this.prisma.trip.update({
       where: { id: body.tripId },
@@ -509,18 +693,22 @@ export class DriverPortalController {
 
   @Get('history')
   @ApiOperation({ summary: 'Histórico de viagens do motorista' })
-  async getHistory(@CurrentUser('userId') userId: string) {
-    return this.getDriverHistoryUseCase.execute(userId);
+  async getHistory(
+    @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
+  ) {
+    return this.getDriverHistoryUseCase.execute(userId, clientId);
   }
 
   @Get('fuel-history')
   @ApiOperation({ summary: 'Histórico de abastecimentos do motorista com status de comprovante' })
   async getFuelHistory(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
     @Query() query: GetDriverFuelHistoryQueryDto,
   ) {
     const pendingOnly = query.pendingReceiptOnly === 'true' || query.pendingReceiptOnly === '1';
-    return this.getDriverFuelHistoryUseCase.execute(userId, pendingOnly);
+    return this.getDriverFuelHistoryUseCase.execute(userId, pendingOnly, clientId);
   }
 
   @Patch('fuel-records/:id/receipt')

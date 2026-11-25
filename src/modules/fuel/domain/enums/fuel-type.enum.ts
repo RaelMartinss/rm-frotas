@@ -5,4 +5,5 @@ export enum FuelType {
   DIESEL_S10 = 'DIESEL_S10',
   GNV = 'GNV',
   ELETRICO = 'ELETRICO',
+  ARLA_32 = 'ARLA_32',
 }

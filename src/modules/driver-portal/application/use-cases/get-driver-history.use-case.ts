@@ -5,24 +5,36 @@ import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.s
 export class GetDriverHistoryUseCase {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(userId: string) {
+  async execute(userId: string, clientId?: string | null) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { driverProfile: true },
     });
 
-    if (!user || !user.driverProfile) {
-      // Tenta buscar motorista por nome
+    if (!user) return [];
+
+    const effectiveClientId = clientId ?? user.clientId ?? undefined;
+
+    if (!user.driverProfile) {
+      // Busca motorista restrito ao mesmo tenant (clientId) para evitar colisão de homônimos
       const driver = await this.prisma.driver.findFirst({
         where: {
+          ...(effectiveClientId ? { clientId: effectiveClientId } : {}),
           OR: [
             { userId },
-            { name: { contains: user?.name, mode: 'insensitive' } },
+            ...(user.email ? [{ email: { equals: user.email, mode: 'insensitive' as const } }] : []),
+            { userId: null, name: { equals: user.name, mode: 'insensitive' as const } },
           ],
         },
       });
 
       if (!driver) return [];
+
+      if (!driver.userId && this.prisma.driver?.update) {
+        await this.prisma.driver
+          .update({ where: { id: driver.id }, data: { userId } })
+          .catch(() => {});
+      }
 
       return this.findDriverTrips(driver.id);
     }

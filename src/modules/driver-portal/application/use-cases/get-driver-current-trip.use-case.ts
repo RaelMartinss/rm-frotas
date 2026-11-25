@@ -72,29 +72,28 @@ export class GetDriverCurrentTripUseCase {
       throw new NotFoundException('Usuário motorista não encontrado.');
     }
 
-    // 1. Localiza o perfil de motorista vinculado (pelo userId ou pelo nome no mesmo tenant)
+    // 1. Localiza o perfil de motorista vinculado (pelo userId ou e-mail/nome no mesmo tenant)
     let driver = user.driverProfile;
-    if (!driver && clientId) {
-      driver = await this.prisma.driver.findFirst({
-        where: {
-          clientId,
-          OR: [
-            { userId: user.id },
-            { name: { contains: user.name, mode: 'insensitive' } },
-          ],
-        },
-      });
-    }
+    const effectiveClientId = clientId ?? user.clientId ?? undefined;
 
-    if (!driver && !clientId) {
+    if (!driver) {
       driver = await this.prisma.driver.findFirst({
         where: {
+          ...(effectiveClientId ? { clientId: effectiveClientId } : {}),
           OR: [
             { userId: user.id },
-            { name: { contains: user.name, mode: 'insensitive' } },
+            ...(user.email ? [{ email: { equals: user.email, mode: 'insensitive' as const } }] : []),
+            { userId: null, name: { equals: user.name, mode: 'insensitive' as const } },
           ],
         },
       });
+
+      if (driver && !driver.userId && this.prisma.driver?.update) {
+        await this.prisma.driver
+          .update({ where: { id: driver.id }, data: { userId: user.id } })
+          .catch(() => {});
+        driver = { ...driver, userId: user.id };
+      }
     }
 
     // Se ainda não houver driver cadastrado, retorna driver com dados do user

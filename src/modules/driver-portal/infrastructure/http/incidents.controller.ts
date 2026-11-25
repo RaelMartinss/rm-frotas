@@ -9,10 +9,13 @@ import {
   HttpCode,
   HttpStatus,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../../auth/infrastructure/decorators/current-user.decorator';
+import { Roles } from '../../../auth/infrastructure/decorators/roles.decorator';
+import { UserRole } from '../../../auth/domain/entities/user.entity';
 import { PrismaService } from '../../../../shared/infrastructure/prisma/prisma.service';
 import { RolesGuard } from '../../../auth/infrastructure/guards/roles.guard';
 
@@ -24,12 +27,14 @@ export class IncidentsController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.FLEET_MANAGER, UserRole.DRIVER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Listar alertas SOS e ocorrências de motoristas' })
   @ApiResponse({ status: 200, description: 'Lista de ocorrências retornada com sucesso.' })
   async getIncidents(
     @CurrentUser('userId') userId: string,
     @CurrentUser('clientId') clientId: string | null,
+    @CurrentUser('role') role: string,
     @Query('status') status?: string,
     @Query('tripId') tripId?: string,
   ) {
@@ -37,6 +42,12 @@ export class IncidentsController {
 
     if (clientId) {
       where.clientId = clientId;
+    }
+
+    if (role === UserRole.DRIVER) {
+      const driver = await this.prisma.driver.findFirst({ where: { userId } });
+      if (!driver) return [];
+      where.driverId = driver.id;
     }
 
     if (status && status !== 'ALL') {
@@ -90,10 +101,12 @@ export class IncidentsController {
   }
 
   @Patch(':id/status')
+  @Roles(UserRole.ADMIN, UserRole.FLEET_MANAGER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Atualizar status do alerta SOS (OPEN, IN_PROGRESS, RESOLVED)' })
   async updateStatus(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
     @Param('id') id: string,
     @Body('status') status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED',
   ) {
@@ -103,6 +116,10 @@ export class IncidentsController {
 
     if (!incident) {
       throw new NotFoundException('Ocorrência não encontrada.');
+    }
+
+    if (clientId && incident.clientId !== clientId) {
+      throw new ForbiddenException('Você não tem permissão para alterar ocorrências de outra empresa.');
     }
 
     const updated = await this.prisma.incident.update({
@@ -123,11 +140,13 @@ export class IncidentsController {
   }
 
   @Patch(':id/resolve')
+  @Roles(UserRole.ADMIN, UserRole.FLEET_MANAGER)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Marcar alerta SOS como resolvido / atendido' })
   @ApiResponse({ status: 200, description: 'Ocorrência marcada como resolvida.' })
   async resolveIncident(
     @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
     @Param('id') id: string,
   ) {
     const incident = await this.prisma.incident.findUnique({
@@ -136,6 +155,10 @@ export class IncidentsController {
 
     if (!incident) {
       throw new NotFoundException('Ocorrência não encontrada.');
+    }
+
+    if (clientId && incident.clientId !== clientId) {
+      throw new ForbiddenException('Você não tem permissão para alterar ocorrências de outra empresa.');
     }
 
     const updated = await this.prisma.incident.update({

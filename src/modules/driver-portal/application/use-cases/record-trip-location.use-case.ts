@@ -30,10 +30,28 @@ export class RecordTripLocationUseCase {
       throw new NotFoundException('Viagem não encontrada.');
     }
 
-    // 2. Valida se o usuário autenticado é o motorista desta viagem
-    const driver = await this.prisma.driver.findFirst({
+    // 2. Valida se o usuário autenticado é o motorista desta viagem (com auto-vínculo seguro no mesmo tenant)
+    let driver = await this.prisma.driver.findFirst({
       where: { userId },
     });
+
+    if (!driver && trip.driver && !trip.driver.userId && (this.prisma as any).user?.findUnique) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      const sameTenant = !user?.clientId || !trip.clientId || user.clientId === trip.clientId;
+      const matchesIdentity =
+        user &&
+        ((user.email && trip.driver.email && user.email.toLowerCase() === trip.driver.email.toLowerCase()) ||
+          user.name.trim().toLowerCase() === trip.driver.name.trim().toLowerCase());
+
+      if (sameTenant && matchesIdentity) {
+        driver = trip.driver;
+        if (this.prisma.driver?.update) {
+          await this.prisma.driver
+            .update({ where: { id: trip.driver.id }, data: { userId } })
+            .catch(() => {});
+        }
+      }
+    }
 
     if (!driver || trip.driverId !== driver.id) {
       throw new ForbiddenException('Você não tem permissão para registrar localização nesta viagem.');

@@ -119,6 +119,7 @@ const FUEL_LABELS: Record<string, string> = {
   DIESEL_S10: 'Diesel S-10',
   GNV: 'GNV',
   ELETRICO: 'Elétrico',
+  ARLA_32: 'Arla 32',
 };
 
 @Injectable()

@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "FuelType" ADD VALUE IF NOT EXISTS 'ARLA_32';

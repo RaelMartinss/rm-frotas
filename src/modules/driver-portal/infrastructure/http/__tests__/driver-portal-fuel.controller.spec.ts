@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BadRequestException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { DriverPortalController } from '../driver-portal.controller';
 
 describe('DriverPortalController - Fuel Recording & Odometer Evaluation', () => {
@@ -228,5 +233,126 @@ describe('DriverPortalController - Fuel Recording & Odometer Evaluation', () => 
         occurredAt: futureDate.toISOString(),
       }),
     ).rejects.toThrow(UnprocessableEntityException);
+  });
+
+  it('deve bloquear abastecimento cross-tenant com ForbiddenException e aceitar ARLA_32 com fullTank false por padrão', async () => {
+    prismaMock.vehicle.findUnique.mockResolvedValueOnce({
+      id: 'vehicle-other',
+      clientId: 'client-other',
+      ownerId: 'owner-2',
+      currentKm: 50000,
+    });
+
+    await expect(
+      controller.createFuelRecord('user-1', 'client-1', {
+        vehicleId: 'vehicle-other',
+        currentKm: 50100,
+        liters: 20,
+        pricePerLiter: 4.5,
+        fuelType: 'ARLA_32',
+      }),
+    ).rejects.toThrow(ForbiddenException);
+
+    prismaMock.vehicle.findUnique.mockResolvedValueOnce({
+      id: 'vehicle-1',
+      clientId: 'client-1',
+      ownerId: 'owner-1',
+      currentKm: 50000,
+      lastEventAt: null,
+    });
+    prismaMock.driver.findFirst.mockResolvedValueOnce({
+      id: 'driver-1',
+      clientId: 'client-1',
+    });
+    prismaMock.fuelRecord.create.mockResolvedValueOnce({
+      id: 'fuel-arla-1',
+      totalCost: 90,
+      odometerInconsistent: false,
+    });
+
+    const arlaRes = await controller.createFuelRecord('user-1', 'client-1', {
+      vehicleId: 'vehicle-1',
+      currentKm: 50100,
+      liters: 20,
+      pricePerLiter: 4.5,
+      fuelType: 'ARLA_32',
+    });
+
+    expect(arlaRes.id).toBe('fuel-arla-1');
+    expect(prismaMock.fuelRecord.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          fuelType: 'ARLA_32',
+          fullTank: false,
+        }),
+      }),
+    );
+  });
+
+  it('deve impedir concluir viagem PLANNED e deve gravar finalOdometer + lastEventAt ao concluir viagem IN_PROGRESS', async () => {
+    prismaMock.trip = {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    };
+    prismaMock.odometerReading = {
+      create: vi.fn(),
+    };
+
+    prismaMock.trip.findUnique.mockResolvedValueOnce({
+      id: 'trip-planned',
+      clientId: 'client-1',
+      driverId: 'driver-1',
+      vehicleId: 'vehicle-1',
+      status: 'PLANNED',
+      driver: { id: 'driver-1', userId: 'user-1' },
+      vehicle: { id: 'vehicle-1', ownerId: 'owner-1', currentKm: 100000 },
+    });
+    prismaMock.driver.findFirst.mockResolvedValueOnce({ id: 'driver-1', userId: 'user-1' });
+
+    await expect(
+      controller.completeTrip('user-1', 'client-1', 'DRIVER', {
+        tripId: 'trip-planned',
+        currentKm: 100300,
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    prismaMock.trip.findUnique.mockResolvedValueOnce({
+      id: 'trip-active',
+      clientId: 'client-1',
+      driverId: 'driver-1',
+      vehicleId: 'vehicle-1',
+      status: 'IN_PROGRESS',
+      driver: { id: 'driver-1', userId: 'user-1' },
+      vehicle: { id: 'vehicle-1', ownerId: 'owner-1', currentKm: 100000 },
+    });
+    prismaMock.driver.findFirst.mockResolvedValueOnce({ id: 'driver-1', userId: 'user-1' });
+    prismaMock.trip.update.mockResolvedValueOnce({
+      id: 'trip-active',
+      status: 'COMPLETED',
+      completedAt: new Date(),
+      finalOdometer: 100350,
+    });
+
+    const completed = await controller.completeTrip('user-1', 'client-1', 'DRIVER', {
+      tripId: 'trip-active',
+      currentKm: 100350,
+    });
+
+    expect(completed.finalOdometer).toBe(100350);
+    expect(prismaMock.trip.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ finalOdometer: 100350, status: 'COMPLETED' }),
+      }),
+    );
+    expect(prismaMock.vehicle.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          currentKm: 100350,
+          lastEventAt: expect.any(Date),
+          status: 'AVAILABLE',
+        }),
+      }),
+    );
+    expect(prismaMock.odometerReading.create).toHaveBeenCalledTimes(1);
   });
 });

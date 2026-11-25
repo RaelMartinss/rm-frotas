@@ -1,11 +1,27 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export const ALLOWED_DRIVER_FUEL_TYPES = [
+  'GASOLINA',
+  'ETANOL',
+  'DIESEL',
+  'DIESEL_S10',
+  'GNV',
+  'ELETRICO',
+  'ARLA_32',
+] as const;
 
 export class StartDriverTripDto {
   @ApiProperty({ description: 'ID da viagem' })
   @IsString()
   @IsNotEmpty({ message: 'O ID da viagem é obrigatório.' })
   tripId: string;
+
+  @ApiPropertyOptional({ description: 'Odômetro inicial conferido na saída da viagem' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0, { message: 'O odômetro inicial deve ser maior ou igual a zero.' })
+  initialKm?: number;
 }
 
 export class CompleteDriverTripDto {
@@ -42,9 +58,13 @@ export class CreateDriverFuelDto {
   @Min(0.01)
   pricePerLiter: number;
 
-  @ApiProperty({ description: 'Tipo de combustível (DIESEL, GASOLINA, ETANOL, GNV)' })
+  @ApiProperty({
+    description: 'Tipo de combustível (DIESEL, DIESEL_S10, GASOLINA, ETANOL, GNV, ELETRICO, ARLA_32)',
+    enum: ALLOWED_DRIVER_FUEL_TYPES,
+  })
   @IsString()
   @IsNotEmpty()
+  @IsIn(ALLOWED_DRIVER_FUEL_TYPES, { message: 'Tipo de combustível ou insumo inválido.' })
   fuelType: string;
 
   @ApiPropertyOptional({ description: 'Nome ou bandeira do posto de combustível' })
