@@ -62,6 +62,11 @@ export class FcmNotificationService implements OnModuleInit {
     }
   }
 
+  private isExpoPushToken(token?: string | null): boolean {
+    if (!token) return false;
+    return token.startsWith('ExponentPushToken[') || token.startsWith('ExpoPushToken[');
+  }
+
   /**
    * Envia uma notificação push para um usuário específico pelo ID
    */
@@ -71,11 +76,6 @@ export class FcmNotificationService implements OnModuleInit {
     body: string,
     data?: Record<string, string>,
   ): Promise<boolean> {
-    if (!this.firebaseApp) {
-      this.logger.debug('Firebase não configurado, notificação push não enviada.');
-      return false;
-    }
-
     try {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
@@ -103,10 +103,6 @@ export class FcmNotificationService implements OnModuleInit {
     body: string,
     data?: Record<string, string>,
   ): Promise<boolean> {
-    if (!this.firebaseApp) {
-      return false;
-    }
-
     try {
       if (!this.prisma?.driver) {
         return false;
@@ -154,7 +150,7 @@ export class FcmNotificationService implements OnModuleInit {
   }
 
   /**
-   * Envia diretamente para um token FCM
+   * Envia diretamente para um token FCM nativo ou Expo Push Token
    */
   async sendPushToToken(
     token: string,
@@ -162,7 +158,42 @@ export class FcmNotificationService implements OnModuleInit {
     body: string,
     data?: Record<string, string>,
   ): Promise<boolean> {
-    if (!this.firebaseApp || !token) {
+    if (!token) {
+      return false;
+    }
+
+    // Suporte nativo a Expo Push Token (funciona mesmo sem chave local do Firebase Admin)
+    if (this.isExpoPushToken(token)) {
+      try {
+        const res = await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: token,
+            title,
+            body,
+            sound: 'default',
+            priority: 'high',
+            channelId: 'rm_frotas_channel',
+            data: {
+              title,
+              body,
+              ...data,
+            },
+          }),
+        });
+        return res.ok;
+      } catch (err: any) {
+        this.logger.error(`Erro ao enviar Expo Push Notification: ${err?.message || err}`);
+        return false;
+      }
+    }
+
+    if (!this.firebaseApp) {
+      this.logger.debug('Firebase não configurado para envio de token FCM nativo.');
       return false;
     }
 
@@ -176,7 +207,7 @@ export class FcmNotificationService implements OnModuleInit {
         data: {
           title,
           body,
-          ...(data || {}),
+          ...data,
         },
         android: {
           priority: 'high',
