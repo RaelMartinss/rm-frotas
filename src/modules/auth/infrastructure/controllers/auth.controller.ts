@@ -4,13 +4,16 @@ import {
   ForbiddenException,
   HttpCode,
   HttpStatus,
+  Inject,
   Logger,
+  Optional,
   Post,
   Req,
   Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import * as crypto from 'crypto';
 import type { Request, Response } from 'express';
 import {
   ApiBearerAuth,
@@ -18,6 +21,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import type { IRefreshTokenSessionRepository } from '../../domain/repositories/refresh-token-session.repository.interface';
 import { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { LoginUseCase } from '../../application/use-cases/login.use-case';
 import { RefreshTokenUseCase } from '../../application/use-cases/refresh-token.use-case';
@@ -56,6 +60,9 @@ export class AuthController {
     private readonly changeOwnPasswordUseCase: ChangeOwnPasswordUseCase,
     private readonly logoutAllDevicesUseCase: LogoutAllDevicesUseCase,
     private readonly verifyPasswordUseCase: VerifyPasswordUseCase,
+    @Optional()
+    @Inject('IRefreshTokenSessionRepository')
+    private readonly refreshTokenSessionRepository?: IRefreshTokenSessionRepository,
   ) {}
 
   @Post('change-password')
@@ -68,14 +75,28 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Senha alterada com sucesso.' })
   async changePassword(
+    @Req() req: Request,
     @CurrentUser('userId') currentUserId: string,
     @Body() body: ChangePasswordDto,
     @Res({ passthrough: true }) res: Response,
   ) {
+    const userAgent = req.headers['user-agent'];
+    const isMobileUa =
+      typeof userAgent === 'string' &&
+      (userAgent.includes('okhttp') ||
+        userAgent.includes('Expo') ||
+        userAgent.includes('Android') ||
+        userAgent.includes('Darwin') ||
+        !req.cookies?.[REFRESH_COOKIE_NAME]);
+
     const result = await this.changeOwnPasswordUseCase.execute({
       userId: currentUserId,
       currentPassword: body.currentPassword,
       newPassword: body.newPassword,
+      deviceInfo: {
+        platform: isMobileUa ? 'mobile' : 'web',
+        userAgent,
+      },
     });
 
     res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getCookieOptions());
@@ -88,11 +109,22 @@ export class AuthController {
   }
 
   @Post('register')
-  @ApiOperation({ summary: 'Registrar um novo usuário no sistema' })
+  @ApiOperation({ summary: 'Registrar um novo usuário no sistema (desativado publicamente em produção)' })
   @ApiResponse({ status: 201, description: 'Usuário cadastrado com sucesso.' })
   @ApiResponse({ status: 400, description: 'Dados de entrada inválidos.' })
+  @ApiResponse({ status: 403, description: 'Auto-cadastro público desativado em produção.' })
   @ApiResponse({ status: 409, description: 'E-mail já cadastrado.' })
   async register(@Body() body: RegisterDto) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException(
+        'O auto-cadastro público está desativado. Solicite seu acesso ao administrador da frota.',
+      );
+    }
+
+    if (body.role === UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Não é permitido criar contas SUPER_ADMIN por este endpoint.');
+    }
+
     const user = await this.registerUserUseCase.execute(body);
 
     return {
@@ -245,9 +277,27 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Encerrar sessão e limpar cookie de refresh token' })
+  @ApiOperation({ summary: 'Encerrar sessão, revogar refresh token no banco e limpar cookie' })
   @ApiResponse({ status: 200, description: 'Sessão encerrada com sucesso.' })
-  async logout(@Res({ passthrough: true }) res: Response) {
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() body?: { refreshToken?: string },
+  ) {
+    const token = req.cookies?.[REFRESH_COOKIE_NAME] || body?.refreshToken;
+    if (token && this.refreshTokenSessionRepository) {
+      try {
+        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+        const session = await this.refreshTokenSessionRepository.findByTokenHash(tokenHash);
+        if (session && !session.isRevoked()) {
+          session.revoke();
+          await this.refreshTokenSessionRepository.save(session);
+        }
+      } catch {
+        // Falha silenciosa para sempre concluir a limpeza do cliente
+      }
+    }
+
     res.clearCookie(REFRESH_COOKIE_NAME, {
       httpOnly: true,
       secure: isProduction,

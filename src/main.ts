@@ -97,8 +97,23 @@ async function bootstrap() {
     message: { statusCode: 429, message: 'Muitas tentativas. Tente novamente em 1 minuto.' },
   });
   app.use('/v1/auth/login', authLimiter);
+  app.use('/v1/auth/register', authLimiter);
+  app.use('/v1/auth/change-password', authLimiter);
   app.use('/v1/auth/verify-password', authLimiter);
   app.use('/v1/me/password', authLimiter);
+
+  // Rate Limiting dedicado para renovação de sessão (/auth/refresh): 30 tentativas por minuto por IP
+  const refreshLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 30,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: {
+      statusCode: 429,
+      message: 'Muitas tentativas de renovação de sessão. Aguarde 1 minuto.',
+    },
+  });
+  app.use('/v1/auth/refresh', refreshLimiter);
 
   // Rate Limiting de Alta Segurança para Portal do Super Admin: 5 tentativas por minuto por IP
   const adminAuthLimiter = rateLimit({
@@ -126,31 +141,29 @@ async function bootstrap() {
     }),
   );
 
-
   const config = new DocumentBuilder()
-  .setTitle('Portal Frotas API')
-  .setDescription('API para gestão de frotas e manutenções com DDD e NestJS')
-  .setVersion('1.0')
-  .addBearerAuth(
-    {
-      type: 'http',
-      scheme: 'bearer',
-      bearerFormat: 'JWT',
-      name: 'JWT',
-      description: 'Insira o token JWT (apenas o token, sem o prefixo Bearer)',
-      in: 'header',
-    },
-    'JWT-auth', // nome do esquema — precisa bater com o usado nos controllers
-  )
-  .addBearerAuth() // Esquema padrão de fallback para controladores com @ApiBearerAuth() genérico
-  .addTag('Auth', 'Registro e autenticação de usuários')
-  .addTag('Profile', 'Dados do usuário autenticado')
-  .addTag('Dashboard', 'Indicadores e resumos consolidados da frota')
-  .addTag('Vehicles', 'Gestão de veículos da frota')
-  .addTag('Drivers', 'Gestão de motoristas da frota')
-  .addTag('Trips', 'Gestão de viagens da frota')
-  .build();
-
+    .setTitle('Portal Frotas API')
+    .setDescription('API para gestão de frotas e manutenções com DDD e NestJS')
+    .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Insira o token JWT (apenas o token, sem o prefixo Bearer)',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .addBearerAuth()
+    .addTag('Auth', 'Registro e autenticação de usuários')
+    .addTag('Profile', 'Dados do usuário autenticado')
+    .addTag('Dashboard', 'Indicadores e resumos consolidados da frota')
+    .addTag('Vehicles', 'Gestão de veículos da frota')
+    .addTag('Drivers', 'Gestão de motoristas da frota')
+    .addTag('Trips', 'Gestão de viagens da frota')
+    .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);

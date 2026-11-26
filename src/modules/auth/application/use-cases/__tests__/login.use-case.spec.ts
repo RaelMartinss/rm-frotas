@@ -49,7 +49,7 @@ describe('LoginUseCase', () => {
 
     expect(result.accessToken).toBeDefined();
     expect(result.refreshToken).toBeDefined();
-    expect(result.expiresIn).toBe(7200);
+    expect(result.expiresIn).toBe(900);
     expect(result.user.email).toBe('rael@example.com');
     expect(result.user.role).toBe(UserRole.FLEET_MANAGER);
 

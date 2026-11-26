@@ -18,9 +18,16 @@ export class RefreshTokenSession {
     userId: string;
     tokenHash: string;
     deviceInfo: DeviceInfo;
+    originCreatedAt?: Date;
   }): RefreshTokenSession {
+    const now = Date.now();
+    const createdAt = props.originCreatedAt ?? new Date(now);
     const ttlDays = props.deviceInfo.isMobile() ? 60 : 7;
-    const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+    const maxAbsoluteDays = props.deviceInfo.isMobile() ? 90 : 30;
+    const slidingExpiry = now + ttlDays * 24 * 60 * 60 * 1000;
+    const absoluteExpiry = createdAt.getTime() + maxAbsoluteDays * 24 * 60 * 60 * 1000;
+    const expiresAt = new Date(Math.min(slidingExpiry, absoluteExpiry));
+
     return new RefreshTokenSession(
       crypto.randomUUID(),
       props.userId,
@@ -28,7 +35,7 @@ export class RefreshTokenSession {
       props.deviceInfo,
       expiresAt,
       null,
-      new Date(),
+      createdAt,
     );
   }
 

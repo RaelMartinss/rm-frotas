@@ -74,12 +74,53 @@ describe('RefreshTokenUseCase', () => {
       await inMemoryRefreshTokenSessionRepository.findByTokenHash(initialHash);
     expect(oldSession?.isRevoked()).toBe(true);
 
-    // O token antigo deve falhar se usado novamente
+    // O token antigo deve falhar se usado novamente (Reuse Detection)
     await expect(() =>
       sut.execute({
         refreshToken: initialRefreshToken,
       }),
     ).rejects.toBeInstanceOf(SessionRevokedException);
+
+    // E a tentativa de reuso deve ter revogado também a nova sessão ativa da família (proteção contra roubo)
+    const rotatedHash = crypto
+      .createHash('sha256')
+      .update(result.refreshToken)
+      .digest('hex');
+    const rotatedSession =
+      await inMemoryRefreshTokenSessionRepository.findByTokenHash(rotatedHash);
+    expect(rotatedSession?.isRevoked()).toBe(true);
+  });
+
+  it('deve impedir renovação além do teto absoluto de vida da sessão (90 dias mobile)', async () => {
+    const password = await Password.create('password123');
+    const user = new User({
+      name: 'Motorista Antigo',
+      email: new Email('motorista@example.com'),
+      password,
+      role: UserRole.DRIVER,
+    });
+    await inMemoryUsersRepository.save(user);
+
+    const token = 'long-lived-mobile-token';
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    const ninetyOneDaysAgo = new Date(Date.now() - 91 * 24 * 60 * 60 * 1000);
+
+    const session = RefreshTokenSession.restore({
+      id: 'session-old-origin',
+      userId: user.getId(),
+      tokenHash: hash,
+      deviceInfo: DeviceInfo.create('mobile'),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      revokedAt: null,
+      createdAt: ninetyOneDaysAgo,
+    });
+    await inMemoryRefreshTokenSessionRepository.save(session);
+
+    await expect(() =>
+      sut.execute({
+        refreshToken: token,
+      }),
+    ).rejects.toBeInstanceOf(SessionExpiredException);
   });
 
   it('deve lançar exceção se o refresh token não for informado', async () => {

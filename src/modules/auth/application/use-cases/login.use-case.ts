@@ -113,7 +113,7 @@ export class LoginUseCase {
     return {
       accessToken,
       refreshToken: rawRefreshToken,
-      expiresIn: 7200, // 2h em segundos
+      expiresIn: 900, // 15m em segundos
       user: {
         id: user.getId(),
         name: user.getName(),

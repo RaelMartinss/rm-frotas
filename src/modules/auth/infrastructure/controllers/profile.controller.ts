@@ -13,15 +13,17 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
-import { IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
+import { Optional } from '@nestjs/common';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import type { UserPayload } from '../strategies/jwt.strategy';
 import type { IUsersRepository } from '../../domain/repositories/users.repository.interface';
+import type { IRefreshTokenSessionRepository } from '../../domain/repositories/refresh-token-session.repository.interface';
 import { IClientsRepository } from '../../../clients/domain/repositories/clients.repository.interface';
 import { Password } from '../../domain/value-objects/password.vo';
 
 export class UpdateProfileDto {
-  @ApiProperty({ example: 'Rael Martins', description: 'Nome completo do usuário' })
+  @ApiProperty({ example: 'Carlos Mendes', description: 'Nome completo do usuário' })
   @IsString()
   @IsNotEmpty({ message: 'O nome não pode ser vazio.' })
   @MinLength(2, { message: 'O nome deve ter no mínimo 2 caracteres.' })
@@ -34,9 +36,15 @@ export class ChangePasswordDto {
   @IsNotEmpty({ message: 'A senha atual é obrigatória.' })
   currentPassword: string;
 
-  @ApiProperty({ example: 'novaSenhaSegura123', description: 'Nova senha (mínimo 6 caracteres)' })
+  @ApiProperty({
+    example: 'novaSenhaSegura123',
+    description: 'Nova senha (mínimo 8 caracteres com letras e números)',
+  })
   @IsString()
-  @MinLength(6, { message: 'A nova senha deve ter no mínimo 6 caracteres.' })
+  @MinLength(8, { message: 'A nova senha deve ter no mínimo 8 caracteres.' })
+  @Matches(/^(?=.*[A-Za-z])(?=.*\d).+$/, {
+    message: 'A nova senha deve conter ao menos uma letra e um número.',
+  })
   newPassword: string;
 }
 
@@ -49,6 +57,9 @@ export class ProfileController {
     @Inject('IUsersRepository')
     private readonly usersRepository: IUsersRepository,
     private readonly clientsRepository: IClientsRepository,
+    @Optional()
+    @Inject('IRefreshTokenSessionRepository')
+    private readonly refreshTokenSessionRepository?: IRefreshTokenSessionRepository,
   ) {}
 
   @Get()
@@ -134,9 +145,25 @@ export class ProfileController {
       throw new BadRequestException('A senha atual fornecida está incorreta.');
     }
 
+    const isSameAsOld = await user.getPassword().matches(body.newPassword);
+    if (isSameAsOld) {
+      throw new BadRequestException('A nova senha deve ser diferente da senha atual.');
+    }
+
     const newPasswordVo = await Password.create(body.newPassword);
     user.changePassword(newPasswordVo);
     await this.usersRepository.save(user);
+
+    // Revoga sessões antigas de outros dispositivos ao alterar a senha
+    if (this.refreshTokenSessionRepository) {
+      const activeSessions = await this.refreshTokenSessionRepository.findAllActiveByUserId(userId);
+      await Promise.all(
+        activeSessions.map((session) => {
+          session.revoke();
+          return this.refreshTokenSessionRepository!.save(session);
+        }),
+      );
+    }
 
     return {
       message: 'Senha alterada com sucesso.',

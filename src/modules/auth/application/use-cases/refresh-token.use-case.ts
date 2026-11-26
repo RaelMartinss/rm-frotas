@@ -63,6 +63,16 @@ export class RefreshTokenUseCase {
     }
 
     if (session.isRevoked()) {
+      // Detecção de reuso de refresh token (RFC 6819): revoga todas as sessões ativas do usuário por segurança
+      const activeSessions = await this.refreshTokenSessionRepository.findAllActiveByUserId(
+        session.getUserId(),
+      );
+      await Promise.all(
+        activeSessions.map((active) => {
+          active.revoke();
+          return this.refreshTokenSessionRepository.save(active);
+        }),
+      );
       throw new SessionRevokedException(session.getId());
     }
 
@@ -111,7 +121,12 @@ export class RefreshTokenUseCase {
       userId: user.getId(),
       tokenHash: newTokenHash,
       deviceInfo: session.getDeviceInfo(),
+      originCreatedAt: session.getCreatedAt(),
     });
+
+    if (newSession.isExpired()) {
+      throw new SessionExpiredException(session.getId());
+    }
 
     await this.refreshTokenSessionRepository.save(newSession);
 
@@ -126,7 +141,7 @@ export class RefreshTokenUseCase {
     return {
       accessToken,
       refreshToken: newRawRefreshToken,
-      expiresIn: 7200,
+      expiresIn: 900,
       user: {
         id: user.getId(),
         name: user.getName(),

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -47,10 +47,27 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ]),
       ignoreExpiration: false,
       secretOrKey: secret || 'default-secret-key',
+      passReqToCallback: true,
     });
   }
 
-  async validate(payload: TokenPayload): Promise<UserPayload> {
+  async validate(req: any, payload: TokenPayload): Promise<UserPayload> {
+    if (payload.mustChangePassword) {
+      const pathUrl = String(req?.originalUrl || req?.url || '').split('?')[0];
+      const allowedWhilePendingPasswordChange =
+        pathUrl.endsWith('/auth/change-password') ||
+        pathUrl.endsWith('/me/password') ||
+        pathUrl.endsWith('/auth/logout') ||
+        pathUrl.endsWith('/auth/logout-all-devices') ||
+        pathUrl.endsWith('/me') ||
+        pathUrl.endsWith('/driver-portal/device/sync');
+
+      if (!allowedWhilePendingPasswordChange) {
+        throw new ForbiddenException(
+          'Redefinição de senha obrigatória pendente. Altere sua senha temporária para continuar.',
+        );
+      }
+    }
     const user: UserPayload = {
       userId: payload.sub,
       email: payload.email,

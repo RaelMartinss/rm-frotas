@@ -255,6 +255,35 @@ describe('Auth Endpoints (E2E)', () => {
         .send({ refreshToken })
         .expect(401);
     });
+
+    it('POST /auth/logout deve revogar a RefreshTokenSession informada no corpo (mobile)', async () => {
+      await request(app.getHttpServer()).post('/auth/register').send({
+        name: 'Motorista Logout',
+        email: 'logout.mobile@example.com',
+        password: 'password123',
+        role: UserRole.DRIVER,
+      });
+
+      const loginRes = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'logout.mobile@example.com',
+          password: 'password123',
+          deviceInfo: { platform: 'mobile' },
+        });
+
+      const refreshToken = loginRes.body.refreshToken;
+
+      await request(app.getHttpServer())
+        .post('/auth/logout')
+        .send({ refreshToken })
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .send({ refreshToken })
+        .expect(401);
+    });
   });
 
   describe('PATCH /users/:id/status', () => {

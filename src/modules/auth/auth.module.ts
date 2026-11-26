@@ -42,7 +42,7 @@ import { ClientsModule } from '../clients/clients.module';
         }
         return {
           secret: secret || 'default-secret-key',
-          signOptions: { expiresIn: '2h' },
+          signOptions: { expiresIn: '15m' },
         };
       },
     }),
