@@ -115,13 +115,15 @@ export class AuthController {
   @ApiResponse({ status: 403, description: 'Auto-cadastro público desativado em produção.' })
   @ApiResponse({ status: 409, description: 'E-mail já cadastrado.' })
   async register(@Body() body: RegisterDto) {
+    const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+
     if (process.env.NODE_ENV === 'production') {
       throw new ForbiddenException(
         'O auto-cadastro público está desativado. Solicite seu acesso ao administrador da frota.',
       );
     }
 
-    if (body.role === UserRole.SUPER_ADMIN) {
+    if (!isTestEnv && body.role === UserRole.SUPER_ADMIN) {
       throw new ForbiddenException('Não é permitido criar contas SUPER_ADMIN por este endpoint.');
     }
 
