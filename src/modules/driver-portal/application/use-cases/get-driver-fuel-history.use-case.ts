@@ -14,6 +14,7 @@ export interface DriverFuelHistoryItem {
   gasStation: string | null;
   fullTank: boolean;
   receiptUrl: string | null;
+  hasReceipt?: boolean;
   notes: string | null;
   fueledAt: string;
   isPendingReceipt: boolean;
@@ -28,6 +29,7 @@ export class GetDriverFuelHistoryUseCase {
     userId: string,
     pendingReceiptOnly = false,
     clientId?: string | null,
+    omitReceipts = false,
   ): Promise<DriverFuelHistoryItem[]> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -69,6 +71,71 @@ export class GetDriverFuelHistoryUseCase {
       ];
     }
 
+    if (omitReceipts) {
+      // Modo otimizado: evita ler até 50 blobs Base64 das tabelas TOAST do PostgreSQL e trafegá-los no 4G
+      const lightRecords = await this.prisma.fuelRecord.findMany({
+        where,
+        select: {
+          id: true,
+          vehicleId: true,
+          fuelType: true,
+          liters: true,
+          pricePerUnit: true,
+          totalCost: true,
+          odometerAtFueling: true,
+          gasStation: true,
+          fullTank: true,
+          notes: true,
+          fueledAt: true,
+          odometerInconsistent: true,
+          vehicle: {
+            select: { plate: true, model: true, brand: true },
+          },
+        },
+        orderBy: { fueledAt: 'desc' },
+        take: 50,
+      });
+
+      if (lightRecords.length === 0) return [];
+
+      let pendingIds = new Set<string>();
+      if (pendingReceiptOnly) {
+        pendingIds = new Set(lightRecords.map((r) => r.id));
+      } else {
+        const missingRows = await this.prisma.fuelRecord.findMany({
+          where: {
+            id: { in: lightRecords.map((r) => r.id) },
+            OR: [{ receiptUrl: null }, { receiptUrl: '' }],
+          },
+          select: { id: true },
+        });
+        pendingIds = new Set(missingRows.map((m) => m.id));
+      }
+
+      return lightRecords.map((r) => {
+        const isPending = pendingIds.has(r.id);
+        return {
+          id: r.id,
+          vehicleId: r.vehicleId,
+          vehiclePlate: r.vehicle.plate,
+          vehicleModel: `${r.vehicle.brand ? r.vehicle.brand + ' ' : ''}${r.vehicle.model}`,
+          fuelType: r.fuelType,
+          liters: r.liters,
+          pricePerUnit: r.pricePerUnit,
+          totalCost: r.totalCost,
+          odometerAtFueling: r.odometerAtFueling,
+          gasStation: r.gasStation,
+          fullTank: r.fullTank,
+          receiptUrl: null,
+          hasReceipt: !isPending,
+          notes: r.notes,
+          fueledAt: r.fueledAt.toISOString(),
+          isPendingReceipt: isPending,
+          odometerInconsistent: r.odometerInconsistent,
+        };
+      });
+    }
+
     const records = await this.prisma.fuelRecord.findMany({
       where,
       include: {
@@ -95,6 +162,7 @@ export class GetDriverFuelHistoryUseCase {
         gasStation: r.gasStation,
         fullTank: r.fullTank,
         receiptUrl: r.receiptUrl,
+        hasReceipt,
         notes: r.notes,
         fueledAt: r.fueledAt.toISOString(),
         isPendingReceipt: !hasReceipt,

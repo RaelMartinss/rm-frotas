@@ -76,6 +76,59 @@ describe('Driver Fuel History Use Cases', () => {
       expect(result[1].isPendingReceipt).toBe(true);
       expect(result[0].vehiclePlate).toBe('ABC1D23');
     });
+
+    it('deve omitir receiptUrl Base64 mantendo hasReceipt e isPendingReceipt quando omitReceipts=true', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        name: 'Carlos Motorista',
+        driverProfile: { id: 'driver-1' },
+      });
+
+      prismaMock.fuelRecord.findMany
+        .mockResolvedValueOnce([
+          {
+            id: 'fuel-1',
+            vehicleId: 'veh-1',
+            fuelType: 'DIESEL',
+            liters: 100,
+            pricePerUnit: 5.89,
+            totalCost: 589,
+            odometerAtFueling: 50000,
+            gasStation: 'Posto Shell',
+            fullTank: true,
+            notes: null,
+            fueledAt: new Date('2026-09-08T10:00:00Z'),
+            odometerInconsistent: false,
+            vehicle: { plate: 'ABC1D23', model: 'R450', brand: 'Scania' },
+          },
+          {
+            id: 'fuel-2',
+            vehicleId: 'veh-1',
+            fuelType: 'DIESEL',
+            liters: 50,
+            pricePerUnit: 5.89,
+            totalCost: 294.5,
+            odometerAtFueling: 50500,
+            gasStation: null,
+            fullTank: true,
+            notes: null,
+            fueledAt: new Date('2026-09-08T15:00:00Z'),
+            odometerInconsistent: false,
+            vehicle: { plate: 'ABC1D23', model: 'R450', brand: 'Scania' },
+          },
+        ])
+        .mockResolvedValueOnce([{ id: 'fuel-2' }]);
+
+      const result = await getFuelHistoryUseCase.execute('user-1', false, 'client-1', true);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].receiptUrl).toBeNull();
+      expect(result[0].hasReceipt).toBe(true);
+      expect(result[0].isPendingReceipt).toBe(false);
+      expect(result[1].receiptUrl).toBeNull();
+      expect(result[1].hasReceipt).toBe(false);
+      expect(result[1].isPendingReceipt).toBe(true);
+    });
   });
 
   describe('UpdateDriverFuelReceiptUseCase', () => {

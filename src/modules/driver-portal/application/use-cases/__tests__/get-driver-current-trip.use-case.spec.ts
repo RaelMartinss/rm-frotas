@@ -112,4 +112,33 @@ describe('GetDriverCurrentTripUseCase', () => {
     expect(result.pendingReceiptsCount).toBe(0);
     expect(result.monthFuelingsCount).toBe(0);
   });
+
+  it('deve omitir photoUrl pesada e sinalizar hasPhoto=true quando omitPhoto=true', async () => {
+    const futureDate = new Date();
+    futureDate.setFullYear(futureDate.getFullYear() + 1);
+
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      name: 'Carlos Motorista',
+      driverProfile: {
+        id: 'driver-1',
+        name: 'Carlos Motorista',
+        cpf: '123.456.789-00',
+        cnhNumber: '12345678901',
+        cnhCategory: 'E',
+        cnhExpirationDate: futureDate,
+        status: 'ACTIVE',
+        photoUrl: 'data:image/jpeg;base64,BIG_AVATAR_BLOB',
+      },
+    });
+
+    prismaMock.trip.findFirst.mockResolvedValue(null);
+    prismaMock.trip.count.mockResolvedValue(0);
+    prismaMock.fuelRecord.count.mockResolvedValue(0);
+
+    const result = await useCase.execute('user-1', 'client-1', { omitPhoto: true });
+
+    expect(result.driver?.hasPhoto).toBe(true);
+    expect(result.driver?.photoUrl).toBeNull();
+  });
 });

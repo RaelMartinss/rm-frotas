@@ -7,6 +7,7 @@ import { SentryFilter } from './shared/observability/sentry.filter';
 import { Logger } from 'nestjs-pino';
 import * as Sentry from '@sentry/node';
 import cookieParser from 'cookie-parser';
+import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { json, urlencoded } from 'express';
@@ -25,6 +26,9 @@ async function bootstrap() {
     bufferLogs: true,
   });
   app.useLogger(app.get(Logger));
+
+  // Compressão HTTP gzip/deflate para reduzir tráfego de rede móvel em payloads JSON (> 1 KB)
+  app.use(compression({ threshold: 1024 }));
 
   // Configura limite de tamanho de payload para suportar upload de fotos de comprovantes (Base64)
   app.use(json({ limit: '10mb' }));

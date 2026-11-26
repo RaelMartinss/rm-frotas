@@ -175,10 +175,20 @@ export class UpdateDriverFuelReceiptDto {
   gasStation?: string;
 }
 
+export class GetDriverCurrentTripQueryDto {
+  @ApiPropertyOptional({ description: 'Omitir foto Base64 do motorista quando já estiver em cache no dispositivo' })
+  @IsOptional()
+  omitPhoto?: string;
+}
+
 export class GetDriverFuelHistoryQueryDto {
   @ApiPropertyOptional({ description: 'Filtrar apenas abastecimentos sem comprovante pendente' })
   @IsOptional()
   pendingReceiptOnly?: string;
+
+  @ApiPropertyOptional({ description: 'Omitir strings Base64 de comprovantes na listagem para carregar sob demanda' })
+  @IsOptional()
+  omitReceipts?: string;
 }
 
 export class SyncUserDeviceDto {

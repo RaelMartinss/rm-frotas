@@ -30,10 +30,13 @@ export class RecordTripLocationUseCase {
       throw new NotFoundException('Viagem não encontrada.');
     }
 
-    // 2. Valida se o usuário autenticado é o motorista desta viagem (com auto-vínculo seguro no mesmo tenant)
-    let driver = await this.prisma.driver.findFirst({
-      where: { userId },
-    });
+    // 2. Valida se o usuário autenticado é o motorista desta viagem (reaproveitando o join já carregado quando possível)
+    let driver =
+      trip.driver?.userId && trip.driver.userId === userId
+        ? trip.driver
+        : await this.prisma.driver.findFirst({
+            where: { userId },
+          });
 
     if (!driver && trip.driver && !trip.driver.userId && (this.prisma as any).user?.findUnique) {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });

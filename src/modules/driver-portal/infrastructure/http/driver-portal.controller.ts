@@ -34,6 +34,7 @@ import {
   CreateDriverFuelDto,
   ReportIncidentDto,
   UpdateDriverFuelReceiptDto,
+  GetDriverCurrentTripQueryDto,
   GetDriverFuelHistoryQueryDto,
   SaveTripChecklistDto,
   SyncUserDeviceDto,
@@ -125,8 +126,10 @@ export class DriverPortalController {
   async getCurrentTrip(
     @CurrentUser('userId') userId: string,
     @CurrentUser('clientId') clientId: string | null,
+    @Query() query?: GetDriverCurrentTripQueryDto,
   ) {
-    return this.getDriverCurrentTripUseCase.execute(userId, clientId);
+    const omitPhoto = query?.omitPhoto === 'true' || query?.omitPhoto === '1';
+    return this.getDriverCurrentTripUseCase.execute(userId, clientId, { omitPhoto });
   }
 
   @Post('start-trip')
@@ -707,8 +710,48 @@ export class DriverPortalController {
     @CurrentUser('clientId') clientId: string | null,
     @Query() query: GetDriverFuelHistoryQueryDto,
   ) {
-    const pendingOnly = query.pendingReceiptOnly === 'true' || query.pendingReceiptOnly === '1';
-    return this.getDriverFuelHistoryUseCase.execute(userId, pendingOnly, clientId);
+    const pendingOnly = query?.pendingReceiptOnly === 'true' || query?.pendingReceiptOnly === '1';
+    const omitReceipts = query?.omitReceipts === 'true' || query?.omitReceipts === '1';
+    return this.getDriverFuelHistoryUseCase.execute(userId, pendingOnly, clientId, omitReceipts);
+  }
+
+  @Get('fuel-records/:id/receipt')
+  @ApiOperation({ summary: 'Obter foto sob demanda do comprovante fiscal de um abastecimento' })
+  async getFuelReceipt(
+    @CurrentUser('userId') userId: string,
+    @CurrentUser('clientId') clientId: string | null,
+    @CurrentUser('role') role: string,
+    @Param('id') id: string,
+  ) {
+    const record = await this.prisma.fuelRecord.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        clientId: true,
+        driverId: true,
+        receiptUrl: true,
+      },
+    });
+
+    if (!record) {
+      throw new NotFoundException('Registro de abastecimento não encontrado.');
+    }
+
+    if (clientId && record.clientId && record.clientId !== clientId) {
+      throw new ForbiddenException('Você não tem permissão para acessar este comprovante.');
+    }
+
+    if (role === 'DRIVER' || !role) {
+      const driver = await this.resolveAuthenticatedDriver(userId, clientId ?? record.clientId);
+      if (!driver || record.driverId !== driver.id) {
+        throw new ForbiddenException('Este comprovante pertence a outro motorista.');
+      }
+    }
+
+    return {
+      id: record.id,
+      receiptUrl: record.receiptUrl || null,
+    };
   }
 
   @Patch('fuel-records/:id/receipt')

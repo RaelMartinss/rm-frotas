@@ -15,6 +15,7 @@ export interface DriverCurrentTripOutput {
     canStartTrip: boolean;
     status: string;
     photoUrl?: string | null;
+    hasPhoto?: boolean;
   } | null;
   trip: {
     id: string;
@@ -62,7 +63,11 @@ export interface DriverCurrentTripOutput {
 export class GetDriverCurrentTripUseCase {
   constructor(private readonly prisma: PrismaService) {}
 
-  async execute(userId: string, clientId?: string | null): Promise<DriverCurrentTripOutput> {
+  async execute(
+    userId: string,
+    clientId?: string | null,
+    options?: { omitPhoto?: boolean },
+  ): Promise<DriverCurrentTripOutput> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { driverProfile: true },
@@ -114,6 +119,7 @@ export class GetDriverCurrentTripUseCase {
       ? driver.status === 'ACTIVE' && daysUntilCnhExpires > 1
       : false;
 
+    const hasPhoto = Boolean(driver?.photoUrl && driver.photoUrl.trim().length > 0);
     const driverData = driver
       ? {
           id: driver.id,
@@ -127,7 +133,8 @@ export class GetDriverCurrentTripUseCase {
           isCnhExpired,
           canStartTrip,
           status: driver.status,
-          photoUrl: driver.photoUrl ?? null,
+          hasPhoto,
+          photoUrl: options?.omitPhoto ? null : (driver.photoUrl ?? null),
         }
       : null;
 
@@ -141,48 +148,47 @@ export class GetDriverCurrentTripUseCase {
       };
     }
 
-    // 2. Busca viagem em andamento (IN_PROGRESS) ou agendada (PLANNED)
-    const activeTrip = await this.prisma.trip.findFirst({
-      where: {
-        driverId: driver.id,
-        status: { in: ['IN_PROGRESS', 'PLANNED'] },
-      },
-      include: {
-        vehicle: true,
-        waypoints: {
-          orderBy: { order: 'asc' },
-        },
-      },
-      orderBy: [
-        // Prioriza IN_PROGRESS sobre PLANNED
-        { status: 'desc' },
-        { createdAt: 'desc' },
-      ],
-    });
-
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // 3. Contagens de viagens concluídas, pendências e abastecimentos do mês
-    const [recentTripsCount, pendingReceiptsCount, monthFuelingsCount] = await Promise.all([
-      this.prisma.trip.count({
-        where: {
-          driverId: driver.id,
-          status: 'COMPLETED',
-        },
-      }),
-      this.prisma.fuelRecord.count({
-        where: {
-          driverId: driver.id,
-          OR: [{ receiptUrl: null }, { receiptUrl: '' }],
-        },
-      }),
-      this.prisma.fuelRecord.count({
-        where: {
-          driverId: driver.id,
-          fueledAt: { gte: startOfMonth },
-        },
-      }),
-    ]);
+    // 2. Busca em paralelo a viagem ativa/escalada e as 3 contagens operacionais (reduz round-trips ao banco)
+    const [activeTrip, recentTripsCount, pendingReceiptsCount, monthFuelingsCount] =
+      await Promise.all([
+        this.prisma.trip.findFirst({
+          where: {
+            driverId: driver.id,
+            status: { in: ['IN_PROGRESS', 'PLANNED'] },
+          },
+          include: {
+            vehicle: true,
+            waypoints: {
+              orderBy: { order: 'asc' },
+            },
+          },
+          orderBy: [
+            // Prioriza IN_PROGRESS sobre PLANNED
+            { status: 'desc' },
+            { createdAt: 'desc' },
+          ],
+        }),
+        this.prisma.trip.count({
+          where: {
+            driverId: driver.id,
+            status: 'COMPLETED',
+          },
+        }),
+        this.prisma.fuelRecord.count({
+          where: {
+            driverId: driver.id,
+            OR: [{ receiptUrl: null }, { receiptUrl: '' }],
+          },
+        }),
+        this.prisma.fuelRecord.count({
+          where: {
+            driverId: driver.id,
+            fueledAt: { gte: startOfMonth },
+          },
+        }),
+      ]);
 
     return {
       driver: driverData,
